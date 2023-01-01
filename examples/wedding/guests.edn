@@ -1,0 +1,5 @@
+[{:name "Laura and Mike" :gift "Cheese board" :relationship "College friends of Diane" :hometown "San Francisco"}
+ {:name "Uncle Steve and Aunt Sarah" :gift "China bowls" :relationship "Jack's aunt and uncle" :hometown "San Juan"}
+ {:name "Maria and Joseph" :gift "Chainsaw" :relationship "Friend of Jack's parents" :hometown "Calgary"}
+ {:name "Ava and Charlotte" :gift "Coat rack" :relationship "Diane's childhood friend and her wife" :hometown "Louisville"}
+ {:name "Cory and Patricia" :gift "Kitchenaid Mixer" :relationship "Diane's parents's friends" :hometown "Valencia  Spain"}]

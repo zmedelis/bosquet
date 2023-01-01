@@ -1,0 +1,17 @@
+{:prompt-pattern/basic-qna
+ "Problem: {{prompt-example/problem}}
+Solution: {{prompt-example/solution}}
+Problem: {{completion/problem}}
+Solution:"
+
+ :prompt-pattern/cot
+ "Problem: {{prompt-example/problem}}
+Solution: {{prompt-example/cot}} {{prompt-example/solution}}
+Problem: {{completion/problem}}"
+
+ :prompt.template/zero-shot
+ "{{prompt/complete-for}}
+Let's think step by step.
+{{aigen/complete}}
+Therefore, the answer (arabic numerals) is
+{{aigen/complete}}"}
