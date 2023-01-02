@@ -13,5 +13,4 @@ Problem: {{completion/problem}}"
  "{{prompt/complete-for}}
 Let's think step by step.
 {{aigen/complete}}
-Therefore, the answer (arabic numerals) is
-{{aigen/complete}}"}
+Therefore, the answer (arabic numerals) is "}
