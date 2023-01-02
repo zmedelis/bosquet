@@ -1,4 +1,9 @@
-{:prompt-pattern/basic-qna
+{:prompt-pattern/summarize
+ "{{paragraph}}
+
+Summarize this paragraph in a single sentence:"
+
+ :prompt-pattern/basic-qna
  "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/solution}}
 Problem: {{completion/problem}}
