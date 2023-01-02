@@ -35,7 +35,7 @@
      (fn [_env input]
        (let [[prompt completion]
              (generation-slot->completion
-               (template/fill-text-slots template input))]
+               (template/fill-slots template input))]
          (merge
            {the-key (str prompt completion)}
            #_{(prefix-ns (namespace the-key) :generated-text) completion}

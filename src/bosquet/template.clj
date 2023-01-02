@@ -28,6 +28,8 @@
 
 (selmer.util/set-missing-value-formatter! missing-value-fn)
 
-(defn fill-text-slots [text slots]
+(defn fill-slots
+  "Use Selmer to fill in `text` template `slots`"
+  [text slots]
   (without-escaping
     (selmer/render text slots)))

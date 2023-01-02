@@ -9,4 +9,4 @@
 
 (deftest missing-values
   (is (= "1 = {{y}}"
-        (tpl/fill-text-slots "{{x}} = {{y}}" {:x 1}))))
+        (tpl/fill-slots "{{x}} = {{y}}" {:x 1}))))
