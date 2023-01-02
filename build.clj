@@ -2,9 +2,9 @@
   (:refer-clojure :exclude [test])
   (:require [org.corfield.build :as bb]))
 
-(def lib 'net.clojars.decisionment/decisionment)
+(def lib 'bosquet/bosquet)
 (def version "0.1.0-SNAPSHOT")
-(def main 'decisionment.decisionment)
+(def main 'bosquet.bosquet)
 
 (defn test "Run the tests." [opts]
   (bb/run-tests opts))
