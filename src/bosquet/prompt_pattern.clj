@@ -17,60 +17,59 @@
     {full-text
      (str "{{" (str (.-sym prompt-pattern)) "}} ((bosquet.openai/get-completion))")}))
 
-(defn summarize []
-  (fn [text]
-    (generator/complete
-      (prompt-items :prompt-pattern/summarize)
-      {:paragraph text}
-      result-keys)))
 
-(defn basic-qna [example-problem example-solution]
-  (fn [problem]
-    (generator/complete
-      (prompt-items :prompt-pattern/basic-qna)
-      {:prompt-example/problem  example-problem
-       :prompt-example/solution example-solution
-       :completion/problem      problem}
-      result-keys)))
+(defn generator
+  "Create a generator for named `prompt-pattern`.
+  The `intro-data` contains static part of the prompt: intiation text, examples, etc
+  it will be reused with each call for different completions."
+  ([prompt-pattern intro-data]
+   (fn [data]
+     (generator/complete
+       (prompt-items prompt-pattern)
+       (merge intro-data data)
+       result-keys)))
+  ([prompt-pattern]
+   (generator prompt-pattern nil)))
 
-(defn chain-of-though
+#_(defn chain-of-though
   "[Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](https://arxiv.org/pdf/2201.11903.pdf)
 
   Good for:
   - arithmetic
   - commonsense
-  - symbolic reasoning"
-  [example-problem example-cot example-solution]
-  (fn [problem]
-    (generator/complete
-      (prompt-items :prompt-pattern/cot)
-      {:prompt-example/problem  example-problem
-       :prompt-example/cot      example-cot
-       :prompt-example/solution example-solution
-       :completion/problem      problem}
-      result-keys)))
+  - symbolic reasoning")
 
 (comment
 
-  (def summarizer (summarize))
-  (summarizer "Summary for this")
+  (def summarizer (generator :prompt-pattern/summarize))
+  (summarizer {:paragraph "Once upon the time three things happened."})
 
   (def roger-qna
-    (basic-qna
-      "Roger has 5 tennis balls. He buys 2 more cans of tennis balls.
+    (generator
+      :prompt-pattern/basic-qna
+      {:prompt-example/problem
+       "Roger has 5 tennis balls. He buys 2 more cans of tennis balls.
 Each can has 3 tennis balls. How many tennis balls does he have now?"
-      "The answer is 11."))
+       :prompt-example/solution
+       "The answer is 11."}))
 
   (roger-qna
-    "The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more,
-how many apples do they have?")
+    {:completion/problem
+     "The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more,
+how many apples do they have?"})
 
   (def roger-cot
-    (chain-of-though
-      "Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now?"
-      "Roger started with 5 balls. 2 cans of 3 tennis balls each is 6 tennis balls. 5 + 6 = 11."
-      "The answer is 11."))
+    (generator
+      :prompt-pattern/cot
+      {:prompt-example/problem
+       "Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls.
+How many tennis balls does he have now?"
+       :prompt-example/cot
+       "Roger started with 5 balls. 2 cans of 3 tennis balls each is 6 tennis balls. 5 + 6 = 11."
+       :prompt-example/solution
+       "The answer is 11."}))
 
   (roger-cot
-    "The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more,
-how many apples do they have?"))
+    {:completion/problem
+     "The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more,
+how many apples do they have?"}))
