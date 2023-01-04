@@ -1,0 +1,12 @@
+{:text-analyzer/summarize-to-sentence
+ {:batch
+  "{% for t in text %}
+* {{t}}
+{% endfor %}
+
+Summarize this list of {{text-type|default:paragraph}} in a single sentence items:"
+
+  :single
+  "{{text}}
+
+Summarize this {{text-type|default:paragraph}} in a single sentence:"}}

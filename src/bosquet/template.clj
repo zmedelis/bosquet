@@ -10,6 +10,25 @@
   (with-open [rdr (io/reader file)]
     (edn/read (java.io.PushbackReader. rdr))))
 
+(defn- edn-file? [file] (string/ends-with? (.getName file) ".edn"))
+
+(defn- file-name->kw [file]
+  (-> (.getName file)
+    (string/replace ".edn" "")
+    keyword))
+
+(defn load-palettes
+  "Build a map of all the prompt palletes defined in `dir`.
+  It will read all EDN files in that dir and construct mapping
+  where key is file name and content is patterns defined in that file."
+  [dir]
+  (->> (io/file dir)
+    (file-seq)
+    (filter edn-file?)
+    (reduce
+      (fn [m file] (assoc m (file-name->kw file) (load-edn file)))
+      {})))
+
 (defn slots-required
   "Find slots reffered to in the template"
   [text]

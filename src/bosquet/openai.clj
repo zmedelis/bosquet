@@ -36,10 +36,10 @@
   ([prompt {:keys [model temperature max-tokens n
                    presence-penalty frequence-penalty]
             :or   {model             ada
-                   temperature       0.7
+                   temperature       0.6
                    max-tokens        80
-                   presence-penalty  0.7
-                   frequence-penalty 0.7
+                   presence-penalty  0.4
+                   frequence-penalty 0.2
                    n                 1}}]
    (let [body {:model             model
                :temperature       temperature

@@ -1,15 +1,10 @@
-{:prompt-pattern/summarize
- "{{paragraph}}
-
-Summarize this paragraph in a single sentence:"
-
- :prompt-pattern/basic-qna
+{ :problem-solver/basic-qna
  "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/solution}}
 Problem: {{completion/problem}}
 Solution:"
 
- :prompt-pattern/cot
+ :problem-solver/cot
  "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/cot}} {{prompt-example/solution}}
 Problem: {{completion/problem}}"
