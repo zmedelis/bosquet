@@ -1,12 +1,17 @@
 {:text-analyzer/summarize-to-sentence
- {:batch
-  "{% for t in text %}
+ "{{text}}
+
+Summarize this {{text-type}} in a single sentence:"
+
+ :text-analyzer/assess-sentiment
+ "Estimate the sentiment of the following {{text-type|default:text}} as positive, negative or neutral:
+{{text-type|default:text}}: {{text}}
+Sentiment:"
+ :text-analyzer/assess-sentiment-batch
+ "Estimate the sentiment of the following batch of {{text-type|default:text}} as positive, negative or neutral:
+{% for t in text %}
 * {{t}}
 {% endfor %}
 
-Summarize this list of {{text-type|default:paragraph}} in a single sentence items:"
-
-  :single
-  "{{text}}
-
-Summarize this {{text-type|default:paragraph}} in a single sentence:"}}
+Sentiments:
+*"}
