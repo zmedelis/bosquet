@@ -3,7 +3,7 @@
     [bosquet.template :as template]
     [bosquet.generator :as generator]))
 
-(def prompt-patterns (template/load-edn "resources/prompt/prompt_template.edn"))
+(def palettes (template/load-palettes "resources/prompt-palette"))
 
 (def full-text :completion/full-text)
 
@@ -13,19 +13,18 @@
 
 (defn- prompt-items [prompt-pattern]
   (merge
-    (select-keys prompt-patterns [prompt-pattern])
+    (select-keys palettes [prompt-pattern])
     {full-text
      (str "{{" (str (.-sym prompt-pattern)) "}} ((bosquet.openai/get-completion))")}))
-
 
 (defn generator
   "Create a generator for named `prompt-pattern`.
   The `intro-data` contains static part of the prompt: intiation text, examples, etc
   it will be reused with each call for different completions."
-  ([prompt-pattern intro-data]
+  ([palette-key intro-data]
    (fn [data]
      (generator/complete
-       (prompt-items prompt-pattern)
+       (prompt-items palette-key)
        (merge intro-data data)
        result-keys)))
   ([prompt-pattern]
@@ -41,12 +40,13 @@
 
 (comment
 
-  (def summarizer (generator :prompt-pattern/summarize))
-  (summarizer {:paragraph "Once upon the time three things happened."})
+  (def summarizer (generator :text-analyzer/summarize-to-sentence))
+  (summarizer {:text-type "paragraph"
+               :text      "Once upon the time three things happened."})
 
   (def roger-qna
     (generator
-      :prompt-pattern/basic-qna
+      :problem-solver/basic-qna
       {:prompt-example/problem
        "Roger has 5 tennis balls. He buys 2 more cans of tennis balls.
 Each can has 3 tennis balls. How many tennis balls does he have now?"
