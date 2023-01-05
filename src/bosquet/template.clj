@@ -26,14 +26,16 @@
     (file-seq)
     (filter edn-file?)
     (reduce
-      (fn [m file] (assoc m (file-name->kw file) (load-edn file)))
+      (fn [m file]
+        (merge m (load-edn file))
+        #_(assoc m (file-name->kw file) (load-edn file)))
       {})))
 
 (defn slots-required
   "Find slots reffered to in the template"
   [text]
-  (mapv (comp keyword last)
-    (re-seq #"\{\{(.*?)\}\}"
+  (mapv (comp keyword second)
+    (re-seq #"\{\{(.*?)(\|.*?)?\}\}"
       ;; As per Selmers doc https://github.com/yogthos/Selmer#namespaced-keys ;;
       ;; 'Note that if you're using namespaced keys, such as :foo.bar/baz,
       ;; then you will need to escape the .'
