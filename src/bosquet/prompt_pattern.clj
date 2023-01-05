@@ -44,6 +44,24 @@
   (summarizer {:text-type "paragraph"
                :text      "Once upon the time three things happened."})
 
+  (def sentimental
+    (generator :text-analyzer/assess-sentiment))
+
+  (sentimental
+    {:text-type "tweet"
+     :text      "How did everyone feel about the Climate Change question last night? Exactly."})
+
+  (def sentimental-batch
+    (generator :text-analyzer/assess-sentiment-batch))
+
+  (sentimental-batch
+    {:text-type "tweets"
+     :text
+     ["How did everyone feel about the Climate Change question last night? Exactly."
+      "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
+      "The biggest disappointment of my life came a year ago."]})
+
+
   (def roger-qna
     (generator
       :problem-solver/basic-qna
