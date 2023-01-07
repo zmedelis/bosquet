@@ -1,7 +1,8 @@
 {:text-analyzer/summarize-to-sentence
  "{{text}}
 
-Summarize this {{text-type}} in a single sentence:"
+Summarize this {{text-type}} in a single sentence:
+((bosquet.openai/get-completion))"
 
  :text-analyzer/assess-sentiment
  "Estimate the sentiment of the following {{text-type|default:text}} as positive, negative or neutral:

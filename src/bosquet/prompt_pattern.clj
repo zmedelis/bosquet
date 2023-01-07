@@ -5,22 +5,16 @@
 
 (def palettes (template/load-palettes "resources/prompt-palette"))
 
-
-(defn- prompt-items [prompt-pattern]
-  (merge
-    (select-keys palettes [prompt-pattern])
-    {generator/full-text
-     (str "{{" (str (.-sym prompt-pattern)) "}} ((bosquet.openai/get-completion))")}))
-
 (defn generator
   "Create a generator for named `prompt-pattern`.
   The `intro-data` contains static parts of the prompt: intiation text, examples, etc
   it will be reused with each call for different completions."
   ([palette-key intro-data config]
-   (fn [data] (generator/complete
-                (prompt-items palette-key)
-                (merge intro-data data)
-                config)))
+   (fn [data]
+     (generator/complete
+       (select-keys palettes [palette-key])
+       (merge intro-data data)
+       config)))
   ([prompt-pattern intro-data] (generator prompt-pattern intro-data nil))
   ([prompt-pattern] (generator prompt-pattern nil nil)))
 
@@ -75,7 +69,7 @@ how many apples do they have?"})
 
   (def roger-cot
     (generator
-      :prompt-pattern/cot
+      :problem-solver/cot
       {:prompt-example/problem
        "Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls.
 How many tennis balls does he have now?"

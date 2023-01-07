@@ -2,12 +2,13 @@
  "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/solution}}
 Problem: {{completion/problem}}
-Solution:"
+Solution: ((bosquet.openai/get-completion))"
 
  :problem-solver/cot
  "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/cot}} {{prompt-example/solution}}
-Problem: {{completion/problem}}"
+Problem: {{completion/problem}}
+((bosquet.openai/get-completion))"
 
  :prompt.template/zero-shot
  "{{prompt/complete-for}}

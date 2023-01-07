@@ -6,22 +6,27 @@
     [com.wsscode.pathom3.interface.smart-map :as psm]
     [bosquet.template :as template]))
 
-(def full-text :completion/full-text)
+(def full-prompt :completion/full-text)
 
 (def generated-text :completion/generated-text)
 
-(def result-keys [full-text generated-text])
+(def result-keys [full-prompt generated-text])
 
 (defn- call-generation-fn
   "Call `generation-fn` specified in prompt template with model/generation `config`"
   [generation-fn prompt config]
   ((resolve (symbol generation-fn)) prompt config))
 
+(defn- completion-fn
+  "Find call to completion function in `template`"
+  [template]
+  (re-find #"\(\((.*?)\)\)" template))
+
 (defn- generation-slot->completion
-  "Return tupe of `prompt` without the slot for gen function and
+  "Return tuple of `prompt` without the slot for gen function and
   `completion` as returned from text generation function"
   [text config]
-  (if-let [[match fun] (re-find #"\(\((.*?)\)\)" text)]
+  (if-let [[match fun] (completion-fn text)]
     (let [prompt (string/replace-first text match "")]
       [prompt (call-generation-fn fun prompt config)])
     [text ""]))
@@ -36,7 +41,9 @@
 (defn- generation-resolver [the-key template]
   (pco/resolver
     {::pco/op-name (symbol (prefix-ns "generator" the-key))
-     ::pco/output  [the-key]
+     ::pco/output  (if (completion-fn template)
+                     [the-key full-prompt generated-text]
+                     [the-key])
      ::pco/input   (vec (template/slots-required template))
      ::pco/resolve
      (fn [env input]
@@ -47,7 +54,8 @@
          (merge
            {the-key (str prompt completion)}
            (when-not (string/blank? completion)
-             {:completion/generated-text completion}))))}))
+             {full-prompt (str prompt completion)
+              generated-text completion}))))}))
 
 (defn- prompt-indexes [prompts]
   (pci/register
