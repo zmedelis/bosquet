@@ -1,8 +1,13 @@
-{ :problem-solver/basic-qna
- "Problem: {{prompt-example/problem}}
+{:problem-solver/basic-qna
+ {:description
+  "Basic Problem-Solution prompt giving one `problem` and its
+`solution` example. Optional `context` to start with setting the topic."
+  :prompt
+  "{{prompt/context}}
+Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/solution}}
 Problem: {{completion/problem}}
-Solution: ((bosquet.openai/get-completion))"
+Solution: ((bosquet.openai/get-completion))"}
 
  :problem-solver/cot
  "Problem: {{prompt-example/problem}}

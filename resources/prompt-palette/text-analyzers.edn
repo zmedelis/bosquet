@@ -7,7 +7,9 @@ Summarize this {{text-type}} in a single sentence:
  :text-analyzer/assess-sentiment
  "Estimate the sentiment of the following {{text-type|default:text}} as positive, negative or neutral:
 {{text-type|default:text}}: {{text}}
-Sentiment:"
+Sentiment:
+((bosquet.openai/get-completion))"
+
  :text-analyzer/assess-sentiment-batch
  "Estimate the sentiment of the following batch of {{text-type|default:text}} as positive, negative or neutral:
 {% for t in text %}
@@ -15,4 +17,4 @@ Sentiment:"
 {% endfor %}
 
 Sentiments:
-*"}
+*((bosquet.openai/get-completion))"}

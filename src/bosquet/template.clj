@@ -24,6 +24,16 @@
       (fn [m file] (merge m (load-edn file)))
       {})))
 
+(defn prompt-template
+  "Return prompt template for a given `prompt-name`. If it's spec contains
+  a full specification map then return `prompt` field. In case it is directly
+  specified as string return it. "
+  [palette prompt-name]
+  (let [prompt (prompt-name palette)]
+    (if (map? prompt)
+      (:prompt prompt)
+      prompt)))
+
 (defn slots-required
   "Find slots reffered to in the template"
   [text]

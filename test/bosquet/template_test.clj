@@ -19,3 +19,12 @@
 (deftest missing-values
   (is (= "1 = {{y}}"
         (tpl/fill-slots "{{x}} = {{y}}" {:x 1}))))
+
+(deftest load-palette
+  (let [palette {:full-spec {:prompt      "Hard to say at the"
+                             :description "Full spec prompt"}
+                 :string    "In the following diagram"}]
+    (is (= "In the following diagram"
+          (tpl/prompt-template palette :string)))
+    (is (= "Hard to say at the"
+          (tpl/prompt-template palette :full-spec)))))
