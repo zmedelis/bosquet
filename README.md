@@ -4,6 +4,8 @@
 
 # LLM prompt building
 
+![bosquet](https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/42_Apollo_in_bosquet_F%C3%A4cher%2C_gardens_of_Sch%C3%B6nbrunn_03.jpg/640px-42_Apollo_in_bosquet_F%C3%A4cher%2C_gardens_of_Sch%C3%B6nbrunn_03.jpg)
+
 This tool will help you to define the prompts for the Large Langue Models. Constructed prompt definitions can then be combined with data, and the resulting prompt text passed into LLM API to request completion. 
 
 (WIP) The lib provides tools to deploy prompt definitions as [Cloudflare Workers](https://workers.cloudflare.com/).
