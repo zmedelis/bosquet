@@ -48,7 +48,9 @@
      :text      "How did everyone feel about the Climate Change question last night? Exactly."})
 
   (def sentimental-batch
-    (generator :text-analyzer/assess-sentiment-batch))
+    (generator :text-analyzer/assess-sentiment-batch
+      nil
+      {:model "text-davinci-003"}))
 
   (sentimental-batch
     {:text-type "tweets"
@@ -56,7 +58,6 @@
      ["How did everyone feel about the Climate Change question last night? Exactly."
       "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
       "The biggest disappointment of my life came a year ago."]})
-
 
   (def roger-qna
     (generator

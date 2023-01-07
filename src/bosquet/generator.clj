@@ -37,13 +37,13 @@
   (pco/resolver
     {::pco/op-name (symbol (prefix-ns "generator" the-key))
      ::pco/output  [the-key]
-     ::pco/input   (template/slots-required template)
+     ::pco/input   (vec (template/slots-required template))
      ::pco/resolve
-     (fn [_env input]
+     (fn [env input]
        (let [[prompt completion]
              (generation-slot->completion
                (template/fill-slots template input)
-               (:generation/config _env))]
+               (:generation/config env))]
          (merge
            {the-key (str prompt completion)}
            (when-not (string/blank? completion)
@@ -59,9 +59,7 @@
   "Given a map of `prompts` refering each other and
   a map of `data` to fill in template slots, generate
   text as a combination of template slot filling and AI
-  generation.
-  `data-to-get` is a vector of keys in a template map to
-  eventualy hold produced text."
+  generation."
   [prompts data config]
   (-> (prompt-indexes prompts)
     (assoc :generation/config config)

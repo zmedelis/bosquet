@@ -12,11 +12,6 @@
 
 (defn- edn-file? [file] (string/ends-with? (.getName file) ".edn"))
 
-(defn- file-name->kw [file]
-  (-> (.getName file)
-    (string/replace ".edn" "")
-    keyword))
-
 (defn load-palettes
   "Build a map of all the prompt palletes defined in `dir`.
   It will read all EDN files in that dir and construct mapping
@@ -26,20 +21,13 @@
     (file-seq)
     (filter edn-file?)
     (reduce
-      (fn [m file]
-        (merge m (load-edn file))
-        #_(assoc m (file-name->kw file) (load-edn file)))
+      (fn [m file] (merge m (load-edn file)))
       {})))
 
 (defn slots-required
   "Find slots reffered to in the template"
   [text]
-  (mapv (comp keyword second)
-    (re-seq #"\{\{(.*?)(\|.*?)?\}\}"
-      ;; As per Selmers doc https://github.com/yogthos/Selmer#namespaced-keys ;;
-      ;; 'Note that if you're using namespaced keys, such as :foo.bar/baz,
-      ;; then you will need to escape the .'
-      (string/replace text #"\.\." "."))))
+  (selmer/known-variables text))
 
 (defn missing-value-fn
   "If the value is missing do not discard slot placeholder.

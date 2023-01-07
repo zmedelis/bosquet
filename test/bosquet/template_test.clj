@@ -3,15 +3,18 @@
     [clojure.test :refer [deftest is testing]]
     [bosquet.template :as tpl]))
 
-(deftest slots-required-extraction
+(deftest slot-extraction
   (testing "filling in plain vars"
-    (is (= [:x :ns.one/y]
+    (is (= #{:x :ns.one/y}
           (tpl/slots-required "{{x}} {{ns..one/y}}"))))
   (testing "filling in vars with config"
-    (is (= [:const]
+    (is (= #{:const}
           (tpl/slots-required "{{const|default:3.14}}")))
-    (is (= [:math/const]
-          (tpl/slots-required "{{math/const|default:3.14}}")))))
+    (is (= #{:math/const}
+          (tpl/slots-required "{{math/const|default:3.14}}"))))
+  (testing "slots in for loops"
+    (is (= #{:x :text}
+          (tpl/slots-required "{{x}} {% for t in text %} {% endfor %}")))))
 
 (deftest missing-values
   (is (= "1 = {{y}}"
