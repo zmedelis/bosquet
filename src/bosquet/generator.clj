@@ -6,16 +6,18 @@
     [com.wsscode.pathom3.interface.smart-map :as psm]
     [bosquet.template :as template]))
 
-(defn- call [this & that]
-  (apply (resolve (symbol this)) that))
+(defn- call-generation-fn
+  "Call `generation-fn` specified in prompt template with model/generation `config`"
+  [generation-fn prompt config]
+  ((resolve (symbol generation-fn)) prompt config))
 
 (defn- generation-slot->completion
   "Return tupe of `prompt` without the slot for gen function and
   `completion` as returned from text generation function"
-  [text]
+  [text config]
   (if-let [[match fun] (re-find #"\(\((.*?)\)\)" text)]
     (let [prompt (string/replace-first text match "")]
-      [prompt (call fun prompt)])
+      [prompt (call-generation-fn fun prompt config)])
     [text ""]))
 
 (defn- prefix-ns
@@ -28,19 +30,18 @@
 (defn- generation-resolver [the-key template]
   (pco/resolver
     {::pco/op-name (symbol (prefix-ns "generator" the-key))
-     ::pco/output  [the-key
-                    #_(prefix-ns (namespace the-key) :generated-text)]
+     ::pco/output  [the-key]
      ::pco/input   (template/slots-required template)
      ::pco/resolve
      (fn [_env input]
        (let [[prompt completion]
              (generation-slot->completion
-               (template/fill-slots template input))]
+               (template/fill-slots template input)
+               (:generation/config _env))]
          (merge
            {the-key (str prompt completion)}
-           #_{(prefix-ns (namespace the-key) :generated-text) completion}
            (when-not (string/blank? completion)
-             {(prefix-ns (namespace the-key) :generated-text) completion}))))}))
+             {:completion/generated-text completion}))))}))
 
 (defn- prompt-indexes [prompts]
   (pci/register
@@ -55,7 +56,8 @@
   generation.
   `data-to-get` is a vector of keys in a template map to
   eventualy hold produced text."
-  [prompts data data-to-get]
+  [prompts data data-to-get config]
   (-> (prompt-indexes prompts)
+    (assoc :generation/config config)
     (psm/smart-map data)
     (select-keys data-to-get)))

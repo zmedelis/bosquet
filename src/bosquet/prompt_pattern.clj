@@ -19,16 +19,16 @@
 
 (defn generator
   "Create a generator for named `prompt-pattern`.
-  The `intro-data` contains static part of the prompt: intiation text, examples, etc
+  The `intro-data` contains static parts of the prompt: intiation text, examples, etc
   it will be reused with each call for different completions."
-  ([palette-key intro-data]
-   (fn [data]
-     (generator/complete
-       (prompt-items palette-key)
-       (merge intro-data data)
-       result-keys)))
-  ([prompt-pattern]
-   (generator prompt-pattern nil)))
+  ([palette-key intro-data config]
+   (fn [data] (generator/complete
+                (prompt-items palette-key)
+                (merge intro-data data)
+                result-keys
+                config)))
+  ([prompt-pattern intro-data] (generator prompt-pattern intro-data nil))
+  ([prompt-pattern] (generator prompt-pattern nil nil)))
 
 #_(defn chain-of-though
   "[Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](https://arxiv.org/pdf/2201.11903.pdf)
@@ -45,7 +45,9 @@
                :text      "Once upon the time three things happened."})
 
   (def sentimental
-    (generator :text-analyzer/assess-sentiment))
+    (generator :text-analyzer/assess-sentiment
+      nil
+      {:model "text-davinci-003"}))
 
   (sentimental
     {:text-type "tweet"
