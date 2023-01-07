@@ -10,12 +10,13 @@
   (let [prompts
         {:t/openning "You are the unit test."
          :t/subject  "Write a test for {{function1}} {{function2}}."
-         :t/code     "{{t/openning}} {{t/subject}} ((bosquet.generator-test/dummy-generator))"}]
-    (is (= {:t/code
+         :completion/full-text
+         "{{t/openning}} {{t/subject}} ((bosquet.generator-test/dummy-generator))"}]
+    (is (= {:completion/full-text
             "You are the unit test. Write a test for foo boo. Text: 49 Config: 1"
             :completion/generated-text
             "Text: 49 Config: 1"}
-           (complete prompts
+           (complete
+             prompts
              {:function1 "foo" :function2 "boo"}
-             [:t/code :completion/generated-text]
              {:config "config1"})))))

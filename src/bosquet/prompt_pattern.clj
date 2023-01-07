@@ -5,16 +5,11 @@
 
 (def palettes (template/load-palettes "resources/prompt-palette"))
 
-(def full-text :completion/full-text)
-
-(def generated-text :completion/generated-text)
-
-(def result-keys [full-text generated-text])
 
 (defn- prompt-items [prompt-pattern]
   (merge
     (select-keys palettes [prompt-pattern])
-    {full-text
+    {generator/full-text
      (str "{{" (str (.-sym prompt-pattern)) "}} ((bosquet.openai/get-completion))")}))
 
 (defn generator
@@ -25,7 +20,6 @@
    (fn [data] (generator/complete
                 (prompt-items palette-key)
                 (merge intro-data data)
-                result-keys
                 config)))
   ([prompt-pattern intro-data] (generator prompt-pattern intro-data nil))
   ([prompt-pattern] (generator prompt-pattern nil nil)))

@@ -6,6 +6,12 @@
     [com.wsscode.pathom3.interface.smart-map :as psm]
     [bosquet.template :as template]))
 
+(def full-text :completion/full-text)
+
+(def generated-text :completion/generated-text)
+
+(def result-keys [full-text generated-text])
+
 (defn- call-generation-fn
   "Call `generation-fn` specified in prompt template with model/generation `config`"
   [generation-fn prompt config]
@@ -56,8 +62,8 @@
   generation.
   `data-to-get` is a vector of keys in a template map to
   eventualy hold produced text."
-  [prompts data data-to-get config]
+  [prompts data config]
   (-> (prompt-indexes prompts)
     (assoc :generation/config config)
     (psm/smart-map data)
-    (select-keys data-to-get)))
+    (select-keys result-keys)))
