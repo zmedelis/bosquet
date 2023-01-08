@@ -2,7 +2,7 @@
 
 ----
 
-# Bosquet: LLMOps for Large Language Model based applications 
+# LLMOps for Large Language Model based applications 
 
 ![bosquet](https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/42_Apollo_in_bosquet_F%C3%A4cher%2C_gardens_of_Sch%C3%B6nbrunn_03.jpg/640px-42_Apollo_in_bosquet_F%C3%A4cher%2C_gardens_of_Sch%C3%B6nbrunn_03.jpg)
 
