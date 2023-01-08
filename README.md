@@ -11,6 +11,20 @@ All but most trivial LLM applications require complex prompt handling, developme
 * Prompt quality evaluation.
 * Developed ant tested prompt deployment to [Cloudflare Workers](https://workers.cloudflare.com/), [AWS Lambda](https://aws.amazon.com/lambda/), or self host via REST API.
 
+## Prompt compilation
+
+Bosquet allows defining prompts that depend on each other, their generated outputs, and supplied data. Let us take a simple example where we want to generate a *synopsis* of the play and a *review* of that play.
+
+The play takes in two parameters: the *title* and *style*. The generation of synopsis depends on the text generated from the *play* prompt. 
+
+The picture shows prompt templates, dependencies, and the sequence needed to produce the final result.
+
+[](./doc/img/chained-generation.png)
+
+* First data needs to be filled in: *title* - "The Parade" and *style* - "horror"
+* These are all the dependencies needed for *synopsis* generation, and at the place specified with `((bosquet.openai/complete))` an OpenAI API is called to get the results.
+* Once *synopsis* is completed, *review* can be done. The *synopsis/completion* dependency is automatically fulfilled and the *review* prompt `((bosquet.openai/complete))` can be called to produce the review which will go under *review/completion* key.
+
 ## Usage
 
 Prompts are defined in a map. Items on the map can refer to each other. Bosquet will traverse the dependency graph and insert referred items where needed.
