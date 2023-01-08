@@ -1,6 +1,4 @@
-# Pre release work in progress
-
-----
+#  Pre release work in progress
 
 # LLMOps for Large Language Model based applications 
 
