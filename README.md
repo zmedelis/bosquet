@@ -11,7 +11,7 @@ All but most trivial LLM applications require complex prompt handling, developme
 * Provide scaffolding for prompt building methods: Role Promoting, Chain of Thought, Zero-Shot CoT, Self Consistency, and more.
 * Vulnerability assessment and monitoring. How possible are prompt leak or injection attacks? Can prompt generate harmful content?
 * Prompt quality evaluation.
-* Developed ant tested prompt deployment.
+* Developed ant tested prompt deployment to [Cloudflare Workers](https://workers.cloudflare.com/), [AWS Lambda](https://aws.amazon.com/lambda/), or self host via REST API.
 
 ## Usage
 
