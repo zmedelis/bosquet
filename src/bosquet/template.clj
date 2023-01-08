@@ -15,6 +15,9 @@
     (:prompt prompt)
     prompt))
 
+(defn read-edn [reader]
+  (edn/read (java.io.PushbackReader. reader)))
+
 (defn load-prompt-palette-edn [file]
   (with-open [rdr (io/reader file)]
     (reduce-kv (fn [m k v]
@@ -23,7 +26,7 @@
                  ;; different data structure perhaps
                  (assoc m k (prompt-template v)))
       {}
-      (edn/read (java.io.PushbackReader. rdr)))))
+      (read-edn rdr))))
 
 (defn- edn-file? [file] (string/ends-with? (.getName file) ".edn"))
 
