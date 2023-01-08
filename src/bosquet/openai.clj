@@ -31,8 +31,8 @@
     first
     :text))
 
-(defn get-completion
-  ([prompt] (get-completion prompt nil))
+(defn complete
+  ([prompt] (complete prompt nil))
   ([prompt {:keys [model temperature max-tokens n
                    presence-penalty frequence-penalty]
             :or   {model             ada
@@ -53,4 +53,4 @@
        (completion)))))
 
 (comment
-  (get-completion "1 + 10 ="))
+  (complete "1 + 10 ="))

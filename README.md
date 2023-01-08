@@ -41,7 +41,7 @@ Let's say we are defining a [chain of though prompt] (https://learnprompting.org
   :completion/math-problem
   "{{prompt-pattern/chain-of-though}} 
   Problem:  {{math/problem}}
-  ((bosquet.openai/get-completion))"})
+  ((bosquet.openai/complete))"})
 ```
 With this CoT prompt definition, a function to generate completions for new problems can be defined.
 

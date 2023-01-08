@@ -6,9 +6,24 @@
     [clojure.java.io :as io]
     [clojure.string :as string]))
 
-(defn load-edn [file]
+(defn prompt-template
+  "Return prompt template for a given `prompt-name`. If it's spec contains
+  a full specification map then return `prompt` field. In case it is directly
+  specified as string return it. "
+  [prompt]
+  (if (map? prompt)
+    (:prompt prompt)
+    prompt))
+
+(defn load-prompt-palette-edn [file]
   (with-open [rdr (io/reader file)]
-    (edn/read (java.io.PushbackReader. rdr))))
+    (reduce-kv (fn [m k v]
+                 ;; this discards documentation key
+                 ;; something needs to be done with it
+                 ;; different data structure perhaps
+                 (assoc m k (prompt-template v)))
+      {}
+      (edn/read (java.io.PushbackReader. rdr)))))
 
 (defn- edn-file? [file] (string/ends-with? (.getName file) ".edn"))
 
@@ -21,18 +36,8 @@
     (file-seq)
     (filter edn-file?)
     (reduce
-      (fn [m file] (merge m (load-edn file)))
+      (fn [m file] (merge m (load-prompt-palette-edn file)))
       {})))
-
-(defn prompt-template
-  "Return prompt template for a given `prompt-name`. If it's spec contains
-  a full specification map then return `prompt` field. In case it is directly
-  specified as string return it. "
-  [palette prompt-name]
-  (let [prompt (prompt-name palette)]
-    (if (map? prompt)
-      (:prompt prompt)
-      prompt)))
 
 (defn slots-required
   "Find slots reffered to in the template"
@@ -41,7 +46,7 @@
 
 (defn missing-value-fn
   "If the value is missing do not discard slot placeholder.
-  It will be filled by generator"
+  It can be filled by other data generators"
   [tag _context-map]
   (str "{{" (:tag-value tag) "}}"))
 

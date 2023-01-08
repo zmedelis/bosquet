@@ -7,16 +7,24 @@
 Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/solution}}
 Problem: {{completion/problem}}
-Solution: ((bosquet.openai/get-completion))"}
+Solution: ((bosquet.openai/complete))"}
 
  :problem-solver/cot
- "Problem: {{prompt-example/problem}}
+ {:description
+  "[Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](https://arxiv.org/pdf/2201.11903.pdf)
+
+  Good for:
+  - arithmetic
+  - commonsense
+  - symbolic reasoning."
+  :prompt
+  "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/cot}} {{prompt-example/solution}}
 Problem: {{completion/problem}}
-((bosquet.openai/get-completion))"
+((bosquet.openai/complete))"}
 
- :prompt.template/zero-shot
+ :problem-solver/zero-shot
  "{{prompt/complete-for}}
 Let's think step by step.
 {{aigen/complete}}
-Therefore, the answer (arabic numerals) is "}
+Therefore, the answer (arabic numerals) is ((bosquet.openai/complete))"}

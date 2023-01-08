@@ -18,14 +18,6 @@
   ([prompt-pattern intro-data] (generator prompt-pattern intro-data nil))
   ([prompt-pattern] (generator prompt-pattern nil nil)))
 
-#_(defn chain-of-though
-  "[Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](https://arxiv.org/pdf/2201.11903.pdf)
-
-  Good for:
-  - arithmetic
-  - commonsense
-  - symbolic reasoning")
-
 (comment
 
   (def summarizer (generator :text-analyzer/summarize-to-sentence))
