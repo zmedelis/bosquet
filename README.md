@@ -9,11 +9,11 @@ All but most trivial LLM applications require complex prompt handling, developme
 
 
 Bosquet is building functionality to aid with those challenges:
-* Support access to all main LLM models: [GPT](https://openai.com/api/), [Bloom](https://bigscience.huggingface.co/blog/bloom), and [Stable Diffusion](https://stability.ai/blog/stable-diffusion-v2-release) to start with.
-* Provide scaffolding for prompt building methods: Role Promoting, Chain of Thought, Zero-Shot CoT, Self Consistency, and more.
-* Vulnerability assessment and monitoring. How possible are prompt leak or injection attacks? Can prompt generate harmful content?
-* Prompt quality evaluation.
-* Developed ant tested prompt deployment to [Cloudflare Workers](https://workers.cloudflare.com/), [AWS Lambda](https://aws.amazon.com/lambda/), or self host via REST API.
+* Support access to all main LLM **models**: [GPT](https://openai.com/api/), [Bloom](https://bigscience.huggingface.co/blog/bloom), and [Stable Diffusion](https://stability.ai/blog/stable-diffusion-v2-release) to start with.
+* Provide scaffolding for prompt building **methods**: Role Promoting, Chain of Thought, Zero-Shot CoT, Self Consistency, and more.
+* **Vulnerability** assessment and monitoring. How possible are prompt leak or injection attacks? Can prompt generate harmful content?
+* Prompt quality **evaluation**.
+* Developed ant tested prompt **deployment** to [Cloudflare Workers](https://workers.cloudflare.com/), [AWS Lambda](https://aws.amazon.com/lambda/), or self host via REST API.
 
 ## Prompt compilation
 
