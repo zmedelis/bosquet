@@ -42,11 +42,14 @@
   (pco/resolver
     {::pco/op-name (symbol (prefix-ns "generator" the-key))
      ::pco/output  (if (completion-fn template)
-                     [the-key full-prompt generated-text]
+                     [the-key :bosquet/completions]
+                     #_[the-key full-prompt generated-text]
                      [the-key])
-     ::pco/input   (vec (template/slots-required template))
+     ::pco/input   (vec (conj (template/slots-required template)
+                          (pco/? :bosquet/completions)))
      ::pco/resolve
      (fn [env input]
+       (prn "INPUT " input)
        (let [[prompt completion]
              (generation-slot->completion
                (template/fill-slots template input)
@@ -54,8 +57,12 @@
          (merge
            {the-key (str prompt completion)}
            (when-not (string/blank? completion)
-             {full-prompt (str prompt completion)
-              generated-text completion}))))}))
+             {:bosquet/completions
+              (merge
+                {the-key completion}
+                (:bosquet/completions input))}
+             #_{full-prompt (str prompt completion)
+                generated-text completion}))))}))
 
 (defn- prompt-indexes [prompts]
   (pci/register
@@ -68,8 +75,10 @@
   a map of `data` to fill in template slots, generate
   text as a combination of template slot filling and AI
   generation."
-  [prompts data config]
-  (-> (prompt-indexes prompts)
-    (assoc :generation/config config)
-    (psm/smart-map data)
-    (select-keys result-keys)))
+  ([prompts data config]
+   (complete prompts data config result-keys))
+  ([prompts data config data-keys]
+   (-> (prompt-indexes prompts)
+     (assoc :generation/config config)
+     (psm/smart-map data)
+     (select-keys data-keys))))
