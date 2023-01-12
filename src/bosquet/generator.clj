@@ -49,7 +49,6 @@
                           (pco/? :bosquet/completions)))
      ::pco/resolve
      (fn [env input]
-       (prn "INPUT " input)
        (let [[prompt completion]
              (generation-slot->completion
                (template/fill-slots template input)
@@ -60,9 +59,7 @@
              {:bosquet/completions
               (merge
                 {the-key completion}
-                (:bosquet/completions input))}
-             #_{full-prompt (str prompt completion)
-                generated-text completion}))))}))
+                (:bosquet/completions input))}))))}))
 
 (defn- prompt-indexes [prompts]
   (pci/register

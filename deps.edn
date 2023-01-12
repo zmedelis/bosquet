@@ -4,7 +4,8 @@
            metosin/jsonista            {:mvn/version "0.3.7"}
            selmer/selmer               {:mvn/version "1.12.55"}
            com.wsscode/pathom3         {:mvn/version "2022.10.19-alpha"}
-           io.github.nextjournal/clerk {:mvn/version "0.12.707"}}
+           io.github.nextjournal/clerk {:mvn/version "0.12.707"}
+           nubank/matcher-combinators  {:mvn/version "3.7.2"}}
  :aliases {:dev  {:extra-paths ["dev"]}
-           :test {:main-opts ["-m" "kaocha.runner"]
+           :test {:main-opts  ["-m" "kaocha.runner"]
                   :extra-deps {lambdaisland/kaocha {:mvn/version "1.71.1119"}}}}}
