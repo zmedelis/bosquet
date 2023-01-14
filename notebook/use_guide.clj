@@ -1,5 +1,8 @@
 (ns use-guide
   (:require
+    ;; FIXME this is an issue since openai is not evaluted
+    ;; need to explicitly load it
+    [bosquet.openai]
     [bosquet.generator :as gen]
     [nextjournal.clerk :as clerk]))
 
@@ -50,3 +53,43 @@ Playwright: This is a synopsis for the above play:
 
 ;; Just the AI completion part
 (clerk/html [:blockquote (first synopsis)])
+
+
+
+;; ## Generating from templates with dependencies
+;;
+;; With the play synopsis generated, we want to add a review of that play.
+;; The review prompt template will depend on synopsis generation. With *Bosquet* we
+;; do not need to worry about resolving the dependencies it will be done automatically.
+;; The review prompt template contains familiar call to generation function and
+;; a reference - `{{synopsys/completion}}` (explained bellow) - to generated text for synopsys.
+
+(def review-template
+  "You are a play critic from the New York Times.
+Given the synopsis of play, it is your job to write a review for that play.
+
+Play Synopsis:
+{{synopsis/completion}}
+
+Review from a New York Times play critic of the above play:
+((bosquet.openai/complete))")
+
+;; Both templates need to be added to a map for further processing
+
+(def play
+  {:synopsis synopsis-template
+   :review   review-template})
+
+;; To process this more advanced case of templates in the dependency graph,
+;; *Bosquet* provides the `gen/complete` function taking:
+;; * `prompts` map defined above
+;; * `data` to fill in fixed slots (Selmer templating)
+;; * `config` configuration for the generation API
+;; * and the `data-keys` we want to get back (TODO API needs simplification)
+;;
+;; **TODO** graph processing bugged fails to get second completion
+(gen/complete
+  play
+  {:title "Mr. X" :genre "crime"}
+  nil
+  [:bosquet/completions])
