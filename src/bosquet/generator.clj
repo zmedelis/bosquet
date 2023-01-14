@@ -6,12 +6,6 @@
     [com.wsscode.pathom3.interface.smart-map :as psm]
     [bosquet.template :as template]))
 
-(def full-prompt :completion/full-text)
-
-(def generated-text :completion/generated-text)
-
-(def result-keys [full-prompt generated-text])
-
 (defn- call-generation-fn
   "Call `generation-fn` specified in prompt template with model/generation `config`"
   [generation-fn prompt config]
@@ -38,28 +32,35 @@
     (str ns (namespace key))
     (name key)))
 
-(defn- generation-resolver [the-key template]
-  (pco/resolver
-    {::pco/op-name (symbol (prefix-ns "generator" the-key))
-     ::pco/output  (if (completion-fn template)
-                     [the-key :bosquet/completions]
-                     #_[the-key full-prompt generated-text]
-                     [the-key])
-     ::pco/input   (vec (conj (template/slots-required template)
-                          (pco/? :bosquet/completions)))
-     ::pco/resolve
-     (fn [env input]
-       (let [[prompt completion]
-             (generation-slot->completion
-               (template/fill-slots template input)
-               (:generation/config env))]
-         (merge
-           {the-key (str prompt completion)}
-           (when-not (string/blank? completion)
-             {:bosquet/completions
-              (merge
-                {the-key completion}
-                (:bosquet/completions input))}))))}))
+(defn- generation-resolver
+  "Build dynamic resolvers figuring out what each prompt tempalte needs
+  and set it as required inputs for the resolver.
+  For the output check if themplate is producing generated content
+  anf if so add a key for it into the output"
+  [the-key template]
+  (let [output (if (completion-fn template)
+                 [the-key :bosquet/completions]
+                 [the-key])
+        input  (vec (conj (template/slots-required template)
+                     ;; completion is optional input
+                     (pco/? :bosquet/completions)))]
+    (pco/resolver
+      {::pco/op-name (-> "generation" (prefix-ns the-key) symbol)
+       ::pco/output  output
+       ::pco/input   input
+       ::pco/resolve
+       (fn [env input]
+         (let [[prompt completion]
+               (generation-slot->completion
+                 (template/fill-slots template input)
+                 (:generation/config env))]
+           (merge
+             {the-key (str prompt completion)}
+             (when-not (string/blank? completion)
+               {:bosquet/completions
+                (assoc
+                  (:bosquet/completions input)
+                  the-key completion)}))))})))
 
 (defn- prompt-indexes [prompts]
   (pci/register
@@ -71,11 +72,11 @@
   "Given a map of `prompts` refering each other and
   a map of `data` to fill in template slots, generate
   text as a combination of template slot filling and AI
-  generation."
-  ([prompts data config]
-   (complete prompts data config result-keys))
-  ([prompts data config data-keys]
-   (-> (prompt-indexes prompts)
-     (assoc :generation/config config)
-     (psm/smart-map data)
-     (select-keys data-keys))))
+  generation.
+  `config` holds configuration for the ai-gen call (see openai ns)
+  `data-keys` are the keys to select for in the pathom resolver results"
+  [prompts data config data-keys]
+  (-> (prompt-indexes prompts)
+    (assoc :generation/config config)
+    (psm/smart-map data)
+    (select-keys data-keys)))
