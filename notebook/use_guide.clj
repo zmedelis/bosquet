@@ -52,7 +52,7 @@ Playwright: This is a synopsis for the above play:
 (clerk/html [:blockquote (first synopsis)])
 
 ;; Just the AI completion part
-(clerk/html [:blockquote (first synopsis)])
+(clerk/html [:blockquote (second synopsis)])
 
 
 
