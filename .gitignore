@@ -20,6 +20,7 @@
 .nrepl-history
 .nrepl-port
 .project
+.portal
 .rebel_readline_history
 .settings
 .socket-repl-port
