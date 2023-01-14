@@ -32,6 +32,14 @@
     (str ns (namespace key))
     (name key)))
 
+(defn complete-template
+  "Fill in `template` `slots` with Selmer and call generation function
+  (if present) to complete the text"
+  [template slots config]
+  (generation-slot->completion
+    (template/fill-slots template slots)
+    config))
+
 (defn- generation-resolver
   "Build dynamic resolvers figuring out what each prompt tempalte needs
   and set it as required inputs for the resolver.
@@ -42,25 +50,21 @@
                  [the-key :bosquet/completions]
                  [the-key])
         input  (vec (conj (template/slots-required template)
-                     ;; completion is optional input
-                     (pco/? :bosquet/completions)))]
+                      ;; completion is optional input
+                      (pco/? :bosquet/completions)))]
     (pco/resolver
       {::pco/op-name (-> "generation" (prefix-ns the-key) symbol)
        ::pco/output  output
        ::pco/input   input
        ::pco/resolve
-       (fn [env input]
+       (fn [{:generation/keys [config]} {:bosquet/keys [completions] :as input}]
          (let [[prompt completion]
-               (generation-slot->completion
-                 (template/fill-slots template input)
-                 (:generation/config env))]
+               (complete-template template input config)]
            (merge
              {the-key (str prompt completion)}
              (when-not (string/blank? completion)
                {:bosquet/completions
-                (assoc
-                  (:bosquet/completions input)
-                  the-key completion)}))))})))
+                (assoc completions the-key completion)}))))})))
 
 (defn- prompt-indexes [prompts]
   (pci/register
