@@ -1,30 +1,28 @@
 {:problem-solver/basic-qna
- {:description
-  "Basic Problem-Solution prompt giving one `problem` and its
-`solution` example. Optional `context` to start with setting the topic."
-  :prompt
-  "{{prompt/context}}
-Problem: {{prompt-example/problem}}
+ "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/solution}}
 Problem: {{completion/problem}}
-Solution: ((bosquet.openai/complete))"}
+Solution: ((bosquet.openai/complete))"
 
  :problem-solver/cot
- {:description
-  "[Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](https://arxiv.org/pdf/2201.11903.pdf)
-
-  Good for:
-  - arithmetic
-  - commonsense
-  - symbolic reasoning."
-  :prompt
-  "Problem: {{prompt-example/problem}}
+ "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/cot}} {{prompt-example/solution}}
 Problem: {{completion/problem}}
-((bosquet.openai/complete))"}
+((bosquet.openai/complete))"
+
 
  :problem-solver/zero-shot
  "{{prompt/complete-for}}
 Let's think step by step.
 {{aigen/complete}}
 Therefore, the answer (arabic numerals) is ((bosquet.openai/complete))"}
+
+;; "Basic Problem-Solution prompt giving one `problem` and its ;;
+;; `solution` example. Optional `context` to start with setting the topic."
+;;
+;; "[Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](https://arxiv.org/pdf/2201.11903.pdf) ;;
+
+;;   Good for:
+;;   - arithmetic
+;;   - commonsense
+;;   - symbolic reasoning."
