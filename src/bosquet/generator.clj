@@ -35,10 +35,11 @@
 (defn complete-template
   "Fill in `template` `slots` with Selmer and call generation function
   (if present) to complete the text"
-  [template slots config]
-  (generation-slot->completion
-    (template/fill-slots template slots)
-    config))
+  ([template slots config]
+   (generation-slot->completion
+     (template/fill-slots template slots)
+     config))
+  ([template slots] (complete-template template slots nil)))
 
 (defn- generation-resolver
   "Build dynamic resolvers figuring out what each prompt tempalte needs
