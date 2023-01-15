@@ -14,8 +14,7 @@
      (generator/complete
        (select-keys palettes [palette-key])
        (merge intro-data data)
-       config
-       [palette-key :bosquet/completions])))
+       config)))
   ([prompt-pattern intro-data] (generator prompt-pattern intro-data nil))
   ([prompt-pattern] (generator prompt-pattern nil nil)))
 

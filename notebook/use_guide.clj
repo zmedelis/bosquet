@@ -49,12 +49,10 @@ Playwright: This is a synopsis for the above play:
     synopsis-template {:title "Mr. X" :genre "crime"}))
 
 ;; Full *Bosquet* produced text
-(clerk/html [:blockquote (first synopsis)])
+(clerk/html [:pre (first synopsis)])
 
 ;; Just the AI completion part
-(clerk/html [:blockquote (second synopsis)])
-
-
+(clerk/html [:pre (second synopsis)])
 
 ;; ## Generating from templates with dependencies
 ;;
@@ -62,14 +60,14 @@ Playwright: This is a synopsis for the above play:
 ;; The review prompt template will depend on synopsis generation. With *Bosquet* we
 ;; do not need to worry about resolving the dependencies it will be done automatically.
 ;; The review prompt template contains familiar call to generation function and
-;; a reference - `{{synopsys/completion}}` (explained bellow) - to generated text for synopsys.
+;; a reference - `{{synopsys-completion}}` (explained bellow) - to generated text for synopsys.
 
 (def review-template
   "You are a play critic from the New York Times.
 Given the synopsis of play, it is your job to write a review for that play.
 
 Play Synopsis:
-{{synopsis/completion}}
+{{synopsis-completion}}
 
 Review from a New York Times play critic of the above play:
 ((bosquet.openai/complete))")
@@ -86,10 +84,8 @@ Review from a New York Times play critic of the above play:
 ;; * `data` to fill in fixed slots (Selmer templating)
 ;; * `config` configuration for the generation API
 ;; * and the `data-keys` we want to get back (TODO API needs simplification)
-;;
-;; **TODO** graph processing bugged fails to get second completion
-(gen/complete
-  play
-  {:title "Mr. X" :genre "crime"}
-  nil
-  [:bosquet/completions])
+
+(def review (gen/complete play {:title "Mr. X" :genre "crime"} nil))
+
+;; Generated review including 'synopsis' generation
+(clerk/html [:pre (:review-completed review)])

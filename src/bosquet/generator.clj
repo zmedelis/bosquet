@@ -21,16 +21,10 @@
   `completion` as returned from text generation function"
   [text config]
   (if-let [[match fun] (completion-fn text)]
-    (let [prompt (string/replace-first text match "")]
-      [prompt (call-generation-fn fun prompt config)])
+    (let [prompt     (string/replace-first text match "")
+          completion (call-generation-fn fun prompt config)]
+      [(str prompt completion) completion])
     [text ""]))
-
-(defn- prefix-ns
-  "Add `ns` as a new namespace for a `key`"
-  [ns key]
-  (keyword
-    (str ns (namespace key))
-    (name key)))
 
 (defn complete-template
   "Fill in `template` `slots` with Selmer and call generation function
@@ -41,36 +35,53 @@
      config))
   ([template slots] (complete-template template slots nil)))
 
+(defn completed-key [str-key] (keyword (str str-key "-completed")))
+
+(defn completion-key [str-key] (keyword (str str-key "-completion")))
+
+(defn output-keys [k template]
+  (let [str-k (str (.-sym k))
+        completed-k (completed-key str-k)
+        completion-k (completion-key str-k)]
+    (if (completion-fn template)
+      [k completed-k completion-k]
+      [k completed-k])))
+
 (defn- generation-resolver
   "Build dynamic resolvers figuring out what each prompt tempalte needs
   and set it as required inputs for the resolver.
   For the output check if themplate is producing generated content
   anf if so add a key for it into the output"
   [the-key template]
-  (let [output (if (completion-fn template)
-                 [the-key :bosquet/completions]
-                 [the-key])
-        input  (vec (conj (template/slots-required template)
-                      ;; completion is optional input
-                      (pco/? :bosquet/completions)))]
+  (let [str-k        (str (.-sym the-key))
+        completed-k  (completed-key str-k)
+        completion-k (completion-key str-k)
+        output       (output-keys the-key template)
+        input        (vec (template/slots-required template))]
     (pco/resolver
-      {::pco/op-name (-> "generation" (prefix-ns the-key) symbol)
+      {::pco/op-name (symbol (keyword (str str-k "-gen")))
        ::pco/output  output
        ::pco/input   input
        ::pco/resolve
-       (fn [{:generation/keys [config]} {:bosquet/keys [completions] :as input}]
-         (let [[prompt completion]
+       (fn [{:generation/keys [config]} input]
+         (let [[completed completion]
                (complete-template template input config)]
            (merge
-             {the-key (str prompt completion)}
+             {completed-k completed
+              the-key     template}
              (when-not (string/blank? completion)
-               {:bosquet/completions
-                (assoc completions the-key completion)}))))})))
+               {completion-k completion}))))})))
 
 (defn- prompt-indexes [prompts]
   (pci/register
     (mapv
       (fn [prompt-key] (generation-resolver prompt-key (prompt-key prompts)))
+      (keys prompts))))
+
+(defn all-keys [prompts]
+  (vec
+    (mapcat
+      (fn [prompt-key] (output-keys prompt-key (prompt-key prompts)))
       (keys prompts))))
 
 (defn complete
@@ -80,8 +91,8 @@
   generation.
   `config` holds configuration for the ai-gen call (see openai ns)
   `data-keys` are the keys to select for in the pathom resolver results"
-  [prompts data config data-keys]
+  [prompts data config]
   (-> (prompt-indexes prompts)
     (assoc :generation/config config)
     (psm/smart-map data)
-    (select-keys data-keys)))
+    (select-keys (all-keys prompts))))

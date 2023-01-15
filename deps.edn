@@ -6,6 +6,6 @@
            com.wsscode/pathom3         {:mvn/version "2022.10.19-alpha"}
            io.github.nextjournal/clerk {:mvn/version "0.12.707"}
            nubank/matcher-combinators  {:mvn/version "3.7.2"}}
- :aliases {:dev  {:extra-paths ["dev"]}
+ :aliases {:dev  {:extra-paths ["dev" "notebook"]}
            :test {:main-opts  ["-m" "kaocha.runner"]
                   :extra-deps {lambdaisland/kaocha {:mvn/version "1.71.1119"}}}}}
