@@ -2,7 +2,8 @@
  :deps    {org.clojure/clojure         {:mvn/version "1.11.1"}
            clj-http/clj-http           {:mvn/version "3.12.3"}
            metosin/jsonista            {:mvn/version "0.3.7"}
-           selmer/selmer               {:mvn/version "1.12.55"}
+           zmedelis/Selmer             {:git/url "https://github.com/zmedelis/Selmer"
+                                        :git/sha "b5a23e456b8991388b73a27c9e92c3941a171507"}
            com.wsscode/pathom3         {:mvn/version "2022.10.19-alpha"}
            io.github.nextjournal/clerk {:mvn/version "0.12.707"}
            nubank/matcher-combinators  {:mvn/version "3.7.2"}}

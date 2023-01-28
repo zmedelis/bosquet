@@ -16,6 +16,14 @@ Bosquet is building functionality to aid with those challenges:
 * Developed ant tested prompt **deployment** to [Cloudflare Workers](https://workers.cloudflare.com/), [AWS Lambda](https://aws.amazon.com/lambda/), or self host via REST API.
 * Prompt service **reliability** guarantees.
 
+## Instalation
+
+One time action need to prep the libs
+
+```bash
+clj -X:deps prep
+```
+
 ## Prompt compilation
 
 Bosquet allows defining prompts that depend on each other, their generated outputs, and supplied data. Let us take a simple example where we want to generate a *synopsis* of the play and a *review* of that play.

@@ -1,0 +1,7 @@
+{:text-analyzer/summarize
+ "{{text}}
+##
+Summarize this {{text-type}} in a single sentence:
+{% llm-generate :provider :openai :model :ada %}"
+ :summary       'bosquet.openai/completion
+ :bosquet/model {:stop ["##"]}}
