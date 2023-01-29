@@ -3,7 +3,7 @@
            clj-http/clj-http           {:mvn/version "3.12.3"}
            metosin/jsonista            {:mvn/version "0.3.7"}
            zmedelis/Selmer             {:git/url "https://github.com/zmedelis/Selmer"
-                                        :git/sha "49179fdf42ba9754f211a8d8c5132eab4de917c1"}
+                                        :git/sha "88fc2b51817e1ad67f0458c75857222a72db4945"}
            com.wsscode/pathom3         {:mvn/version "2022.10.19-alpha"}
            io.github.nextjournal/clerk {:mvn/version "0.12.707"}
            nubank/matcher-combinators  {:mvn/version "3.7.2"}}

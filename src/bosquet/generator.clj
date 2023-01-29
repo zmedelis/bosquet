@@ -63,7 +63,6 @@
   `data-keys` are the keys to select for in the pathom resolver results"
   [prompts data]
   (-> (prompt-indexes prompts)
-    #_(assoc :generation/config config)
     (psm/smart-map data)
     (select-keys (all-keys prompts))))
 

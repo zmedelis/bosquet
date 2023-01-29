@@ -2,20 +2,20 @@
  "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/solution}}
 Problem: {{completion/problem}}
-Solution: ((bosquet.openai/complete))"
+Solution: {% llm-generate %}"
 
  :problem-solver/cot
  "Problem: {{prompt-example/problem}}
 Solution: {{prompt-example/cot}} {{prompt-example/solution}}
 Problem: {{completion/problem}}
-((bosquet.openai/complete))"
+{% llm-generate %}"
 
 
  :problem-solver/zero-shot
  "{{prompt/complete-for}}
 Let's think step by step.
 {{aigen/complete}}
-Therefore, the answer (arabic numerals) is ((bosquet.openai/complete))"}
+Therefore, the answer (arabic numerals) is {% llm-generate %}"}
 
 ;; "Basic Problem-Solution prompt giving one `problem` and its ;;
 ;; `solution` example. Optional `context` to start with setting the topic."

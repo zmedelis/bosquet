@@ -42,13 +42,15 @@
       (fn [m file] (merge m (load-prompt-palette-edn file)))
       {})))
 
+(def ^:private var-name ":var-name=")
+
 (defn generation-vars [template]
   (->> (selmer/known-variables template)
     (filter (fn [variable]
-              (string/starts-with? (str variable) ":selmer-name=")))
+              (string/starts-with? (str variable) var-name)))
     (map (fn [variable]
            (keyword (string/replace-first
-                      (str variable) ":selmer-name=" ""))))
+                      (str variable) var-name ""))))
     (set)))
 
 (defn slots-required

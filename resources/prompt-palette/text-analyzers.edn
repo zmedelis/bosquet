@@ -2,13 +2,16 @@
  "{{text}}
 
 Summarize this {{text-type}} in a single sentence:
-((bosquet.openai/complete))"
+{% llm-generate %}"
 
  :text-analyzer/assess-sentiment
- "Estimate the sentiment of the following {{text-type|default:text}} as positive, negative or neutral:
+ "Estimate the sentiment of the following {{text-type|default:text}}
+as positive, negative or neutral:
+
 {{text-type|default:text}}: {{text}}
+
 Sentiment:
-((bosquet.openai/complete))"
+{% llm-generate model=text-davinci-003 %}"
 
  :text-analyzer/assess-sentiment-batch
  "Estimate the sentiment of the following batch of {{text-type|default:text}} as positive, negative or neutral:
@@ -17,4 +20,4 @@ Sentiment:
 {% endfor %}
 
 Sentiments:
-*((bosquet.openai/complete))"}
+*{% llm-generate model=text-davinci-003 %}"}

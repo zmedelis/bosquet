@@ -9,14 +9,12 @@
   "Create a generator for named `prompt-pattern`.
   The `intro-data` contains static parts of the prompt: intiation text, examples, etc
   it will be reused with each call for different completions."
-  ([palette-key intro-data config]
+  ([palette-key intro-data]
    (fn [data]
      (generator/complete
        (select-keys palettes [palette-key])
-       (merge intro-data data)
-       config)))
-  ([prompt-pattern intro-data] (generator prompt-pattern intro-data nil))
-  ([prompt-pattern] (generator prompt-pattern nil nil)))
+       (merge intro-data data))))
+  ([prompt-pattern] (generator prompt-pattern nil)))
 
 (comment
 
@@ -24,19 +22,13 @@
   (summarizer {:text-type "paragraph"
                :text      "Once upon the time three things happened."})
 
-  (def sentimental
-    (generator :text-analyzer/assess-sentiment
-      nil
-      {:model "text-davinci-003"}))
-
+  (def sentimental (generator :text-analyzer/assess-sentiment))
   (sentimental
     {:text-type "tweet"
      :text      "How did everyone feel about the Climate Change question last night? Exactly."})
 
   (def sentimental-batch
-    (generator :text-analyzer/assess-sentiment-batch
-      nil
-      {:model "text-davinci-003"}))
+    (generator :text-analyzer/assess-sentiment-batch))
 
   (sentimental-batch
     {:text-type "tweets"

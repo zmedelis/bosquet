@@ -6,7 +6,7 @@
 
 (defn- args->map [args]
   (reduce (fn [m arg]
-            (let [[k v] (string/split arg #":")]
+            (let [[k v] (string/split arg #"=")]
               (assoc m (keyword k) v)))
     {}
     args))
