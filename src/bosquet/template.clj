@@ -42,21 +42,26 @@
       (fn [m file] (merge m (load-prompt-palette-edn file)))
       {})))
 
+(defn generation-vars [template]
+  (->> (selmer/known-variables template)
+    (filter (fn [variable]
+              (string/starts-with? (str variable) ":selmer-name=")))
+    (map (fn [variable]
+           (keyword (string/replace-first
+                      (str variable) ":selmer-name=" ""))))
+    (set)))
+
 (defn slots-required
   "Find slots reffered to in the template"
   [text]
-  (selmer/known-variables text))
-
-(defn missing-value-fn
-  "If the value is missing do not discard slot placeholder.
-  It can be filled by other data generators"
-  [tag _context-map]
-  (str "{{" (:tag-value tag) "}}"))
-
-(selmer.util/set-missing-value-formatter! missing-value-fn)
+  (set
+    (remove
+      ;; remove config values coming from tags like `llm-generate`
+      (fn [variable] (string/includes? (name variable) "="))
+      (selmer/known-variables text))))
 
 (defn fill-slots
   "Use Selmer to fill in `text` template `slots`"
   [text slots]
   (without-escaping
-    (selmer/render text slots)))
+    (selmer/render-with-values text slots)))

@@ -1,8 +1,8 @@
 {:text-analyzer/summarize
-"Summarize this {{text-type}} in a single sentence.
+ "Summarize this {{text-type}} {{for}} in a single sentence.
 
 Sentence:
 {{text}}
 
 Summary:
-{% llm-generate provider:openai model:text-davinci-003 %}"}
+{% llm-generate selmer-name=summary provider=openai model=ada %}"}

@@ -12,6 +12,6 @@
 
 (comment
   (def s (prompt-def))
-  (parser/render (:text-analyzer/summarize s)
+  (parser/render-with-values (:text-analyzer/summarize s)
     {:text "A very long text to be summarized."
      :text-type "sentence"}))
