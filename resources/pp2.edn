@@ -1,7 +1,8 @@
 {:text-analyzer/summarize
- "{{text}}
-##
-Summarize this {{text-type}} in a single sentence:
-{% llm-generate :provider :openai :model :ada %}"
- :summary       'bosquet.openai/completion
- :bosquet/model {:stop ["##"]}}
+"Summarize this {{text-type}} in a single sentence.
+
+Sentence:
+{{text}}
+
+Summary:
+{% llm-generate provider:openai model:text-davinci-003 %}"}
