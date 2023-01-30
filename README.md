@@ -1,14 +1,13 @@
 # LLMOps for Large Language Model based applications 
 
-All but most trivial LLM applications require complex prompt handling, development, evaluation, secure use, and deployment techniques. 
-
-Bosquet is building LLMOps functionality (see totorial bellow for the parts that are now implemented):
+All but most trivial LLM applications require complex prompt handling, development, evaluation, secure use, and deployment techniques.
+Bosquet is building LLMOps functionality (see the tutorial bellow for the parts that are now implemented):
 
 * Support access to all main LLM **models**: [GPT](https://openai.com/api/), [Bloom](https://bigscience.huggingface.co/blog/bloom), and [Stable Diffusion](https://stability.ai/blog/stable-diffusion-v2-release) to start with.
 * Provide scaffolding for prompt building **methods**: Role Promoting, Chain of Thought, Zero-Shot CoT, Self Consistency, and more.
 * **Vulnerability** assessment and monitoring. How possible are prompt leak or injection attacks? Can prompt generate harmful content?
 * Prompt quality **evaluation**.
-* Developed ant tested prompt **deployment** to [Cloudflare Workers](https://workers.cloudflare.com/), [AWS Lambda](https://aws.amazon.com/lambda/), or self host via REST API.
+* Developed and tested prompt **deployment** to [Cloudflare Workers](https://workers.cloudflare.com/), [AWS Lambda](https://aws.amazon.com/lambda/), or self-host via REST API.
 * Prompt service **reliability** guarantees.
 
 ## Features
@@ -18,20 +17,20 @@ advanced template definition functionality.
 
 ### Composability
 
-Composability allows to focus on prompt language and logics not worrying about 
-resolving the dependencies and sequence of the prompt execution.
+Composability allows focusing on prompt language and logic, not worrying about resolving the dependencies and sequence of the prompt execution.
 
 ![prompt chaining](/doc/img/chained-generation.png)
 
-In this prompt definition *Bosquet* will ensure the following sequence of execution:
+In this prompt definition, *Bosquet* will ensure the following sequence of execution:
+
 1. First data needs to be filled in: *title* - "The Parade" and *style* - "horror"
 1. These are all the dependencies needed for *synopsis* generation, and at the place specified with `((bosquet.openai/complete))` an OpenAI API is called to get the results.
-1. Once *synopsis* is completed, *review* can be done. The *synopsis/completion* dependency is automatically fulfilled and the *review* prompt `((bosquet.openai/complete))` will be called to produce the review 
-1. Generated text for reiview will go under *review/completion* key.
+1. Once the *synopsis* is completed, the *review* can be done. The *synopsis/completion* dependency is automatically fulfilled and the *review* prompt `((bosquet.openai/complete))` will be called to produce the review 
+1. Generated text for review will go under *review/completion* key.
 
 ### Templates
 
-Bosquet uses Selmer to define its templates with all the functionality comming from Selmer's templating language:
+Bosquet uses Selmer to define its templates with all the functionality coming from Selmer's templating language:
 * filters
 * loops
 * branches
@@ -53,7 +52,7 @@ clj -X:deps prep
 
 ## Defining and executing prompts
 
-This section is available as live via [Clerk](https://clerk.vision/) notebook.
+This section is available as a live via [Clerk](https://clerk.vision/) notebook.
 Start project REPL with
 
 ```bash
@@ -66,7 +65,7 @@ to get it running on http://localhost:7777
 - resolves *dependencies* between prompts
 - produces AI *completions*
 
-This section fill show how to use it.
+The following section will show how to use it.
 
 ## Simple single template case
 
@@ -82,8 +81,7 @@ It uses `{{DATA}}` syntax to specify where data needs to be injected.
 happen. This is indicated with the `{% llm-generate %}` [tag](https://github.com/zmedelis/Selmer#tags).
 
 Generation is done with the following *Bosquet* features:
-- `llm-generate` will recieve all the text preceeding it with already filled in template slots. This text
-is used as the prompt to be sent to the competion API.
+- `llm-generate` will receive all the text preceding it with already filled-in template slots. This text is used as the prompt to be sent to the completion API.
 - `bosquet.openai` namespace defines completion function, that calls *OpenAI API* to initiate the completion
 
 ### Synopsis template
@@ -101,10 +99,7 @@ Playwright: This is a synopsis for the above play:
 
 ```
 
-Note the optional `var-name` parameter. This is the name of the var to hold
-generation generation result and it can an be used as a reference in other templates
-or the same template further down. If `var-name` is  not specified `llm-generate` will be
-used as the name.
+Note the optional `var-name` parameter. This is the name of the var to hold generation result and it can be used as a reference in other templates or the same template further down. If `var-name` is not specified `"llm-generate"` will be used as the name.
 
 ### Generation
 
@@ -114,8 +109,8 @@ is present as the environment variable.
 `llm-generate` call to the *OpenAI* will use configuration parameters specfied
 in that tag and reflect parameters specified by [Open AI API](https://beta.openai.com/docs/api-reference/completions).
 The tag uses the same names. If config parameters are not used, then defaults
-are used. Note that default model is *Ada*, in production *Davinci* would be a
-nautural choice.
+are used. Note that the default model is *Ada*, in production *Davinci* would be a
+natural choice.
 
 ```clojure
 {model             ada
@@ -173,13 +168,13 @@ Both templates need to be added to a map to be jointly processed by *Bosquet*.
 ```
 
 
-The review prompt template contains familiar call to generation function and
-a reference - `{{synopsis-completion.synopsys}}` - to generated text for the synopsis.
+The review prompt template contains a familiar call to generation function and
+a reference - `{{synopsis-completion.synopsis}}` - to a generated text for the synopsis.
 
 The reference points to `synopsis-completion.synopsis` where `synopsis-completion`
 points to the map of all completions done by `synopsis` template and `.play`
 pics out the `var-name` used for that specific generation
-(multiple generations can be defined in one tempalte).
+(multiple generations can be defined in one template).
 
 Thus the references between prompts and completions are constructed using this pattern
 
@@ -201,7 +196,7 @@ An example of some of those features.
 
 ### Tweet sentiment batch processing
 
-Lets say we want to get a batch sentiment processor for Tweets.
+Let's say we want to get a batch sentiment processor for Tweets.
 
 A template for that:
 
@@ -216,10 +211,10 @@ Sentiments:
 {% llm-generate model=text-davinci-003 %}")
 ```
 
-First, *Selmer* provides [for tag](https://github.com/yogthos/Selmer#for)
+First, *Selmer* provides ['for' tag](https://github.com/yogthos/Selmer#for)
 to process collections of data.
 
-Then, `{{text-type|default:text}}` shows how defaults can be used. In this case
+Then, `{{text-type|default:text}}` shows how defaults can be used. In this case,
 if `text-type` is not specified `"text"` will be used.
 
 Tweets to be processed
