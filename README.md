@@ -1,15 +1,8 @@
-  
-⚠️ **Pre release work in progress** ⚠️
-
 # LLMOps for Large Language Model based applications 
 
 All but most trivial LLM applications require complex prompt handling, development, evaluation, secure use, and deployment techniques. 
 
-![bosquet](https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/42_Apollo_in_bosquet_F%C3%A4cher%2C_gardens_of_Sch%C3%B6nbrunn_03.jpg/640px-42_Apollo_in_bosquet_F%C3%A4cher%2C_gardens_of_Sch%C3%B6nbrunn_03.jpg)
-
-
-Bosquet is building LLMOps functionality (see totorial bellow for the parts that are
-now implemented):
+Bosquet is building LLMOps functionality (see totorial bellow for the parts that are now implemented):
 
 * Support access to all main LLM **models**: [GPT](https://openai.com/api/), [Bloom](https://bigscience.huggingface.co/blog/bloom), and [Stable Diffusion](https://stability.ai/blog/stable-diffusion-v2-release) to start with.
 * Provide scaffolding for prompt building **methods**: Role Promoting, Chain of Thought, Zero-Shot CoT, Self Consistency, and more.
