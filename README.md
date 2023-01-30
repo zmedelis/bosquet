@@ -5,6 +5,8 @@
 All but most trivial LLM applications require complex prompt handling, development, evaluation, secure use, and deployment techniques.
 Bosquet is building LLMOps functionality (see the tutorial bellow for the parts that are now implemented):
 
+## Planned features
+
 * Support access to all main LLM **models**: [GPT](https://openai.com/api/), [Bloom](https://bigscience.huggingface.co/blog/bloom), and [Stable Diffusion](https://stability.ai/blog/stable-diffusion-v2-release) to start with.
 * Provide scaffolding for prompt building **methods**: Role Promoting, Chain of Thought, Zero-Shot CoT, Self Consistency, and more.
 * **Vulnerability** assessment and monitoring. How possible are prompt leak or injection attacks? Can prompt generate harmful content?
@@ -12,7 +14,7 @@ Bosquet is building LLMOps functionality (see the tutorial bellow for the parts 
 * Developed and tested prompt **deployment** to [Cloudflare Workers](https://workers.cloudflare.com/), [AWS Lambda](https://aws.amazon.com/lambda/), or self-host via REST API.
 * Prompt service **reliability** guarantees.
 
-## Features
+## Current Features
 
 *Bosquet* relies on [Selmer](https://github.com/yogthos/Selmer) and [Pathom](https://pathom3.wsscode.com/) to implement composable prompts with 
 advanced template definition functionality.
