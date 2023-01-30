@@ -3,12 +3,15 @@
     [bosquet.generator :as gen]
     [nextjournal.clerk :as clerk]))
 
-;; This is the tutorial showing how Bosquet constructs prompts and produces AI completions.
+;; This is the tutorial showing how **Bosquet**:
+;; - defines prompt *templates*
+;; - resolves *dependencies* between prompts
+;; - produces AI *completions*.
 ;;
 ;; ## Simple single template case
 ;;
-;; Let's say we want to generate a synopsis of the play from
-;; its `title` and the `genre` we want that play to be in.
+;; Let's say we want to generate a synopsis of the play. The synopsis
+;; is to be generated from `title` and `genre` inputs.
 ;;
 ;; ### Selmer templating language
 ;;
@@ -17,19 +20,29 @@
 ;;
 ;; *Bosquet* adds to *Selmer* a specification of where AI generation calls should
 ;; happen. This is indicated with the `{% llm-generate %}` [tag](https://github.com/zmedelis/Selmer#tags).
-;; Behind that tag a completion function defined in `bosquet.openai` namespace will be alled.
+;;
+;; Generation is done with the following *Bosquet* features:
+;; - `llm-generate` will recieve all the text preceeding it with already filled in template slots. This text
+;; is used as the prompt to be sent to the competion API.
+;; - `bosquet.openai` namespace defines completion function, that calls *OpenAI API* to initiate the completion
 ;;
 ;; ### Synopsis template
 
 (def synopsis-template
-  "You are a playwright. Given the title of play and the desired style,
-it is your job to write a synopsis for that title.
+  "You are a playwright. Given the play's title and t's genre
+it is your job to write synopsis for that play.
 
 Title: {{title}}
 Genre: {{genre}}
 
 Playwright: This is a synopsis for the above play:
-{% llm-generate model=text-davinci-003 var-name=synopsis%}")
+{% llm-generate model=text-davinci-003 var-name=play %}")
+
+
+;; Note the optional `var-name` parameter. This is the name of the var to hold
+;; generation generation result and it can an be used as a reference in other templates
+;; or the same template further down. If `var-name` is  not specified `llm-generate` will be
+;; used as the name.
 
 ;; ### Generation
 ;;
@@ -52,10 +65,6 @@ Playwright: This is a synopsis for the above play:
 ;;  n                 1}
 ;; ```
 ;;
-;; Note the optional `var-name` parameter. This is the name of the var to hold
-;; generation generation result and it can an be used as a reference in other templates
-;; or the same template further down.
-;;
 ;; The call to generation function takes in:
 ;; - `template` defined above
 ;; - `data` is the data to fill in the template slots (`title` and `genre`)
@@ -68,24 +77,22 @@ Playwright: This is a synopsis for the above play:
     synopsis-template
     {:title "Mr. X" :genre "crime"}))
 
-;; Full *Bosquet* produced text
-(clerk/html [:code.language-html (first synopsis)])
+;; #### Full *Bosquet* produced text
+^{::clerk/visibility {:code :hide}}
+(clerk/html [:pre (first synopsis)])
 
-;; Just the AI completion part
-(clerk/html [:code.language-html (-> synopsis second :synopsis)])
+;; #### Just the AI completion part
+^{::clerk/visibility {:code :hide}}
+(clerk/html [:pre (-> synopsis second :play)])
 
 ;; ## Generating from templates with dependencies
 ;;
 ;; With the play synopsis generated, we want to add a review of that play.
 ;; The review prompt template will depend on synopsis generation. With *Bosquet* we
-;; do not need to worry about resolving the dependencies it will be done automatically.
-;;
-;; The review prompt template contains familiar call to generation function and
-;; a reference - `{{synopsis-completion.synopsys}}` - to generated text for synopsys.
-;;
-;; The reference points to `synopsis-completion.synopsis` where `synopsis-completion`
-;; points to the map of all completions done by `synopsis` template and `.synopsis`
-;; pics out the `var-name` used for that specific generation.
+;; do not need to worry about resolving the dependencies it will
+;; be done automatically (powered by [Pathom](https://pathom3.wsscode.com/)).
+
+;; ### Review prompt
 
 (def review-template
   "You are a play critic from the New York Times.
@@ -97,15 +104,24 @@ Play Synopsis:
 Review from a New York Times play critic of the above play:
 {% llm-generate model=text-davinci-003 %}")
 
-;; Note that `var-name` is not used and generaation will be assigned to a
-;; default `llm-generate` name.
-;;
-;; Both templates need to be added to a map for further processing
+;; Both templates need to be added to a map to be jointly processed by *Bosquet*.
 
 (def play
   {:synopsis synopsis-template
    :review   review-template})
 
+;; The review prompt template contains familiar call to generation function and
+;; a reference - `{{synopsis-completion.synopsys}}` - to generated text for the synopsis.
+;;
+;; The reference points to `synopsis-completion.synopsis` where `synopsis-completion`
+;; points to the map of all completions done by `synopsis` template and `.play`
+;; pics out the `var-name` used for that specific generation
+;; (multiple generations can be defined in one tempalte).
+;;
+;; Thus the references between prompts and completions are constructed using this pattern
+;;
+;; `[prompt-map-key]-completion.[var-name]`
+;;
 ;; To process this more advanced case of templates in the dependency graph,
 ;; *Bosquet* provides the `gen/complete` function taking:
 ;; * `prompts` map defined above
@@ -113,5 +129,46 @@ Review from a New York Times play critic of the above play:
 
 (def review (gen/complete play {:title "Mr. X" :genre "crime"}))
 
-;; Generated review including 'synopsis' generation
-(clerk/html [:code.language-html (:review-completed review)])
+;; ### Fully generated review
+^{::clerk/visibility {:code :hide}}
+(clerk/html [:pre (:review-completed review)])
+
+
+;; ## Advanced templating with Selmer
+;;
+;; *Selmer* provides lots of great templating functionality.
+;; An example of some of those features.
+;;
+;; ### Tweet sentiment batch processing
+;;
+;; Lets say we want to get a batch sentiment processor for Tweets.
+;;
+;; A template for that:
+
+(def sentimental
+  "Estimate the sentiment of the following batch of {{text-type|default:text}} as positive, negative or neutral:
+{% for t in tweets %}
+* {{t}}
+{% endfor %}
+
+Sentiments:
+{% llm-generate model=text-davinci-003 %}")
+
+;; First, *Selmer* provides [for tag](https://github.com/yogthos/Selmer#for)
+;; to process collections of data.
+;;
+;; Then, `{{text-type|default:text}}` shows how defaults can be used. In this case
+;; if `text-type` is not specified `"text"` will be used.
+
+;; Tweets to be processed
+(def tweets
+   ["How did everyone feel about the Climate Change question last night? Exactly."
+    "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
+    "The biggest disappointment of my life came a year ago."])
+
+(def sentiments (gen/complete-template sentimental
+                  {:text-type "tweets" :tweets tweets}))
+
+;; Generation results in the same order as `tweets`
+^{::clerk/visibility {:code :hide}}
+(clerk/html [:pre (-> sentiments second :llm-generate)])

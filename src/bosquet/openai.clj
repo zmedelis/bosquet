@@ -33,13 +33,14 @@
 
 (defn complete
   ([prompt] (complete prompt nil))
-  ([prompt {:keys [model temperature max-tokens n
+  ([prompt {:keys [model temperature max-tokens n top-p
                    presence-penalty frequence-penalty]
             :or   {model             ada
                    temperature       0.6
                    max-tokens        80
                    presence-penalty  0.4
                    frequence-penalty 0.2
+                   top-p             1
                    n                 1}}]
    (let [body {:model             model
                :temperature       temperature
@@ -47,6 +48,7 @@
                :presence_penalty  presence-penalty
                :frequency_penalty frequence-penalty
                :n                 n
+               :top_p             top-p
                :prompt            prompt}]
      (-> endpoint
        (http/post (request body (api-key)))
