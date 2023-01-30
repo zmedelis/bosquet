@@ -1,5 +1,7 @@
 # LLMOps for Large Language Model based applications 
 
+![bosquet chain](/doc/img/generation-chain.png)
+
 All but most trivial LLM applications require complex prompt handling, development, evaluation, secure use, and deployment techniques.
 Bosquet is building LLMOps functionality (see the tutorial bellow for the parts that are now implemented):
 
