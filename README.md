@@ -34,7 +34,7 @@ In this prompt definition, *Bosquet* will ensure the following sequence of execu
 
 ### Templates
 
-Bosquet uses Selmer to define its templates with all the functionality coming from Selmer's templating language:
+*Bosquet* uses [Selmer](https://github.com/yogthos/Selmer) to define its templates with all the functionality coming from Selmer's templating language:
 * filters
 * loops
 * branches
@@ -195,7 +195,7 @@ To process this more advanced case of templates in the dependency graph,
 
 ## Advanced templating with Selmer
 
-*Selmer* provides lots of great templating functionality.
+[Selmer](https://github.com/yogthos/Selmer) provides lots of great templating functionality.
 An example of some of those features.
 
 ### Tweet sentiment batch processing
