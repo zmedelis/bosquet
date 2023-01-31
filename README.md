@@ -90,7 +90,7 @@ clj -X:deps prep
 
 ## Defining and executing prompts
 
-This section is available as a live via [Clerk](https://clerk.vision/) notebook.
+This section is available as a live via **[Clerk](https://clerk.vision/) notebook**.
 Start project REPL with
 
 ```bash
