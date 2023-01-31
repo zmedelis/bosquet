@@ -5,6 +5,40 @@
 All but most trivial LLM applications require complex prompt handling, development, evaluation, secure use, and deployment techniques.
 Bosquet is building LLMOps functionality (see the tutorial bellow for the parts that are now implemented):
 
+## Quick example
+
+An example of a composable prompt definition to define a prompt answering question with role assumption.
+
+```clojure
+(complete
+  ;Prompt components
+  {:role      "As a brilliant {{who-you-are}} answer the following question."
+   :QnA       "{{role-completed}} {{question}} Answer: {% llm-generate var-name=answer %}"
+   :self-eval "{{QnA-completed}} Is this a correct answer? {% llm-generate var-name=test%}"}
+   ;Data
+   {:who-you-are "astronomer"
+    :question    "What is the distance from Moon to Io?"})
+=>
+{:role-completed
+ "As a brilliant astronomer answer the following question."
+ 
+ :QnA-completed
+ "As a brilliant astronomer answer the following question. What is the distance from Moon to Io? 
+  Answer: The average distance between the Moon and Io is approximately 384,400 km (238,855 mi)."
+  
+ :QnA-completion
+ {:answer
+  "The average distance between the Moon and Io is approximately 384,400 km (238,855 mi)."}
+  
+ :self-eval-completed
+ "As a brilliant astronomer answer the following question. What is the distance from Moon to Io? 
+  Answer: The average distance between the Moon and Io is approximately 384,400 km (238,855 mi). 
+  Is this a correct answer? Yes, that is a correct answer."
+  
+ :self-eval-completion {:test "Yes, that is a correct answer."}}
+
+```
+
 ## Planned features
 
 * Support access to all main LLM **models**: [GPT](https://openai.com/api/), [Bloom](https://bigscience.huggingface.co/blog/bloom), and [Stable Diffusion](https://stability.ai/blog/stable-diffusion-v2-release) to start with.
