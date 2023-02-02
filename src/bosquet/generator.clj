@@ -69,4 +69,12 @@
 (comment
   (def p
     (template/read-edn (clojure.java.io/reader "resources/pp2.edn")))
-  (complete p {:text-type "sentence" :for "a kid" :text "This very long stuff."}))
+  (complete p {:text-type "sentence" :for "a kid" :text "This very long stuff."})
+
+  (clojure.pprint/pprint
+    (complete
+      {:role      "As a brilliant {{who-you-are}} answer the following question."
+       :QnA       "{{role-completed}} {{question}} Answer: {% llm-generate var-name=answer %}"
+       :self-eval "{{QnA-completed}} Is this a correct answer? {% llm-generate var-name=test%}"}
+      {:who-you-are "astronomer"
+       :question "What is the distance from Moon to Io?"})))
