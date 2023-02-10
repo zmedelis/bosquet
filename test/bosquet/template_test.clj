@@ -14,13 +14,13 @@
           (tpl/slots-required "{{math/const|default:3.14}}"))))
   (testing "slots with config params"
     (is (= #{:x}
-          (tpl/slots-required "{% debug selmer-name=test x=y %} {{x}}"))))
+          (tpl/slots-required "{% debug var-name=test x=y %} {{x}}"))))
   (testing "slots in for loops"
     (is (= #{:x :text}
           (tpl/slots-required "{{x}} {% for t in text %} {% endfor %}"))))
   (testing "generation slot extraction"
     (is (= #{:test1 :test2}
-          (tpl/generation-vars "{% debug selmer-name=test1 %} {% debug selmer-name=test2 %}")))))
+          (tpl/generation-vars "{% debug var-name=test1 %} {% debug var-name=test2 %}")))))
 
 
 
