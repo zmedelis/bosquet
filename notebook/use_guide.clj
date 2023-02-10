@@ -99,39 +99,35 @@ Playwright: This is a synopsis for the above play:
 Given the synopsis of play, it is your job to write a review for that play.
 
 Play Synopsis:
-{{synopsis-completion.synopsis}}
+{{play}}
 
 Review from a New York Times play critic of the above play:
-{% llm-generate model=text-davinci-003 %}")
+{% llm-generate model=text-davinci-003 var-name=review %}")
 
 ;; Both templates need to be added to a map to be jointly processed by *Bosquet*.
 
-(def play
-  {:synopsis synopsis-template
-   :review   review-template})
+(def play-review
+  {:synopsis  synopsis-template
+   :evrything review-template})
 
 ;; The review prompt template contains familiar call to generation function and
-;; a reference - `{{synopsis-completion.synopsys}}` - to generated text for the synopsis.
-;;
-;; The reference points to `synopsis-completion.synopsis` where `synopsis-completion`
-;; points to the map of all completions done by `synopsis` template and `.play`
-;; pics out the `var-name` used for that specific generation
-;; (multiple generations can be defined in one tempalte).
-;;
-;; Thus the references between prompts and completions are constructed using this pattern
-;;
-;; `[prompt-map-key]-completion.[var-name]`
+;; a reference - `{{play}}` - to generated text for the synopsis.
 ;;
 ;; To process this more advanced case of templates in the dependency graph,
 ;; *Bosquet* provides the `gen/complete` function taking:
 ;; * `prompts` map defined above
 ;; * `data` to fill in fixed slots (Selmer templating)
 
-(def review (gen/complete play {:title "Mr. X" :genre "crime"}))
+(def review (gen/complete play-review {:title "Mr. X" :genre "crime"}))
 
 ;; ### Fully generated review
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:pre (:review-completed review)])
+(clerk/html [:pre (:evrything review)])
+
+
+;; ### Just a review part for the generated play synopsis
+^{::clerk/visibility {:code :hide}}
+(clerk/html [:pre (:review review)])
 
 
 ;; ## Advanced templating with Selmer

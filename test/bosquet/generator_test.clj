@@ -13,14 +13,13 @@
         {:openning "You are the unit test."
          :subject  "Write a test for '{{function1}}' '{{function2}}'."
          :unit-test
-         "{{openning}} {{subject}} ((bosquet.generator-test/dummy-generator))"
+         "{{openning}} {{subject}} {% llm-generate model=text-ada-001 %}"
          :test-results
-         "{{t/unit-test}} Test result summary: ((bosquet.generator-test/dummy-generator))"}
+         "{{t/unit-test}} Test result summary: {% llm-generate model=text-ada-001 %}"}
 
-        {:t/keys [openning subject unit-test test-results] :bosquet/keys [completions] :as o}
+        {:t/keys [openning subject unit-test test-results]}
         (complete prompts
-          {:function1 "foo" :function2 "boo"}
-          {:config "config1"})]
+          {:function1 "foo" :function2 "boo"})]
     (is (match? "You are the unit test." openning))
     (is (match? #".*foo.*?boo.*\." subject))
     (is (match? #"You.*'foo' 'boo'. Text: 53 Config: 1" unit-test))
