@@ -1,4 +1,4 @@
-(ns bosquet.prompt-pattern
+(ns bosquet.prompt-palette
   (:require
     [bosquet.template :as template]
     [bosquet.generator :as generator]))
