@@ -1,4 +1,4 @@
-(ns bosquet.template
+(ns bosquet.template.read
   (:require
     [selmer.parser :as selmer]
     [selmer.util :refer [without-escaping]]
@@ -6,27 +6,13 @@
     [clojure.java.io :as io]
     [clojure.string :as string]))
 
-(defn prompt-template
-  "Return prompt template for a given `prompt-name`. If it's spec contains
-  a full specification map then return `prompt` field. In case it is directly
-  specified as string return it. "
-  [prompt]
-  (if (map? prompt)
-    (:prompt prompt)
-    prompt))
-
 (defn read-edn [reader]
   (edn/read (java.io.PushbackReader. reader)))
 
 (defn load-prompt-palette-edn [file]
   (with-open [rdr (io/reader file)]
-    (reduce-kv (fn [m k v]
-                 ;; this discards documentation key
-                 ;; something needs to be done with it
-                 ;; different data structure perhaps
-                 (assoc m k (prompt-template v)))
-      {}
-      (read-edn rdr))))
+    (reduce-kv (fn [m k v] (assoc m k v))
+      {} (read-edn rdr))))
 
 (defn- edn-file? [file] (string/ends-with? (.getName file) ".edn"))
 

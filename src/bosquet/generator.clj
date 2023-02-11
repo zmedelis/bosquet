@@ -1,6 +1,6 @@
 (ns bosquet.generator
   (:require
-    [bosquet.template :as template]
+    [bosquet.template.read :as template]
     [bosquet.template.tag :as tag]
     [com.wsscode.pathom3.connect.indexes :as pci]
     [com.wsscode.pathom3.connect.operation :as pco]

@@ -1,7 +1,7 @@
 (ns bosquet.template-test
   (:require
     [clojure.test :refer [deftest is testing]]
-    [bosquet.template :as tpl]))
+    [bosquet.template.read :as tpl]))
 
 (deftest slot-extraction
   (testing "filling in plain vars"
@@ -21,14 +21,3 @@
   (testing "generation slot extraction"
     (is (= #{:test1 :test2}
           (tpl/generation-vars "{% debug var-name=test1 %} {% debug var-name=test2 %}")))))
-
-
-
-(deftest load-palette
-  (let [palette {:full-spec {:prompt      "Hard to say at the"
-                             :description "Full spec prompt"}
-                 :string    "In the following diagram"}]
-    (is (= "In the following diagram"
-          (tpl/prompt-template (palette :string))))
-    (is (= "Hard to say at the"
-          (tpl/prompt-template (palette :full-spec))))))
