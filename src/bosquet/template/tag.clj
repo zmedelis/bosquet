@@ -4,7 +4,7 @@
    [clojure.string :as string]
    [selmer.parser :as parser]))
 
-(defn- args->map [args]
+(defn args->map [args]
   (reduce (fn [m arg]
             (let [[k v] (string/split arg #"=")]
               (assoc m (keyword k) v)))
