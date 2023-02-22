@@ -7,4 +7,6 @@
 ;; or let Clerk watch the given `:paths` for changes
 (clerk/serve! {:watch-paths ["notebook"]})
 
-(clerk/show! "notebook/use_guide.clj")
+(comment
+  (clerk/show! "notebook/use_guide.clj")
+  (clerk/show! "notebook/wedding_guest_example.clj"))

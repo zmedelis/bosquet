@@ -1,5 +1,6 @@
 (ns wedding-guest-example
   (:require
+   [bosquet.generator :as gen]
    [nextjournal.clerk :as clerk]))
 
 ;; Here we will create "Thank you letters" for our wedding guests.
@@ -9,6 +10,7 @@
 ;;
 ;; This is what we know about the guests:
 
+^{::clerk/visibility {:code :hide}}
 (def guests
   [{:name "Laura and Mike" :gift "Cheese board" :relationship "College friends of Diane" :hometown "San Francisco"}
    {:name "Uncle Steve and Aunt Sarah" :gift "China bowls" :relationship "Jack's aunt and uncle" :hometown "San Juan"}
@@ -16,12 +18,14 @@
    {:name "Ava and Charlotte" :gift "Coat rack" :relationship "Diane's childhood friend and her wife" :hometown "Louisville"}
    {:name "Cory and Patricia" :gift "Kitchenaid Mixer" :relationship "Diane's parents's friends" :hometown "Valencia  Spain"}])
 
+^{::clerk/visibility {:code :hide}}
 (clerk/table guests)
 
 ;; To generate individual letters we will instruct LLM with
 ;; a few examples illustrating what kind of things are to be said
 ;; given the information about the guest.
 
+^{::clerk/visibility {:code :hide}}
 (def thank-you-letters-few-shot-exmples
   [{:guest
     "Name: Nancy, Relationship: Friend of Jack's parents, Gift: Set of mixing bowls, Hometown: New Jersey"
@@ -57,4 +61,41 @@ We love it and it will look perfect in our new home. We are so grateful to have 
 Hopefully we'll be coming through Miami sometime soon. Would love to see you!
 Best, Jack and Diane"}])
 
-(clerk/table thank-you-letters-few-shot-exmples)
+
+(def letter-writter
+  {:context
+   "Jack and Diane just had their wedding in Puerto Rico and it is time to write thank you cards.
+For each guest, write a thoughtful, sincere, and personalized thank you note using the information provided below."
+
+   :examples
+   "{% for guest,step,note in examples %}
+Guest Information:
+{{guest}}
+
+First, let's think step by step:
+{{step}}
+
+Next, let's draft the letter:
+{{note}}
+{% endfor %}"
+
+   :letter
+   "{{context}}
+
+{{examples}}
+
+
+Guest Information: Name: {{name}}
+Relationship: {{relationship}}
+Gift: {{gift}}
+Hometown: {{hometown}}
+
+First, let's think step by step:
+{% llm-generate model=text-davinci-003 %}"})
+
+
+
+(def letters (gen/complete letter-writter
+               (merge
+                 (first guests)
+                 {:examples thank-you-letters-few-shot-exmples})))
