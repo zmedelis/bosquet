@@ -67,25 +67,26 @@ Best, Jack and Diane"}])
    "Jack and Diane just had their wedding in Puerto Rico and it is time to write thank you cards.
 For each guest, write a thoughtful, sincere, and personalized thank you note using the information provided below."
 
-   :examples
-   "{% for guest,step,note in examples %}
+   :few-shot-examples
+   "{% for example in examples %}
 Guest Information:
-{{guest}}
+{{example.guest}}
 
 First, let's think step by step:
-{{step}}
+{{example.step}}
 
 Next, let's draft the letter:
-{{note}}
+{{example.note}}
 {% endfor %}"
 
    :letter
    "{{context}}
 
-{{examples}}
+{{few-shot-examples}}
 
 
-Guest Information: Name: {{name}}
+Guest Information:
+Name: {{name}}
 Relationship: {{relationship}}
 Gift: {{gift}}
 Hometown: {{hometown}}
@@ -95,7 +96,8 @@ First, let's think step by step:
 
 
 
-(def letters (gen/complete letter-writter
-               (merge
-                 (first guests)
-                 {:examples thank-you-letters-few-shot-exmples})))
+(def letters
+  (gen/complete letter-writter
+    (merge
+      (first guests)
+      {:examples thank-you-letters-few-shot-exmples})))
