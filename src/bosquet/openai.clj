@@ -12,7 +12,7 @@
                    presence-penalty frequence-penalty]
             :or   {model             ada
                    temperature       0.6
-                   max-tokens        80
+                   max-tokens        250
                    presence-penalty  0.4
                    frequence-penalty 0.2
                    top-p             1

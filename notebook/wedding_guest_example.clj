@@ -1,16 +1,25 @@
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns wedding-guest-example
   (:require
    [bosquet.generator :as gen]
    [nextjournal.clerk :as clerk]))
 
-;; Here we will create "Thank you letters" for our wedding guests.
-;; This will illustrate how to use generation over a database of
-;; guests producing different letters based on the information
-;; about the guest.
+;; # Generating thank you letters
 ;;
-;; This is what we know about the guests:
+;; There was a wedding with lots of guests. They traveled far and wide to attend it, brough gifts and all.
+;;
+;; We want to generate thank you letters for each guest. The letters should be personalized and note how
+;; far they traveled, and how great is their gift. Letters ought to be written in a tone appropriate for
+;; the type of the relationship between the guest and the couple.
+;;
+;; ## The guests
+;;
+;; The list of guests is taken from the couple's spreadsheet they used to note who came to their wedding.
+;; There were 178 guests in total, hence the need for automation. This sample shows typical types of guests'
+;; relationships with the couple, the geographical spread of visitors, and the gifts they brought.
+;; Those types of data will have to be reflected in personalized letters.
 
-^{::clerk/visibility {:code :hide}}
+^{::clerk/visibility {:code :fold}}
 (def guests
   [{:name "Laura and Mike" :gift "Cheese board" :relationship "College friends of Diane" :hometown "San Francisco"}
    {:name "Uncle Steve and Aunt Sarah" :gift "China bowls" :relationship "Jack's aunt and uncle" :hometown "San Juan"}
@@ -21,11 +30,61 @@
 ^{::clerk/visibility {:code :hide}}
 (clerk/table guests)
 
-;; To generate individual letters we will instruct LLM with
-;; a few examples illustrating what kind of things are to be said
-;; given the information about the guest.
+;; ## The Instructions
+;;
+;; Large Language Model needs to learn how to write thank you letters. LLMs need only a few examples
+;; and instructions on how to write a letter. The examples need to illustrate how different
+;; relationship types, gifts, and distances traveled impact the tone and content of the letter.
+;;
+;; The instructions are composed of three parts:
+;; * data about the guest
+;; * step-by-step guidance on how to write the letter
+;; * and the example letter itself.
+
+;; ### Data
+;; We take a guest representing a certain group of those who attended the wedding:
 
 ^{::clerk/visibility {:code :hide}}
+(clerk/html [:ul.viewer.viewer-code.w-full.max-w-wide
+             [:li [:em "Name"] " - Nancy"]
+             [:li [:em "Relationship"] " - Friend of Jack's parents"]
+             [:li [:em "Hometown"] " - New Jersy"]
+             [:li [:em "Gift"] " - Set of mixing bowls"]])
+
+;; ### Step-by-step guidance
+;; We need to provide step-by-step instructions to LLM on how to write a thank you letter. In _Nancy's_ case
+;; those instructions would be:
+
+^{::clerk/visibility {:code :hide}}
+(clerk/html [:ul.viewer.viewer-code.w-full.max-w-wide
+             [:li "Nancy is a friend of Jack's parents, so the tone should be more formal and reference how important she is to Jack's parents."]
+             [:li "New Jersey and Puerto Rico are a long distance apart, so we should thank her for making the trip."]
+             [:li "Mixing bowls are a nice gift because they can be used for baking."]])
+
+;; ### Example letter
+;; Finally, the last component to finish teaching LLM to write thank you letters is to give it
+;; an actual sample letter given the above data about the guests and instructions on how to write a letter.
+
+^{::clerk/visibility {:code :hide}}
+(clerk/html [:div.viewer.viewer-code.w-full.max-w-wide.whitespace-pre
+             "Dear Nancy,
+
+Thank you so much for attending our wedding in Puerto Rico and for the lovely gift of mixing bowls.
+We love to bake and will think of you every time we use them. It was so kind of you to make the trip
+all the way from New Jersey to celebrate with us. We are truly grateful to have such supportive and
+close friends like you in our lives.
+
+We will of course let you know when we're next in New Jersey, and hope to see you soon!
+
+Best, Jack and Diane"])
+
+;; ### Full set of instructions
+;;
+;; The above process needs to be repeated for each type of the guest. There is no need to povide lots of examples
+;; a few representing most typical cases will do. LLM will take care of the rest.
+;;
+
+^{::clerk/visibility {:code :fold}}
 (def thank-you-letters-few-shot-exmples
   [{:guest
     "Name: Nancy, Relationship: Friend of Jack's parents, Gift: Set of mixing bowls, Hometown: New Jersey"
@@ -62,6 +121,21 @@ Hopefully we'll be coming through Miami sometime soon. Would love to see you!
 Best, Jack and Diane"}])
 
 
+;; ## The Prompt
+;;
+;; The prompt is a short description of the task that LLM needs to perform. There is an excellent [DAIR.AI introduction to Prompt Engineering](https://github.com/dair-ai/Prompt-Engineering-Guide/blob/main/guides/prompts-intro.md).
+;; **Bosquet** allows you to compose prompts out of individual components.
+;;
+;; First the _context_ that sets the topic of the prompt:
+
+^{::clerk/visibility {:code :hide}}
+(clerk/html [:div.viewer.viewer-code.w-full.max-w-wide
+             "Jack and Diane just had their wedding in Puerto Rico and it is time to write thank you cards.
+For each guest, write a thoughtful, sincere, and personalized thank you note using the information provided below."])
+
+
+
+^{::clerk/visibility {:code :fold}}
 (def letter-writter
   {:context
    "Jack and Diane just had their wedding in Puerto Rico and it is time to write thank you cards.
@@ -84,7 +158,6 @@ Next, let's draft the letter:
 
 {{few-shot-examples}}
 
-
 Guest Information:
 Name: {{name}}
 Relationship: {{relationship}}
@@ -92,12 +165,18 @@ Gift: {{gift}}
 Hometown: {{hometown}}
 
 First, let's think step by step:
-{% llm-generate model=text-davinci-003 %}"})
+{% llm-generate model=text-curie-001 %}"})
 
 
 
+^{::clerk/visibility {:code :fold}}
 (def letters
   (gen/complete letter-writter
     (merge
       (first guests)
       {:examples thank-you-letters-few-shot-exmples})))
+
+
+^{::clerk/visibility {:code :hide}}
+(clerk/html [:div.bg-teal-50.whitespace-pre
+             (:letter letters)])
