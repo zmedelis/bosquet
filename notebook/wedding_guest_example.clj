@@ -66,7 +66,7 @@
 ;; an actual sample letter given the above data about the guests and instructions on how to write a letter.
 
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:div.viewer.viewer-code.w-full.max-w-wide.whitespace-pre
+(clerk/html [:div.viewer.viewer-code.w-full.max-w-wide.whitespace-pre-line
              "Dear Nancy,
 
 Thank you so much for attending our wedding in Puerto Rico and for the lovely gift of mixing bowls.
@@ -121,21 +121,23 @@ Hopefully we'll be coming through Miami sometime soon. Would love to see you!
 Best, Jack and Diane"}])
 
 
+^{::clerk/visibility {:code :hide}}
+
+(clerk/table
+  thank-you-letters-few-shot-exmples)
+
+
 ;; ## The Prompt
 ;;
 ;; The prompt is a short description of the task that LLM needs to perform. There is an excellent [DAIR.AI introduction to Prompt Engineering](https://github.com/dair-ai/Prompt-Engineering-Guide/blob/main/guides/prompts-intro.md).
-;; **Bosquet** allows you to compose prompts out of individual components.
-;;
-;; First the _context_ that sets the topic of the prompt:
+;; With [Bosquet](https://github.com/BrewLLM/bosquet) you can compose prompts out of individual components, while [Selmer]() templating engine will provide necessary
+;; tools merge guest data and instructions into the prompt.
 
-^{::clerk/visibility {:code :hide}}
-(clerk/html [:div.viewer.viewer-code.w-full.max-w-wide
-             "Jack and Diane just had their wedding in Puerto Rico and it is time to write thank you cards.
-For each guest, write a thoughtful, sincere, and personalized thank you note using the information provided below."])
-
-
-
-^{::clerk/visibility {:code :fold}}
+;; Prompt components defining the generation.
+;; * `context` - sets the theme of the letter, note that it can be swapped with the rest unchanged
+;; * `few-shot-examples` - only a part iterating over the letter writting example instructions
+;; * `letter` - the part where all the previous components and data are merged together to send for generation
+;; * `letter-generation` - this one is different, it is defined in `llm-generate` and specfies which key will hold only the generated text
 (def letter-writter
   {:context
    "Jack and Diane just had their wedding in Puerto Rico and it is time to write thank you cards.
@@ -155,9 +157,7 @@ Next, let's draft the letter:
 
    :letter
    "{{context}}
-
 {{few-shot-examples}}
-
 Guest Information:
 Name: {{name}}
 Relationship: {{relationship}}
@@ -165,18 +165,20 @@ Gift: {{gift}}
 Hometown: {{hometown}}
 
 First, let's think step by step:
-{% llm-generate model=text-curie-001 %}"})
+{% llm-generate model=text-davinci-003 var-name=letter-generation %}"})
 
+;; ## Generate letters
+;;
+;; With the promts defined we can now generate the letters.
 
-
-^{::clerk/visibility {:code :fold}}
 (def letters
   (gen/complete letter-writter
     (merge
       (first guests)
       {:examples thank-you-letters-few-shot-exmples})))
 
+;; Only the generated part
 
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:div.bg-teal-50.whitespace-pre
-             (:letter letters)])
+(clerk/html [:div.bg-slate-100.whitespace-pre-line
+             (:letter-generation letters)])
