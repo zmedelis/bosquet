@@ -23,8 +23,8 @@
   anf if so add a key for it into the output"
   [the-key template]
   (let [str-k        (str (.-sym the-key))
-        output       (output-keys the-key template)
-        input        (vec (template/slots-required template))]
+        input        (vec (template/slots-required template))
+        output       (into input (output-keys the-key template))]
     (pco/resolver
       {::pco/op-name (symbol (keyword (str str-k "-gen")))
        ::pco/output  output
@@ -34,7 +34,8 @@
          (let [[completed completion] (template/fill-slots template input)]
            (merge
              {the-key completed}
-             completion)))})))
+             completion
+             input)))})))
 
 (defn- prompt-indexes [prompts]
   (pci/register
@@ -42,10 +43,14 @@
       (fn [prompt-key] (generation-resolver prompt-key (prompt-key prompts)))
       (keys prompts))))
 
-(defn all-keys [prompts]
-  (vec
+(defn all-keys
+  "Produce a list of all the data keys that will come out of the Pathom processing.
+  Whatever is refered in `prompts` and comes in via input `data`"
+  [prompts data]
+  (into (vec (keys data))
     (mapcat
-      (fn [prompt-key] (output-keys prompt-key (get prompts prompt-key)))
+      (fn [prompt-key]
+        (output-keys prompt-key (get prompts prompt-key)))
       (keys prompts))))
 
 (defn complete
@@ -58,7 +63,7 @@
   [prompts data]
   (-> (prompt-indexes prompts)
     (psm/smart-map data)
-    (select-keys (all-keys prompts))))
+    (select-keys (all-keys prompts data))))
 
 (comment
 
@@ -67,6 +72,6 @@
       {:role            "As a brilliant {{you-are}} answer the following question."
        :question        "What is the distance between Io and Europa?"
        :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
-       :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test%}"}
+       :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
       {:you-are  "astronomer"
        :question "What is the distance from Moon to Io?"})))
