@@ -66,12 +66,10 @@
     (select-keys (all-keys prompts data))))
 
 (comment
-
-  (clojure.pprint/pprint
-    (complete
-      {:role            "As a brilliant {{you-are}} answer the following question."
-       :question        "What is the distance between Io and Europa?"
-       :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
-       :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
-      {:you-are  "astronomer"
-       :question "What is the distance from Moon to Io?"})))
+  (complete
+   {:role            "As a brilliant {{you-are}} answer the following question."
+    :question        "What is the distance between Io and Europa?"
+    :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
+   {:you-are  "astronomer"
+    :question "What is the distance from Moon to Io?"}))

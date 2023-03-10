@@ -4,20 +4,17 @@
 Summarize this {{text-type}} in a single sentence:
 {% llm-generate %}"
 
- :text-analyzer/assess-sentiment
- "Estimate the sentiment of the following {{text-type|default:text}}
-as positive, negative or neutral:
+ :text-analyzer/extract-fact
+ "Extract the {{fact}} from the following {{text-type|default:text}}
 
 {{text-type|default:text}}: {{text}}
+{{fact}}: {% llm-generate model=text-davinci-003 %}"
 
-Sentiment:
-{% llm-generate model=text-davinci-003 %}"
+ :text-analyzer/extract-fact-batch
+ "Extract the {{fact}} from the following {{text-type|default:text}}
 
- :text-analyzer/assess-sentiment-batch
- "Estimate the sentiment of the following batch of {{text-type|default:text}} as positive, negative or neutral:
 {% for t in text %}
-* {{t}}
+{{text-type|default:text}}: {{t}}
 {% endfor %}
 
-Sentiments:
-*{% llm-generate model=text-davinci-003 %}"}
+{{fact}}: {% llm-generate model=text-davinci-003 %}"}
