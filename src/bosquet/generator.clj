@@ -1,5 +1,6 @@
 (ns bosquet.generator
   (:require
+    [taoensso.timbre :as timbre]
     [bosquet.template.read :as template]
     [bosquet.template.tag :as tag]
     [com.wsscode.pathom3.connect.indexes :as pci]
@@ -25,12 +26,16 @@
   (let [str-k        (str (.-sym the-key))
         input        (vec (template/slots-required template))
         output       (into input (output-keys the-key template))]
+    (timbre/info "Resolver: " the-key)
+    (timbre/info "  Input: " input)
+    (timbre/info "  Output: " output)
     (pco/resolver
       {::pco/op-name (symbol (keyword (str str-k "-gen")))
        ::pco/output  output
        ::pco/input   input
        ::pco/resolve
        (fn [_env input]
+         (timbre/info "Resolving: " the-key)
          (let [[completed completion] (template/fill-slots template input)]
            (merge
              {the-key completed}
@@ -54,22 +59,24 @@
       (keys prompts))))
 
 (defn complete
-  "Given a map of `prompts` refering each other and
-  a map of `data` to fill in template slots, generate
-  text as a combination of template slot filling and AI
-  generation.
-  `config` holds configuration for the ai-gen call (see openai ns)
-  `data-keys` are the keys to select for in the pathom resolver results"
-  [prompts data]
-  (-> (prompt-indexes prompts)
-    (psm/smart-map data)
-    (select-keys (all-keys prompts data))))
+  "Given a `prompt-palette` and a map of `data` to fill in template slots,
+  generate text as a combination of template slot filling and AI generation.
+
+  `entry-prompts` are the keys to the `prompt-palette` indicating where to start
+  the generation process."
+  [prompt-palette data & entry-prompts]
+  (let [extraction-keys (all-keys (select-keys prompt-palette entry-prompts) data)]
+    (timbre/info "Resolving keys: " extraction-keys)
+    (-> (prompt-indexes prompt-palette)
+      (psm/smart-map data)
+      (select-keys extraction-keys))))
 
 (comment
   (complete
-   {:role            "As a brilliant {{you-are}} answer the following question."
-    :question        "What is the distance between Io and Europa?"
-    :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
-   {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"}))
+    {:role            "As a brilliant {{you-are}} answer the following question."
+     :question        "What is the distance between Io and Europa?"
+     :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
+     :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
+    {:you-are  "astronomer"
+     :question "What is the distance from Moon to Io?"}
+    :question-answer :self-eval))

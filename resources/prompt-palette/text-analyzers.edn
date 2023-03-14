@@ -4,17 +4,24 @@
 Summarize this {{text-type}} in a single sentence:
 {% llm-generate %}"
 
+ :text-analyzer/extraction-instruction
+ "Extract the {{fact}} from the following {{text-type|default:text}}."
+
+ :text-analyzer/batch-instruction
+ "Provide answers in the same list order as the {{text-type|default:text}} list."
+
  :text-analyzer/extract-fact
- "Extract the {{fact}} from the following {{text-type|default:text}}
+ "{{text-analyzer/extraction-instruction}}
 
 {{text-type|default:text}}: {{text}}
 {{fact}}: {% llm-generate model=text-davinci-003 %}"
 
  :text-analyzer/extract-fact-batch
- "Extract the {{fact}} from the following {{text-type|default:text}}
+ "{{text-analyzer/extraction-instruction}}
+{{text-analyzer/batch-instruction}}
 
 {% for t in text %}
-{{text-type|default:text}}: {{t}}
+* {{text-type|default:text}}: {{t}}
 {% endfor %}
 
 {{fact}}: {% llm-generate model=text-davinci-003 %}"}

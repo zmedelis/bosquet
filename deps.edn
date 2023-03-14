@@ -4,7 +4,8 @@
                                             :git/sha "88fc2b51817e1ad67f0458c75857222a72db4945"}
            com.wsscode/pathom3             {:mvn/version "2022.10.19-alpha"}
            io.github.nextjournal/clerk     {:mvn/version "0.12.707"}
-           net.clojars.wkok/openai-clojure {:mvn/version "0.4.0"}}
+           net.clojars.wkok/openai-clojure {:mvn/version "0.4.0"}
+           com.taoensso/timbre             {:mvn/version "6.1.0"}}
  :aliases {:dev  {:extra-paths ["dev" "notebook"]}
            :test {:main-opts   ["-m" "kaocha.runner"]
                   :extra-paths ["test"]

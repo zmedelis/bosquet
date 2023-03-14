@@ -12,8 +12,9 @@
   ([palette-key intro-data]
    (fn [data]
      (generator/complete
-       (select-keys palettes [palette-key])
-       (merge intro-data data))))
+       palettes
+       (merge intro-data data)
+       palette-key)))
   ([prompt-pattern] (generator prompt-pattern nil)))
 
 (comment
