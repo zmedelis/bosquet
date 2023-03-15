@@ -27,6 +27,7 @@
        :question        "What is the distance from Moon to Io?"
        :question-answer "Question: What is the distance from Moon to Io? Answer: 0.0017 AU"
        :self-eval       "0.0017 AU. Is this a correct answer? Yes"
+       :test            "Yes"
        :you-are         "astronomer"}
       (with-redefs [openai/complete dummy-generator]
         (complete astronomy-prompt

@@ -63,9 +63,14 @@
   generate text as a combination of template slot filling and AI generation.
 
   `entry-prompts` are the keys to the `prompt-palette` indicating where to start
-  the generation process."
+  the generation process.
+
+  When not provided, all keys in `prompt-palette` are used.
+  With big prompt palettes, this can be a problem, because multiple unrelated
+  prompts can be invoked"
   [prompt-palette data & entry-prompts]
-  (let [extraction-keys (all-keys (select-keys prompt-palette entry-prompts) data)]
+  (let [entry-prompts (if (empty? entry-prompts) (keys prompt-palette) entry-prompts)
+        extraction-keys (all-keys (select-keys prompt-palette entry-prompts) data)]
     (timbre/info "Resolving keys: " extraction-keys)
     (-> (prompt-indexes prompt-palette)
       (psm/smart-map data)
