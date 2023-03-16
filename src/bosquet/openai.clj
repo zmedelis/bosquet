@@ -30,7 +30,7 @@
   ([prompt {:keys [impl
                    model temperature max-tokens n top-p
                    presence-penalty frequence-penalty]
-            :or   {impl              :openai
+            :or   {impl              "openai" 
                    model             ada
                    temperature       0.6
                    max-tokens        250
@@ -49,7 +49,7 @@
            :n                 n
            :top_p             top-p
            :prompt            prompt}
-         (api/create-completion impl)
+          (api/create-completion (keyword impl))
        :choices first :text))))
 
 (comment
