@@ -14,7 +14,7 @@
      (generator/complete
        palettes
        (merge intro-data data)
-       palette-key)))
+       [palette-key])))
   ([prompt-pattern] (generator prompt-pattern nil)))
 
 (comment
@@ -22,6 +22,7 @@
   (def summarizer (generator :text-analyzer/summarize-to-sentence))
   (summarizer {:text-type "paragraph"
                :text      "Once upon the time three things happened."})
+
 
   (def sentimental (generator :text-analyzer/extract-fact))
   (sentimental
@@ -37,6 +38,7 @@
      ["How did everyone feel about the Climate Change question last night? Exactly."
       "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
       "The biggest disappointment of my life came a year ago."]})
+
 
   (def roger-qna
     (generator

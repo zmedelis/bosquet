@@ -118,7 +118,9 @@ Review from a New York Times play critic of the above play:
 ;; * `prompts` map defined above
 ;; * `data` to fill in fixed slots (Selmer templating)
 
-(def review (gen/complete play-review {:title "Mr. X" :genre "crime"}))
+(def review (gen/complete play-review
+                          {:title "Mr. X" :genre "crime"}
+                          [:synopsis :review]))
 
 ;; ### Fully generated review
 ^{::clerk/visibility {:code :hide}}
@@ -163,7 +165,7 @@ Sentiments:
     "The biggest disappointment of my life came a year ago."])
 
 (def sentiments (gen/complete-template sentimental
-                  {:text-type "tweets" :tweets tweets}))
+                                       {:text-type "tweets" :tweets tweets}))
 
 ;; Generation results in the same order as `tweets`
 ^{::clerk/visibility {:code :hide}}

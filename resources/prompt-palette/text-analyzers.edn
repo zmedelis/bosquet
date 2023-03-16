@@ -10,6 +10,10 @@ Summarize this {{text-type}} in a single sentence:
  :text-analyzer/batch-instruction
  "Provide answers in the same list order as the {{text-type|default:text}} list."
 
+ :text-analyzer/batch-items
+ "{% for t in text %}
+{{forloop.counter}}. {{t}}{% endfor %}"
+
  :text-analyzer/extract-fact
  "{{text-analyzer/extraction-instruction}}
 
@@ -20,8 +24,6 @@ Summarize this {{text-type}} in a single sentence:
  "{{text-analyzer/extraction-instruction}}
 {{text-analyzer/batch-instruction}}
 
-{% for t in text %}
-* {{text-type|default:text}}: {{t}}
-{% endfor %}
+{{text-analyzer/batch-items}}
 
-{{fact}}: {% llm-generate model=text-davinci-003 %}"}
+{{fact}}: {% llm-generate model=text-davinci-003 var-name=facts %}"}

@@ -68,20 +68,22 @@
   When not provided, all keys in `prompt-palette` are used.
   With big prompt palettes, this can be a problem, because multiple unrelated
   prompts can be invoked"
-  [prompt-palette data & entry-prompts]
-  (let [entry-prompts (if (empty? entry-prompts) (keys prompt-palette) entry-prompts)
-        extraction-keys (all-keys (select-keys prompt-palette entry-prompts) data)]
-    (timbre/info "Resolving keys: " extraction-keys)
-    (-> (prompt-indexes prompt-palette)
-      (psm/smart-map data)
-      (select-keys extraction-keys))))
+  ([prompt-palette data]
+   (complete prompt-palette data nil))
+  ([prompt-palette data entry-prompt-keys]
+   (let [entry-prompts   (if (empty? entry-prompt-keys) (keys prompt-palette) entry-prompt-keys)
+         extraction-keys (all-keys (select-keys prompt-palette entry-prompts) data)]
+     (timbre/info "Resolving keys: " extraction-keys)
+     (-> (prompt-indexes prompt-palette)
+         (psm/smart-map data)
+         (select-keys extraction-keys)))))
 
 (comment
   (complete
-    {:role            "As a brilliant {{you-are}} answer the following question."
-     :question        "What is the distance between Io and Europa?"
-     :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
-     :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
-    {:you-are  "astronomer"
-     :question "What is the distance from Moon to Io?"}
-    :question-answer :self-eval))
+   {:role            "As a brilliant {{you-are}} answer the following question."
+    :question        "What is the distance between Io and Europa?"
+    :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
+   {:you-are  "astronomer"
+    :question "What is the distance from Moon to Io?"}
+   [:question-answer :self-eval]))
