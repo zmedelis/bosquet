@@ -1,5 +1,6 @@
 (ns text-analyzers
   (:require
+    [bosquet.converter :as converter]
     [bosquet.prompt-palette :as pp]))
 
 ;; ## Text Analyzer prompts
@@ -22,10 +23,13 @@
 
 (def sentimental-batch (pp/generator :text-analyzer/extract-fact-batch))
 
-(sentimental-batch
-  {:text-type "tweets"
-   :fact      "sentiment"
-   :text
-   ["How did everyone feel about the Climate Change question last night? Exactly."
-    "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
-    "The biggest disappointment of my life came a year ago."]})
+(def result
+  (sentimental-batch
+    {:text-type "tweets"
+     :fact      "sentiment"
+     :text
+     ["How did everyone feel about the Climate Change question last night? Exactly."
+      "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
+      "The biggest disappointment of my life came a year ago."]}))
+
+(-> result :facts converter/numbered-items->list)
