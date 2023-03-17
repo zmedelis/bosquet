@@ -1,8 +1,11 @@
 {:text-analyzer/summarize-to-sentence
- "{{text}}
+ "Provide a summary of the following {{text-type|default:text}} in a single sentence:
 
-Summarize this {{text-type}} in a single sentence:
-{% llm-generate %}"
+Text:
+{{text}}
+
+Summary:
+{% llm-generate max-tokens=60 var-name=completion %}"
 
  :text-analyzer/extraction-instruction
  "Extract the {{fact}} from the following {{text-type|default:text}}."
@@ -10,20 +13,21 @@ Summarize this {{text-type}} in a single sentence:
  :text-analyzer/batch-instruction
  "Provide answers in the same list order as the {{text-type|default:text}} list."
 
- :text-analyzer/batch-items
- "{% for t in text %}
-{{forloop.counter}}. {{t}}{% endfor %}"
-
  :text-analyzer/extract-fact
  "{{text-analyzer/extraction-instruction}}
 
 {{text-type|default:text}}: {{text}}
-{{fact}}: {% llm-generate model=text-davinci-003 %}"
+{{fact}}: {% llm-generate model=text-davinci-003 var-name=completion %}"
+
+
+ :text-analyzer/texts
+ "{% for t in text %}
+{{forloop.counter}}. {{t}}{% endfor %}"
 
  :text-analyzer/extract-fact-batch
  "{{text-analyzer/extraction-instruction}}
 {{text-analyzer/batch-instruction}}
 
-{{text-analyzer/batch-items}}
+{{text-analyzer/texts}}
 
-{{fact}}: {% llm-generate model=text-davinci-003 var-name=facts %}"}
+{{fact}}: {% llm-generate model=text-davinci-003 var-name=completion %}"}
