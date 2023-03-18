@@ -1,0 +1,11 @@
+{:text-analyzer/summarize-to-sentence
+ "Provide a summary of the following {{text-type|default:text}} in a single sentence:
+
+Text:
+{{text}}
+
+Summary:
+{% llm-generate max-tokens=60 var-name=completion %}"
+
+
+ }

@@ -1,15 +1,17 @@
 (ns bosquet.template.read
   (:require
-    [selmer.parser :as selmer]
-    [selmer.util :refer [without-escaping]]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
-    [clojure.string :as string]))
+    [clojure.string :as string]
+    [selmer.parser :as selmer]
+    [selmer.util :refer [without-escaping]]
+    [taoensso.timbre :as timbre]))
 
 (defn read-edn [reader]
   (edn/read (java.io.PushbackReader. reader)))
 
 (defn load-prompt-palette-edn [file]
+  (timbre/info "Read prompts from: " (.getName file))
   (with-open [rdr (io/reader file)]
     (reduce-kv (fn [m k v] (assoc m k v))
       {} (read-edn rdr))))

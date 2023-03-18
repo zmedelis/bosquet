@@ -6,26 +6,13 @@
 
 ;; ## Text Analyzer prompts
 
-;; Text analysis prompts are defined in resources/prompt-palette/text-analyzers.edn
+;; Text analysis prompts are defined in resources/prompt-palette/text-analysis
 
 ;; ### Sentiment Analysis
-;;
-;; #### Single tweet sentiment analysis
 
-(def sentimental (pp/generator :text-analyzer/extract-fact))
-
-(def result (sentimental
-              {:text-type "tweet"
-               :fact      "sentiment"
-               :text      "How did everyone feel about the Climate Change question last night? Exactly."}))
+(def sentimental (pp/generator :classification/classify))
 
 ;; Tweet sentiment label
-
-(:completion result)
-
-;; #### Batch sentiment analysis
-
-(def sentimental-batch (pp/generator :text-analyzer/extract-fact-batch))
 
 (def tweets
   ["How did everyone feel about the Climate Change question last night? Exactly."
@@ -33,26 +20,27 @@
    "The biggest disappointment of my life came a year ago."])
 
 {:nextjournal.clerk/visibility {:code :show :result :show}}
-(def batch-result
-  (sentimental-batch {:text-type "tweets"
-                      :fact      "sentiment"
-                      :text      tweets}))
+(def sentiment-result
+  (sentimental {:text-type "tweets"
+                :classes   ["positive" "negative" "neutral"]
+                :fact      "sentiment"
+                :texts     tweets}))
 
 {:nextjournal.clerk/visibility {:code :hide :result :hide}}
-(def sentiment-labels (-> batch-result :completion converter/numbered-items->list vec))
+(def sentiment-labels (-> sentiment-result :completion converter/numbered-items->list vec))
 
 ;; Sentiment anlaysis results
 
 {:nextjournal.clerk/visibility {:code :hide :result :show}}
 (clerk/table
-  {"Tweets"    tweets
-   "Sentiment" sentiment-labels})
+ {"Tweets"    tweets
+  "Sentiment" sentiment-labels})
 
 ;; ### Text summarization
 
-(def summarizer (pp/generator :text-analyzer/summarize-to-sentence))
+#_(def summarizer (pp/generator :text-analyzer/summarize-to-sentence))
 
-(def summary
+#_(def summary
  (summarizer
    {:text-type "paragraph"
     :text "OpenAI released its hotly-anticipated GPT-4 on Tuesday,
@@ -61,4 +49,4 @@ language model (LLM). But despite the lengthy documentation and the company's
 not-for-profit roots, OpenAI has revealed extremely little information about how
 its latest AI actually works — which has experts worried, Venture Beat reports."}))
 
-(clerk/html [:pre (:completion summary)])
+#_(clerk/html [:pre (:completion summary)])
