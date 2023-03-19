@@ -17,3 +17,14 @@
   [items]
   (map drop-digit
     (s/split (s/trim items) #"\n")))
+
+(defn yes-no->bool
+  "Converts yes/no answer to boolean
+
+   Yes => true
+   NO => false"
+  [answer]
+  (condp = (-> answer s/trim s/lower-case )
+    "yes" true
+    "no"  false
+    nil))
