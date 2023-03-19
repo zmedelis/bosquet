@@ -27,9 +27,11 @@
   "Complete `prompt` if passed in `model` is cGPT the completion will
   be passed to `complete-chat`"
   ([prompt] (complete prompt nil))
-  ([prompt {:keys [model temperature max-tokens n top-p
+  ([prompt {:keys [impl
+                   model temperature max-tokens n top-p
                    presence-penalty frequence-penalty]
-            :or   {model             ada
+            :or   {impl              "openai" 
+                   model             ada
                    temperature       0.6
                    max-tokens        250
                    presence-penalty  0.4
@@ -39,17 +41,17 @@
             :as opts}]
    (if (= model cgpt)
      (complete-chat prompt opts)
-     (-> {:model             model
-          :temperature       temperature
-          :max_tokens        max-tokens
-          :presence_penalty  presence-penalty
-          :frequency_penalty frequence-penalty
-          :n                 n
-          :top_p             top-p
-          :prompt            prompt}
-       api/create-completion
+     (->> {:model             model
+           :temperature       temperature
+           :max_tokens        max-tokens
+           :presence_penalty  presence-penalty
+           :frequency_penalty frequence-penalty
+           :n                 n
+           :top_p             top-p
+           :prompt            prompt}
+          (api/create-completion (keyword impl))
        :choices first :text))))
 
 (comment
   (complete "What is your name?" {:max-tokens 10 :model cgpt})
-  (complete "1 + 10 ="))
+  (complete "1 + 10 =" {:model "testtextdavanci003" :impl :azure}))
