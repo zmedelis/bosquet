@@ -1,19 +1,9 @@
-{:classification/extraction-instruction
- "Identify {{fact}} as: {{classes|join: \", \"}} for the provided {{text-type|default:text}}."
-
- :classification/batch-instruction
- "Provide answers in the same list order as the {{text-type|default:text}} list."
-
- :classification/items
- "{% for t in texts %}
-{{forloop.counter}}. {{t}}{% endfor %}"
-
- :classification/classify
- "{{classification/extraction-instruction}}
-{{classification/batch-instruction}}
+{:classification/classify
+ "{{instruction/extract}}
+{{instruction/batch}}
 
 {{text-type|default:text}}:
-{{classification/items}}
+{{instruction/batch-items}}
 
 {{fact}}:
 {% llm-generate model=text-davinci-003 var-name=completion %}"}

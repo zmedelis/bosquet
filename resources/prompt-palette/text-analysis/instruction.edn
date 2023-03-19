@@ -1,0 +1,12 @@
+{:instruction/extract
+ "Identify {{fact}} as: {{classes|join: , }} for the provided {{text-type|default:text}}."
+
+ :instruction/answer-yes-no
+ "Answer only with 'yes' or 'no'."
+
+ :instruction/batch
+ "Provide answers in the same numbered list format and order as the {{text-type|default:text}} list bellow."
+
+ :instruction/batch-items
+ "{% for t in texts %}
+{{forloop.counter}}. {{t}}{% endfor %}"}
