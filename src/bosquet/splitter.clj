@@ -3,7 +3,7 @@
             [clojure.string :as str]))
 
 
-(defn heuristic-token-count-fn [^String s]
+(defn heuristic-gpt-token-count-fn [^String s]
   (int (/  (.length s) 4)))
 
 (defn split-max-tokens

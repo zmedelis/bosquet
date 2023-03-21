@@ -20,7 +20,7 @@ What is the name of the licence ?
 
 ;;  split the text in pieces
 (def splits
-  (splitter/split-max-tokens text 1000 splitter/heuristic-token-count-fn))
+  (splitter/split-max-tokens text 1000 splitter/heuristic-gpt-token-count-fn))
 
 
 ;; apply template to all pieces
