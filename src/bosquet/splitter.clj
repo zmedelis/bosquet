@@ -43,29 +43,21 @@
 
 
 (comment
-  ;; requires tiktoken/jar {:local/root "tiktoken-1.0-SNAPSHOT.jar"} in deps.edn
-  ;; from https://github.com/eisber/tiktoken
-  ;;
-  ;; (import '[tiktoken Encoding])
+  (import '[com.knuddels.jtokkit.api Encoding EncodingType EncodingRegistry])
+  (import 'com.knuddels.jtokkit.Encodings)
+
+
+  (def enc (.getEncoding (Encodings/newDefaultEncodingRegistry)
+             EncodingType/CL100K_BASE))
 
   (defn gpt-count [encoding s]
-    (count (.encode encoding
-                    s
-                    (into-array String []) Integer/MAX_VALUE)))
-
-  ;; (def enc (Encoding. "text-davinci-001"))
+    (count (.encode encoding s)))
 
   (def text (slurp "https://raw.githubusercontent.com/scicloj/scicloj.ml.smile/main/LICENSE"))
 
-
-  (->>
-   (split-max-tokens
-    text
-    12
-    (fn [s] (gpt-count enc s)))
-   (map #(hash-map :c  (gpt-count enc %)
-                   :s %))
-   (map :c))
-
+  (->> (split-max-tokens text 12
+         (fn [s] (gpt-count enc s)))
+    (map #(hash-map :c (gpt-count enc %) :s %))
+    (map :c))
 
   :ok)

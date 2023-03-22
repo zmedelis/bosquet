@@ -1,12 +1,10 @@
-(ns test
+(ns split
   (:require
-   [bosquet.splitter :as splitter]
-   [bosquet.generator :as gen]
-   [nextjournal.clerk :as clerk]))
+    [bosquet.splitter :as splitter]
+    [bosquet.generator :as gen]
+    [nextjournal.clerk :as clerk]))
 (comment
   (clerk/serve! {:browse? true}))
-
-
 
 
 (def text (slurp "https://raw.githubusercontent.com/scicloj/scicloj.ml.smile/main/LICENSE"))
