@@ -14,7 +14,7 @@
 {{text}}
 
 What is the name of the licence ?
-{% llm-generate  model=testtextdavanci003 impl=azure % }")
+{% llm-generate model=text-davinci-003 % }")
 
 ;;  split the text in pieces
 (def splits
@@ -35,7 +35,7 @@ What is the name of the licence ?
 {% endfor %}
 
 Please summarize the above.
-{% llm-generate  model=testtextdavanci003 impl=azure % }
+{% llm-generate  model=text-davinci-003 % }
 ")
 
 ;; apply summarise-all tamplate to get single answer
