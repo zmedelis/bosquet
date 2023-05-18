@@ -1,5 +1,7 @@
 (ns user
-  (:require [nextjournal.clerk :as clerk]))
+  #_{:clj-kondo/ignore [:unused-namespace]}
+  (:require [nextjournal.clerk :as clerk]
+            [bosquet.generator :as bg]))
 
 ;; start Clerk's built-in webserver on the default port 7777, opening the browser when done
 #_(clerk/serve! {:browse? true})

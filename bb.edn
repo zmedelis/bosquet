@@ -1,7 +1,7 @@
 {:paths ["src" "test"]
  :tasks {:init    (do (def standalone-jar-file "target/antq-standalone.jar")
                       (def jar-file "target/antq.jar"))
-         repl     (shell "iced repl -A:dev")
+         repl     (clojure "-M:dev:rebel")
          outdated (clojure "-M:outdated")
          tests    (do
                     (clojure "-M:outdated:1.8 --exclude=clojure/brew-install")
