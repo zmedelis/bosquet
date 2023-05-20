@@ -10,6 +10,8 @@
          com.knuddels/jtokkit            {:mvn/version "0.5.0"}}
 
  :aliases {:dev      {:extra-paths ["dev" "notebook"]}
+           :rebel    {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
+                      :main-opts  ["-m" "rebel-readline.main"]}
            :outdated {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
                       :main-opts ["-m" "antq.core" "--upgrade"]}
            :test     {:main-opts   ["-m" "kaocha.runner"]
