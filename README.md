@@ -150,7 +150,7 @@ The tag uses the same names. If config parameters are not used, then defaults
 are used. Note that the default model is *Ada*, in production *Davinci* would be a
 natural choice.
 
-The `impl` can be usd to switch betwen he original openai API or teh Azure openAI API.
+The `impl` can be usd to switch between the original openai API or thr Azure OpenAI API.
 They need different environemnt variables for authentication, see [here](https://github.com/wkok/openai-clojure)
 
 
