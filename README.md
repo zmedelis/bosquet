@@ -5,6 +5,11 @@
 All but most trivial LLM applications require complex prompt handling, development, evaluation, secure use, and deployment techniques.
 Bosquet is building LLMOps functionality (see the tutorial bellow for the parts that are now implemented):
 
+## Setup
+
+Bosquet expects OpenAI key to be found in `OPENAI_API_KEY` environment variable or
+`~/.openai_api_key` file.
+
 ## Quick example
 
 An example of a composable prompt definition to define a prompt answering question with role assumption.
