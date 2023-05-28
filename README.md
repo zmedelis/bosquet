@@ -16,32 +16,22 @@ An example of a composable prompt definition to define a prompt answering questi
 
 ```clojure
 (complete
-  ;Prompt components
-  {:role      "As a brilliant {{who-you-are}} answer the following question."
-   :QnA       "{{role-completed}} {{question}} Answer: {% llm-generate var-name=answer %}"
-   :self-eval "{{QnA-completed}} Is this a correct answer? {% llm-generate var-name=test%}"}
-   ;Data
-   {:who-you-are "astronomer"
-    :question    "What is the distance from Moon to Io?"})
+   {:role            "As a brilliant {{you-are}} answer the following question."
+    :question        "What is the distance between Io and Europa?"
+    :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
+   {:you-are  "astronomer"
+    :question "What is the distance from Moon to Io?"}
+   [:question-answer :self-eval])
 =>
-{:role-completed
- "As a brilliant astronomer answer the following question."
- 
- :QnA-completed
- "As a brilliant astronomer answer the following question. What is the distance from Moon to Io? 
-  Answer: The average distance between the Moon and Io is approximately 384,400 km (238,855 mi)."
-  
- :QnA-completion
- {:answer
-  "The average distance between the Moon and Io is approximately 384,400 km (238,855 mi)."}
-  
- :self-eval-completed
- "As a brilliant astronomer answer the following question. What is the distance from Moon to Io? 
-  Answer: The average distance between the Moon and Io is approximately 384,400 km (238,855 mi). 
-  Is this a correct answer? Yes, that is a correct answer."
-  
- :self-eval-completion {:test "Yes, that is a correct answer."}}
-
+{:you-are "astronomer",
+ :question "What is the distance from Moon to Io?",
+ :question-answer
+ "Question: What is the distance from Moon to Io?  Answer: The distance from Earth to Io is about 93,000 miles.",
+ :answer "The distance from Earth to Io is about 93,000 miles.",
+ :self-eval
+ "The distance from Earth to Io is about 93,000 miles. Is this a correct answer? The distance from Earth to Io is about 93,000 miles.",
+ :test "The distance from Earth to Io is about 93,000 miles."}
 ```
 
 ## Planned features
