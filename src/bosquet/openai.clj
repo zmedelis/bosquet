@@ -1,5 +1,7 @@
 (ns bosquet.openai
-  (:require [wkok.openai-clojure.api :as api]))
+  (:require
+   [clojure.string :as string]
+   [wkok.openai-clojure.api :as api]))
 
 (def ada "text-ada-001")
 
