@@ -1,14 +1,15 @@
-{:paths ["src" "resources"]
- :deps  {org.clojure/clojure             {:mvn/version "1.11.1"}
-         zmedelis/Selmer                 {:git/url "https://github.com/zmedelis/Selmer"
-                                          :git/sha "88fc2b51817e1ad67f0458c75857222a72db4945"}
-         com.wsscode/pathom3             {:mvn/version "2023.01.31-alpha"}
-         io.github.nextjournal/clerk     {:mvn/version "0.13.842"}
-         net.clojars.wkok/openai-clojure {:mvn/version "0.6.0"}
-         org.flatland/useful             {:mvn/version "0.11.6"}
-         com.taoensso/timbre             {:mvn/version "6.1.0"}
-         com.knuddels/jtokkit            {:mvn/version "0.5.0"}}
-
+{:paths   ["src" "resources"]
+ :deps    {org.clojure/clojure             {:mvn/version "1.11.1"}
+           zmedelis/Selmer                 {:git/url "https://github.com/zmedelis/Selmer"
+                                            :git/sha "88fc2b51817e1ad67f0458c75857222a72db4945"}
+           com.wsscode/pathom3             {:mvn/version "2023.01.31-alpha"}
+           io.github.nextjournal/clerk     {:mvn/version "0.13.842"}
+           net.clojars.wkok/openai-clojure {:mvn/version "0.6.0"}
+           org.flatland/useful             {:mvn/version "0.11.6"}
+           com.taoensso/timbre             {:mvn/version "6.1.0"}
+           com.knuddels/jtokkit            {:mvn/version "0.5.0"}
+           http-kit/http-kit               {:mvn/version "2.6.0"}
+           metosin/jsonista                {:mvn/version "0.3.7"}}
  :aliases {:dev      {:extra-paths ["dev" "notebook"]}
            :rebel    {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
                       :main-opts  ["-m" "rebel-readline.main"]}
