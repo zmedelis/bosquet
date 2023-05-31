@@ -6,7 +6,6 @@
     [org.httpkit.client :as http]
     [jsonista.core :as j]))
 
-
 (defn- read-json [json]
   (j/read-value json (j/object-mapper {:decode-key-fn true})))
 
@@ -55,6 +54,12 @@
     exact-match
     (first results)))
 
+(defn extract-page-content [query]
+  (fetch-page
+    (best-match
+      query
+      (search-wiki-titles query))))
+
 (deftype Wikipedia [] a/Agent
          (search [_this query]
            (timbre/info "Searching Wikipedia for" query)
@@ -68,7 +73,7 @@
 
 (comment
 
-  (search-wiki-titles "Fox")
+  (extract-page-content "Fox")
 
   (def question "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
   (def w (Wikipedia.))
