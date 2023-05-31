@@ -3,15 +3,10 @@
     [clojure.test :refer [deftest is]]
     [bosquet.agent.wikipedia :as w]))
 
-
-(def search-result
-  [["Fox" "https://en.wikipedia.org/wiki/Fox"]
-           ["Fox News" "https://en.wikipedia.org/wiki/Fox_News"]
-           ["Fox Broadcasting Company" "https://en.wikipedia.org/wiki/Fox_Broadcasting_Company"]])
+(def fox-result
+  ["Fox" "Fox News" "Fox Broadcasting Company"])
 
 (deftest best-match-test
-  (is (= ["Fox" "https://en.wikipedia.org/wiki/Fox"]
-        (w/best-match "Fox" search-result)))
-  (is (= ["Fox" "https://en.wikipedia.org/wiki/Fox"]
-        (w/best-match "Box" search-result)))
+  (is (= "Fox" (w/best-match "Fox" fox-result)))
+  (is (= "Fox" (w/best-match "Box" fox-result)))
   (is (nil? (w/best-match "Box" []))))
