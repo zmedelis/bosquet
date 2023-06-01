@@ -13,5 +13,5 @@ Thought 2: U.S. Navy Admiral James Stockdale served as the ambassador to the Uni
 Action 2: Search[James Stockdale]")
 
 (deftest find-first-action-test
-  (is (= {:action "Search" :parameter "David Chanoff"}
+  (is (= {:action :search :parameter "David Chanoff"}
         (find-first-action thought-1))))

@@ -2,6 +2,8 @@
   (:require
     [bosquet.agent.agent :as a]
     [bosquet.generator :as generator]
+    [bosquet.agent.agent-mind-reader :as mind-reader]
+    [io.aviso.ansi :as ansi]
     [taoensso.timbre :as timbre]
     [org.httpkit.client :as http]
     [jsonista.core :as j]))
@@ -60,16 +62,21 @@
       query
       (search-wiki-titles query))))
 
-(deftype Wikipedia [] a/Agent
-         (search [_this query]
-           (timbre/info "Searching Wikipedia for" query)
-           (generator/complete a/agent-prompt-palette
-             {:question query}
-             [:react/prompt :thoughts]))
-         (lookup [_this query db]
-           (println "Looking up Wikipedia for" query))
-         (finish [_this]
-           (println "Finishing Wikipedia")))
+(deftype Wikipedia
+    [] a/Agent
+    (search [_this query]
+      (println (ansi/compose [:bold  "I need to figure out the following question:"]))
+      (println (ansi/compose [:italic query]))
+      (let [{thoughts :thoughts}
+            (generator/complete a/agent-prompt-palette
+              {:question query}
+              [:react/prompt :thoughts])]
+        (println
+          (mind-reader/find-first-action thoughts))))
+    (lookup [_this query db]
+      (println "Looking up Wikipedia for" query))
+    (finish [_this]
+      (println "Finishing Wikipedia")))
 
 (comment
 

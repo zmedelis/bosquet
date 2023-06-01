@@ -1,0 +1,6 @@
+{:level     :debug
+ :output-fn :taoensso.timbre/default-output-fn
+ :appenders
+ {:println nil
+  :spit    (taoensso.timbre.appenders.core/spit-appender
+            {:fname "bosquet.log"})}}
