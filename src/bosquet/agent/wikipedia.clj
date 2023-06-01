@@ -4,9 +4,9 @@
     [bosquet.generator :as generator]
     [bosquet.agent.agent-mind-reader :as mind-reader]
     [io.aviso.ansi :as ansi]
-    [taoensso.timbre :as timbre]
     [org.httpkit.client :as http]
-    [jsonista.core :as j]))
+    [jsonista.core :as j]
+    [taoensso.timbre :as timbre]))
 
 (defn- read-json [json]
   (j/read-value json (j/object-mapper {:decode-key-fn true})))
@@ -62,28 +62,37 @@
       query
       (search-wiki-titles query))))
 
+(defn produce-thoughts
+  "Execute agent prompt with the `query`. This will return a map with
+   `:thoughts` key where agent's plans of actions are stored."
+  [query]
+  (generator/complete a/agent-prompt-palette {:question query} [:react/prompt :thoughts]))
+
+
 (deftype Wikipedia
     [] a/Agent
-    (search [_this query]
+    (plan [this query]
       (println (ansi/compose [:bold  "I need to figure out the following question:"]))
       (println (ansi/compose [:italic query]))
-      (let [{thoughts :thoughts}
-            (generator/complete a/agent-prompt-palette
-              {:question query}
-              [:react/prompt :thoughts])]
-        (println
-          (mind-reader/find-first-action thoughts))))
+      (let [{thoughts :thoughts :as res} (produce-thoughts query)
+            {:keys [action parameter]}   (mind-reader/find-first-action thoughts)]
+        (timbre/debugf "Output from completing Wikipedia prompt:\n%s" res)
+        (condp = action
+          :search (a/search this parameter))))
+
+    (search [_this query]
+      (a/print-action "Wikipedia Page Fetcher" query)
+      (extract-page-content query))
+
     (lookup [_this query db]
       (println "Looking up Wikipedia for" query))
     (finish [_this]
       (println "Finishing Wikipedia")))
 
 (comment
-
   (extract-page-content "Fox")
 
   (def question "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
   (def w (Wikipedia.))
-  (a/search w question)
-
+  (a/plan w question)
   #__)

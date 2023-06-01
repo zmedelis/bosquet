@@ -10,6 +10,7 @@
            com.knuddels/jtokkit            {:mvn/version "0.5.0"}
            http-kit/http-kit               {:mvn/version "2.6.0"}
            metosin/jsonista                {:mvn/version "0.3.7"}
+           com.taoensso/encore             {:mvn/version "3.59.0"}
            io.aviso/pretty                 {:mvn/version "1.4.3"}}
  :aliases {:dev      {:extra-paths ["dev" "notebook"]}
            :rebel    {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
