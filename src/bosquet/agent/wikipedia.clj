@@ -62,26 +62,53 @@
       query
       (search-wiki-titles query))))
 
-(defn produce-thoughts
+(defn start-thinking
   "Execute agent prompt with the `query`. This will return a map with
    `:thoughts` key where agent's plans of actions are stored."
   [query]
-  (generator/complete a/agent-prompt-palette {:question query} [:react/prompt :thoughts]))
+  (generator/complete a/agent-prompt-palette
+    {:question query} [:react/start :thought]))
 
+(defn continue-from-observation
+  "Execute agent observation prompt with the `observation` and the number of the
+  cycle the agent is in.
+  This will return a map with `:thoughts` key where agent's further plans of
+  actions are stored."
+  [cycle memory observation]
+  (generator/complete a/agent-prompt-palette
+    {:cycle       cycle
+     :memory      memory
+     :observation observation}
+    [:react/observe :thought]))
 
 (deftype Wikipedia
     [] a/Agent
-    (plan [this query]
-      (println (ansi/compose [:bold  "I need to figure out the following question:"]))
-      (println (ansi/compose [:italic query]))
-      (let [{thoughts :thoughts :as res} (produce-thoughts query)
-            {:keys [action parameter]}   (mind-reader/find-first-action thoughts)]
-        (timbre/debugf "Output from completing Wikipedia prompt:\n%s" res)
-        (condp = action
-          :search (a/search this parameter))))
+    (think [this query]
+      (a/print-thought "I need to figure out the following question" query)
+      (loop [cycle      0
+             {full-plan :react/start
+              thought   :thought} (start-thinking query)]
+        (timbre/debugf "\n** Full output:\n%s" full-plan)
+        (timbre/debugf "\n** Generated part:\n%s" thought)
+        (let [{:keys [result memory]} (a/act this thought)]
+          (if (= cycle 0)
+            (a/finish this)
+            (recur (inc cycle)
+              (:react/observe
+               (continue-from-observation (inc cycle)
+                 memory
+                 result)))))))
+
+    (act [this thoughts]
+      (let [{:keys [action parameters thought] :as mind}
+            (mind-reader/find-first-action thoughts)]
+        (a/print-thought "Thought" thought)
+        (assoc-in mind [0 :result]
+          (condp = action
+            :search (a/search this parameters)))))
 
     (search [_this query]
-      (a/print-action "Wikipedia Page Fetcher" query)
+      (a/print-action "Wikipedia Page Search" query)
       (extract-page-content query))
 
     (lookup [_this query db]
@@ -94,5 +121,5 @@
 
   (def question "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
   (def w (Wikipedia.))
-  (a/plan w question)
+  (a/think w question)
   #__)

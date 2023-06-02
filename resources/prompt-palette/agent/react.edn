@@ -1,7 +1,13 @@
-{:react/prompt
+{:react/start
  "{{react/examples}}
+
 Question: {{question}}
-{% llm-generate model=text-davinci-003 var-name=thoughts %}"
+{% llm-generate model=text-davinci-003 var-name=thought %}"
+
+ :react/observe
+ "{{memory}}
+Observation {{cycle}}: {{observation}}
+Thought {{cycle}}:{% llm-generate model=text-davinci-003 var-name=thought %}"
 
  :react/examples
  "Question: What is the elevation range for the area that the eastern sector of the
