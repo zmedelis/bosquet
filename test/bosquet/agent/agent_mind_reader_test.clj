@@ -36,5 +36,5 @@ collaborated with, then find the President the admiral served under."}
         (find-action 2 thought-lookup))))
 
 (deftest sentence-splitter
-  (is (= ["Sentence one." "Sentence A.B. two?"]
-         (split-sentences "Sentence one. Sentence A.B. two?"))))
+  (is (= ["Sentence one." "Sentence A.B. two?" "Last one!"]
+         (split-sentences "Sentence one.\nSentence A.B. two? Last one!"))))

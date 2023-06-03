@@ -27,7 +27,7 @@
   "Split `text` into sentences."
   [text]
   ;; Naive regex based implementation
-  (string/split text #"(?<=[^A-Z].[.?]) +(?=[A-Z])"))
+  (string/split text #"(?s)(?<=[^A-Z].[.?])\s+(?=[A-Z])"))
 
 (defn find-sentence
   "Find a sentence in the `content` that contains the `query`."
