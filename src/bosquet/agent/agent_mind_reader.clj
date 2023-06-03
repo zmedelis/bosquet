@@ -15,10 +15,10 @@
     (format "(?s).*?Thought %s:(.*?)(Action %s:(.*?)\\[(.*?)\\])\\nObservation %s:"
       cycle cycle cycle)))
 
-(defn find-first-action
-  "Read agents thoughts and actions. Return the first action found."
-  [agent-mind]
-  (let [[_ thought _ action param] (re-find (action-re 1) agent-mind)]
+(defn find-action
+  "Read agent's thoughts and actions. Find the action in its `cycle` of thinking."
+  [cycle agent-mind]
+  (let [[_ thought _ action param] (re-find (action-re cycle) agent-mind)]
     {:thought    (string/trim thought)
      :action     (normalize-action action)
      :parameters (string/trim param)}))

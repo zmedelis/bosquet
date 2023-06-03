@@ -35,8 +35,10 @@ Observation 2: ..."})
   (is (nil? (w/best-match "Box" []))))
 
 (deftest agent-interactions
-  (with-redefs [w/start-thinking     (fn [query]
-                                         {:thoughts (colorado-thoughts query)})
+  (with-redefs [w/start-thinking       (fn [query]
+                                         {:react/start (str "Question: " colorado-question "\n"
+                                                            (colorado-thoughts query))
+                                          :thought     (colorado-thoughts query)})
                 w/extract-page-content (fn [query]
                                          (colorado-wiki query))]
     (let [agent (Wikipedia.)]

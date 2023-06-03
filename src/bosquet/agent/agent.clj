@@ -13,8 +13,8 @@
 
 (defn print-action [agent parameters]
   (println (ansi/compose [:bold "Action!"]))
-  (println (ansi/compose [:bold "- Agent:\t"] [:italic agent]))
-  (println (ansi/compose [:bold "- Parameters:\t"] [:italic parameters])))
+  (println (ansi/compose [:bold "- Agent: "] [:italic agent]))
+  (println (ansi/compose [:bold "- Parameters: "] [:italic parameters])))
 
 (defn print-thought [plan content]
   (println (ansi/compose [:bold (str plan ":")]))

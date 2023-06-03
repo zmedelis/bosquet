@@ -85,25 +85,27 @@
     [] a/Agent
     (think [this query]
       (a/print-thought "I need to figure out the following question" query)
-      (loop [cycle      0
-             {full-plan :react/start
-              thought   :thought} (start-thinking query)]
-        (timbre/debugf "\n** Full output:\n%s" full-plan)
-        (timbre/debugf "\n** Generated part:\n%s" thought)
-        (let [{:keys [result memory]} (a/act this thought)]
-          (if (= cycle 0)
-            (a/finish this)
-            (recur (inc cycle)
-              (:react/observe
-               (continue-from-observation (inc cycle)
-                 memory
-                 result)))))))
+      (let [{memory-start  :react/start
+             thought-start :thought} (start-thinking query)]
+        (loop [cycle   0
+               memory  memory-start
+               thought thought-start]
+          (timbre/debugf "\n\n>>>>>> %s <<<<<" cycle)
+          (timbre/debugf "\n\n***** Full output:\n%s" memory)
+          (timbre/debugf "\n\n***** Generated part:\n%s" thought)
+          (let [{:keys [result]} (a/act this thought)]
+            (if (= cycle 1)
+              (a/finish this)
+              (let [{memory-x :react/observe
+                     thought-x :thought}
+                    (continue-from-observation (inc cycle) memory result)]
+                (recur (inc cycle) memory-x thought-x)))))))
 
     (act [this thoughts]
       (let [{:keys [action parameters thought] :as mind}
-            (mind-reader/find-first-action thoughts)]
+            (mind-reader/find-action 1 thoughts)]
         (a/print-thought "Thought" thought)
-        (assoc-in mind [0 :result]
+        (assoc mind :result
           (condp = action
             :search (a/search this parameters)))))
 
