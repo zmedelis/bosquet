@@ -22,3 +22,14 @@
     {:thought    (string/trim thought)
      :action     (normalize-action action)
      :parameters (string/trim param)}))
+
+(defn split-sentences
+  "Split `text` into sentences."
+  [text]
+  ;; Naive regex based implementation
+  (string/split text #"(?<=[^A-Z].[.?]) +(?=[A-Z])"))
+
+(defn find-sentence
+  "Find a sentence in the `content` that contains the `query`."
+  [query content]
+  )

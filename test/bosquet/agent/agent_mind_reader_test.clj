@@ -1,7 +1,7 @@
 (ns bosquet.agent.agent-mind-reader-test
   (:require
    [clojure.test :refer [deftest is]]
-   [bosquet.agent.agent-mind-reader :refer [find-action]]))
+   [bosquet.agent.agent-mind-reader :refer [find-action split-sentences]]))
 
 (def ^:private thought-search
   "Question: Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to
@@ -34,3 +34,7 @@ collaborated with, then find the President the admiral served under."}
           :thought
           "The paragraph does not tell who Milhouse is named after, maybe I can look up \"named after\"."}
         (find-action 2 thought-lookup))))
+
+(deftest sentence-splitter
+  (is (= ["Sentence one." "Sentence A.B. two?"]
+         (split-sentences "Sentence one. Sentence A.B. two?"))))
