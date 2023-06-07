@@ -11,18 +11,24 @@
 
 (def agent-prompt-palette (template/load-palettes "resources/prompt-palette/agent"))
 
-(defn print-action [agent parameters]
-  (println (ansi/compose [:bold "Action!"]))
+(defn print-indexed-step [action plan step]
+  (println (ansi/compose [:bold (format "%s: %s" action step)]))
+  (println (ansi/compose [:italic plan])))
+
+(defn print-action [agent parameters step]
+  (println (ansi/compose [:bold "Action: " step]))
   (println (ansi/compose [:bold "- Agent: "] [:italic agent]))
   (println (ansi/compose [:bold "- Parameters: "] [:italic parameters])))
+
 
 (defn print-thought [plan content]
   (println (ansi/compose [:bold (str plan ":")]))
   (println (ansi/compose [:italic content])))
 
+
 (defprotocol Agent
-  (think  [this query])
-  (act    [this action])
-  (search [this query])
-  (lookup [this query db])
-  (finish [this]))
+  (think  [this ctx])
+  (act    [this ctx])
+  (search [this ctx])
+  (lookup [this ctx])
+  (finish [this ctx]))

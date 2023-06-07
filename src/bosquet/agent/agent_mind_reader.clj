@@ -17,8 +17,8 @@
 
 (defn find-action
   "Read agent's thoughts and actions. Find the action in its `cycle` of thinking."
-  [cycle agent-mind]
-  (let [[_ thought _ action param] (re-find (action-re cycle) agent-mind)]
+  [step agent-mind]
+  (let [[_ thought _ action param] (re-find (action-re step) agent-mind)]
     {:thought    (string/trim thought)
      :action     (normalize-action action)
      :parameters (string/trim param)}))
@@ -29,7 +29,20 @@
   ;; Naive regex based implementation
   (string/split text #"(?s)(?<=[^A-Z].[.?])\s+(?=[A-Z])"))
 
-(defn find-sentence
-  "Find a sentence in the `content` that contains the `query`."
+(defn lookup-index
+  "Construct a `query` lookup index for the `content`.
+  It will return a seqence of triplets.
+  ```
+  [sentence-index has-query sentence]
+  ```
+  where `sentence-index` is the index of the sentence in the `content`,
+  `has-query` is a boolean indicating if the sentence contains the `query`,
+  `sentence` is the sentence itself."
   [query content]
-  )
+  (vec
+    (map-indexed
+      (fn [idx sentence]
+        [idx
+         (string/includes? (string/lower-case sentence) (string/lower-case query))
+         sentence])
+      (split-sentences content))))

@@ -1,7 +1,7 @@
 (ns bosquet.agent.agent-mind-reader-test
   (:require
    [clojure.test :refer [deftest is]]
-   [bosquet.agent.agent-mind-reader :refer [find-action split-sentences]]))
+   [bosquet.agent.agent-mind-reader :refer :all]))
 
 (def ^:private thought-search
   "Question: Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to
@@ -38,3 +38,12 @@ collaborated with, then find the President the admiral served under."}
 (deftest sentence-splitter
   (is (= ["Sentence one." "Sentence A.B. two?" "Last one!"]
          (split-sentences "Sentence one.\nSentence A.B. two? Last one!"))))
+
+(deftest content-lookup-index
+  (is (= [[0 true "This sentence one."]
+          [1 true "This sentence A.B. two?"]
+          [2 false "Almost the last sentence."]
+          [3 true "The A.B. is good in this sentence!"]]
+        (lookup-index
+          "this Sentence"
+          "This sentence one.\nThis sentence A.B. two? Almost the last sentence. The A.B. is good in this sentence!"))))

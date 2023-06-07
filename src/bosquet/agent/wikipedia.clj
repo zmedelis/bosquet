@@ -83,45 +83,64 @@
 
 (deftype Wikipedia
     [] a/Agent
-    (think [this query]
+    (think [this {query :agent/query :as ctx}]
       (a/print-thought "I need to figure out the following question" query)
       (let [{memory-start  :react/start
              thought-start :thought} (start-thinking query)]
-        (loop [cycle   0
+        (loop [cycle   1
                memory  memory-start
                thought thought-start]
           (timbre/debugf "\n\n>>>>>> %s <<<<<" cycle)
           (timbre/debugf "\n\n***** Full output:\n%s" memory)
           (timbre/debugf "\n\n***** Generated part:\n%s" thought)
-          (let [{:keys [result]} (a/act this thought)]
-            (if (= cycle 1)
-              (a/finish this)
-              (let [{memory-x :react/observe
+          (let [{:agent/keys [observation]}
+                (a/act this
+                  (assoc ctx
+                    :agent/cycle    cycle
+                    :agent/thoughts thought))]
+            (if (= cycle 2)
+              (a/finish this ctx)
+              (let [{memory-x  :react/observe
                      thought-x :thought}
-                    (continue-from-observation (inc cycle) memory result)]
+                    (continue-from-observation (inc cycle) memory observation)]
                 (recur (inc cycle) memory-x thought-x)))))))
 
-    (act [this thoughts]
-      (let [{:keys [action parameters thought] :as mind}
-            (mind-reader/find-action 1 thoughts)]
+    (act [this {:agent/keys [cycle thoughts] :as ctx}]
+      (let [{:keys [action thought] :as action-params}
+            (mind-reader/find-action cycle thoughts)
+            ctx (assoc ctx :agent/action action-params)]
         (a/print-thought "Thought" thought)
-        (assoc mind :result
+        (assoc ctx :agent/observation
           (condp = action
-            :search (a/search this parameters)))))
+            :search (a/search this ctx)
+            :lookup (a/lookup this ctx)))))
 
-    (search [_this query]
+    (search [_this {{query :parameters} :agent/action :as ctx}]
       (a/print-action "Wikipedia Page Search" query)
       (extract-page-content query))
 
-    (lookup [_this query db]
+    (lookup [_this
+             {{query :parameters} :agent/action
+              thoughts :agent/thoughts}]
       (println "Looking up Wikipedia for" query))
-    (finish [_this]
+    (finish [_this ctx]
       (println "Finishing Wikipedia")))
+
+
+(deftype Wikipedia2
+    [] a/Agent
+    (think  [this ctx])
+    (act    [this ctx])
+    (search [_this {query :parameters}]
+      (extract-page-content query))
+    (lookup [this ctx])
+    (finish [this ctx])
+    )
 
 (comment
   (extract-page-content "Fox")
 
   (def question "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
   (def w (Wikipedia.))
-  (a/think w question)
+  (a/think w {:agent/query question})
   #__)
