@@ -3,6 +3,7 @@
 *.jar
 *.swp
 *~
+*.log
 .DS_Store
 .calva/output-window/
 .classpath
