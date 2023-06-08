@@ -1,10 +1,21 @@
 (ns bosquet.splitter
   (:require [flatland.useful.seq :as useq]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            )
+  (:import [com.knuddels.jtokkit.api  EncodingType]
+           [com.knuddels.jtokkit Encodings]))
 
+(defn create-tokkit-gpt-token-count-fn 
+  "Make a fn which counts the tokens for a given string using the encoding-type.
+   Should result in the same token count as the GPT API"
+  [^EncodingType encoding-type]
+  (let [enc (.getEncoding (Encodings/newDefaultEncodingRegistry)
+                          encoding-type)]
+    (fn [^String s]
+      (count (.encode enc s)))))
 
 (defn heuristic-gpt-token-count-fn
-  "Uses a heuristic to count the toknes for a given string.
+  "Uses a heuristic to count the tokens for a given string.
    Should work for most GPT based models."
   [^String s]
   (int (/  (.length s) 4)))
@@ -43,12 +54,12 @@
 
 
 (comment
-  (import '[com.knuddels.jtokkit.api Encoding EncodingType EncodingRegistry])
+  (import '[com.knuddels.jtokkit.api EncodingType])
   (import 'com.knuddels.jtokkit.Encodings)
 
 
   (def enc (.getEncoding (Encodings/newDefaultEncodingRegistry)
-             EncodingType/CL100K_BASE))
+                         EncodingType/CL100K_BASE))
 
   (defn gpt-count [encoding s]
     (count (.encode encoding s)))
@@ -56,8 +67,11 @@
   (def text (slurp "https://raw.githubusercontent.com/scicloj/scicloj.ml.smile/main/LICENSE"))
 
   (->> (split-max-tokens text 12
-         (fn [s] (gpt-count enc s)))
-    (map #(hash-map :c (gpt-count enc %) :s %))
-    (map :c))
+                         (fn [s] (gpt-count enc s)))
+       (map #(hash-map :c (gpt-count enc %) :s %))
 
-  :ok)
+       (map :c))
+  (def tokkit-count-fn (create-tokkit-gpt-token-count-fn EncodingType/CL100K_BASE) )
+  (split-max-tokens text 10 tokkit-count-fn)
+  :ok
+  )
