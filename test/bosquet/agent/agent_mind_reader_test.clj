@@ -13,7 +13,8 @@ Observation 1: David Chanoff is an American author and journalist who has writte
 over 20 books. He is best known for his collaborations with U.S. Navy
 Admiral James Stockdale.
 Thought 2: U.S. Navy Admiral James Stockdale served as the ambassador to the United Kingdom. I need to search James Stockdale and find which President he served under.
-Action 2: Search[James Stockdale]")
+Action 2: Search[James Stockdale]
+Observation 2: ...")
 
 (def ^:private thought-lookup
   "Observation 1: Milhouse Mussolini Van Houten is a recurring character in the Fox animated
@@ -26,13 +27,21 @@ Observation 2: (Result 1 / 1) Milhouse was named after U.S. president Richard Ni
   (is (= {:action     :search
           :parameters "David Chanoff"
           :thought
-          "I need to search David Chanoff, find the U.S. Navy admiral he
-collaborated with, then find the President the admiral served under."}
+          "Thought 1: I need to search David Chanoff, find the U.S. Navy admiral he
+collaborated with, then find the President the admiral served under.
+Action 1: Search[David Chanoff]"}
          (find-action 1 thought-search)))
+  (is (= {:action     :search
+          :parameters "James Stockdale"
+          :thought
+          "Thought 2: U.S. Navy Admiral James Stockdale served as the ambassador to the United Kingdom. I need to search James Stockdale and find which President he served under.
+Action 2: Search[James Stockdale]"}
+        (find-action 2 thought-search)))
   (is (= {:action     :lookup
           :parameters "named after"
           :thought
-          "The paragraph does not tell who Milhouse is named after, maybe I can look up \"named after\"."}
+          "Thought 2: The paragraph does not tell who Milhouse is named after, maybe I can look up \"named after\".
+Action 2: Lookup[named after]"}
         (find-action 2 thought-lookup))))
 
 (deftest sentence-splitter

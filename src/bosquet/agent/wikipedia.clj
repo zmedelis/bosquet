@@ -116,8 +116,7 @@
             :lookup (a/lookup this ctx)))))
 
     (search [_this {{query :parameters} :agent/action :as ctx}]
-      (a/print-action "Wikipedia Page Search" query)
-      (extract-page-content query))
+      #_(extract-page-content query))
 
     (lookup [_this
              {{query :parameters} :agent/action
@@ -139,8 +138,6 @@
 
 (comment
   (extract-page-content "Fox")
-
-  (def question "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
-  (def w (Wikipedia.))
-  (a/think w {:agent/query question})
+  (def w (Wikipedia2.))
+  (a/search w {:parameters "Fox"})
   #__)

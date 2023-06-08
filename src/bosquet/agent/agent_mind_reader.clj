@@ -12,16 +12,16 @@
   "Regex to find the action in the agent's mind when it is in a `cycle`"
   [cycle]
   (re-pattern
-    (format "(?s).*?Thought %s:(.*?)(Action %s:(.*?)\\[(.*?)\\])\\nObservation %s:"
+    (format "(?s).*?(Thought %s:.*?)(Action %s:(.*?)\\[(.*?)\\])\\nObservation %s:"
       cycle cycle cycle)))
 
 (defn find-action
   "Read agent's thoughts and actions. Find the action in its `cycle` of thinking."
   [step agent-mind]
-  (let [[_ thought _ action param] (re-find (action-re step) agent-mind)]
-    {:thought    (string/trim thought)
-     :action     (normalize-action action)
-     :parameters (string/trim param)}))
+  (let [[_ thought action action-verb action-param] (re-find (action-re step) agent-mind)]
+    {:thought    (string/trim (str thought action))
+     :action     (normalize-action action-verb)
+     :parameters (string/trim action-param)}))
 
 (defn split-sentences
   "Split `text` into sentences."

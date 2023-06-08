@@ -12,7 +12,7 @@
 (def agent-prompt-palette (template/load-palettes "resources/prompt-palette/agent"))
 
 (defn print-indexed-step [action plan step]
-  (println (ansi/compose [:bold (format "%s: %s" action step)]))
+  (println (ansi/compose [:bold (format "%s: %s" (name action) step)]))
   (println (ansi/compose [:italic plan])))
 
 (defn print-action [agent parameters step]
