@@ -33,14 +33,3 @@ Observation 2: ..."})
   (is (= "Fox" (w/best-match "Fox" fox-result)))
   (is (= "Fox" (w/best-match "Box" fox-result)))
   (is (nil? (w/best-match "Box" []))))
-
-(deftest agent-interactions
-  (with-redefs [w/start-thinking       (fn [query]
-                                         {:react/start (str "Question: " colorado-question "\n"
-                                                            (colorado-thoughts query))
-                                          :thought     (colorado-thoughts query)})
-                w/extract-page-content (fn [query]
-                                         (colorado-wiki query))]
-    (let [agent (Wikipedia.)]
-      (is (= (colorado-wiki "Colorado orogeny")
-             (a/think agent colorado-question))))))

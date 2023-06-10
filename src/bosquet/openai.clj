@@ -1,6 +1,7 @@
 (ns bosquet.openai
   (:require
    [clojure.string :as string]
+   [taoensso.timbre :as timbre]
    [wkok.openai-clojure.api :as api]))
 
 (def ada "text-ada-001")
@@ -49,7 +50,7 @@
             :or   {impl              :openai
                    api-key           (get-api-key)
                    model             ada
-                   temperature       0.6
+                   temperature       0.2
                    max-tokens        250
                    presence-penalty  0.4
                    frequence-penalty 0.2
@@ -65,6 +66,7 @@
                  :top_p             top-p
                  :prompt            prompt}
          opts   {:api-key api-key}]
+     (timbre/infof "Calling OAI with params: '%s'" (dissoc params :prompt))
      (if (= model cgpt)
        (create-chat prompt params opts)
        (create-completion prompt params opts)))))

@@ -12,7 +12,8 @@
   "Regex to find the action in the agent's mind when it is in a `cycle`"
   [cycle]
   (re-pattern
-    (format "(?s).*?(Thought %s:.*?)(Action %s:(.*?)\\[(.*?)\\])\\nObservation %s:"
+    ;; 'Observation' at the end is optional because there will be none when 'Action=Finish'
+    (format "(?s).*?(Thought %s:.*?)(Action %s:(.*?)\\[(.*?)\\])(\\nObservation %s:)?"
       cycle cycle cycle)))
 
 (defn find-action
