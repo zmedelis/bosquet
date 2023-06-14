@@ -2,6 +2,7 @@
 (ns wedding-guest-example
   (:require
    [bosquet.generator :as gen]
+   [clojure.string :as string]
    [nextjournal.clerk :as clerk]))
 
 ;; # Generating thank you letters
@@ -66,7 +67,7 @@
 ;; an actual sample letter given the above data about the guests and instructions on how to write a letter.
 
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:div.viewer.viewer-code.w-full.max-w-wide.whitespace-pre-line
+(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm
              "Dear Nancy,
 
 Thank you so much for attending our wedding in Puerto Rico and for the lovely gift of mixing bowls.
@@ -125,7 +126,7 @@ Best, Jack and Diane"}]})
 ^{::clerk/visibility {:code :hide}}
 
 (clerk/table
-  thank-you-letters-few-shot-exmples)
+  (:examples thank-you-letters-few-shot-exmples))
 
 
 ;; ## The Prompt
@@ -173,14 +174,25 @@ First, let's think step by step:
 ;; With the promts defined we can now generate the letters.
 
 (def letters
-  (doall
-    (pmap
-      (fn [guest]
-        (gen/complete letter-writter
-          (merge guest thank-you-letters-few-shot-exmples)))
-      guests)))
+  (pmap
+    (fn [guest]
+      (gen/complete letter-writter
+        (merge guest thank-you-letters-few-shot-exmples)))
+    guests))
 
-;; Generated letters
+;; #### Generated letters
+
+;; First two examples of generated text
+
+^{::clerk/visibility {:code :hide}}
+(clerk/row
+  (clerk/html [:div.whitespace-pre-line.max-w-md.bg-white.p-4.text-slate-500.text-sm
+               (-> letters first :letter-generation)])
+
+  (clerk/html [:div.whitespace-pre-line.max-w-md.bg-white.p-4.text-slate-500.text-sm
+               (-> letters second :letter-generation)]))
+
+;; Full generation data
 
 ^{::clerk/visibility {:code :hide}}
 (clerk/table letters)
