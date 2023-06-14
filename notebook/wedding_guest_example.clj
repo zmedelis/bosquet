@@ -2,7 +2,6 @@
 (ns wedding-guest-example
   (:require
    [bosquet.generator :as gen]
-   [clojure.string :as string]
    [nextjournal.clerk :as clerk]))
 
 ;; # Generating thank you letters

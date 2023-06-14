@@ -1,17 +1,33 @@
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns use-guide
   (:require
     [bosquet.generator :as gen]
     [nextjournal.clerk :as clerk]))
 
-;; This is the tutorial showing how **Bosquet**:
-;; - defines prompt *templates*
-;; - resolves *dependencies* between prompts
-;; - produces AI *completions*.
+;; # Bosquet Tutorial
 ;;
-;; ## Simple single template case
+;; This notebook will demonstrate the following things:
+;; - define prompt *templates*
+;; - resolve *dependencies* between prompts
+;; - produce AI *completions*.
 ;;
-;; Let's say we want to generate a synopsis of the play. The synopsis
-;; is to be generated from `title` and `genre` inputs.
+;; ## A simple single template case
+;;
+;; Let's say we want to generate a synopsis of the play, based only on the `title` and `genre` we want this play to be in.
+;; Something like this:
+
+^{:nextjournal.clerk/visibility {:code :hide}}
+(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm
+             "Title:
+Crime Drama
+
+Genre:
+The Fifth Man
+
+Synopsys:
+The Fifth Man is a suspenseful crime drama set in a small town in the USA. Five childhood friends, now in their mid-twenties, have grown up together and are as close as brothers. One evening, the group is out at a nightclub wherein the lead of the group, John, finds an envelope stuffed with hundreds of thousands of dollars. Despite their better judgment, John and his friends decide to keep the money and use it to fund a life of pleasure and excitement."])
+
+;; For this we will need to define a template with prompt and slots for data insertion.
 ;;
 ;; ### Selmer templating language
 ;;
@@ -29,7 +45,7 @@
 ;; ### Synopsis template
 
 (def synopsis-template
-  "You are a playwright. Given the play's title and t's genre
+  "You are a playwright. Given the play's title and it's genre
 it is your job to write synopsis for that play.
 
 Title: {{title}}
@@ -79,11 +95,11 @@ Playwright: This is a synopsis for the above play:
 
 ;; #### Full *Bosquet* produced text
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:pre (first synopsis)])
+(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm  (first synopsis)])
 
 ;; #### Just the AI completion part
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:pre (-> synopsis second :play)])
+(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm  (-> synopsis second :play)])
 
 ;; ## Generating from templates with dependencies
 ;;
@@ -120,16 +136,16 @@ Review from a New York Times play critic of the above play:
 
 (def review (gen/complete play-review
                           {:title "Mr. X" :genre "crime"}
-                          [:synopsis :review]))
+                          [:synopsis :evrything]))
 
 ;; ### Fully generated review
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:pre (:evrything review)])
+(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm (:evrything review)])
 
 
 ;; ### Just a review part for the generated play synopsis
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:pre (:review review)])
+(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm  (:review review)])
 
 
 ;; ## Advanced templating with Selmer
