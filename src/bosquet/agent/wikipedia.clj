@@ -1,6 +1,6 @@
 (ns bosquet.agent.wikipedia
   (:require
-    [bosquet.agent.agent :as a]
+    [bosquet.agent.tool :as t]
     [jsonista.core :as j]
     [org.httpkit.client :as http]))
 
@@ -59,7 +59,7 @@
       (search-wiki-titles query))))
 
 (deftype Wikipedia
-    [] a/Agent
+    [] t/Tool
     (my-name [_this] "Wikipedia")
     (search [_this {query :parameters}]
       (extract-page-content query))
@@ -69,6 +69,6 @@
 
 (comment
   (def w (Wikipedia.))
-  (a/my-name w)
-  (a/search w {:parameters "Fox"})
+  (t/my-name w)
+  (t/search w {:parameters "Fox"})
   #__)

@@ -1,4 +1,4 @@
-(ns bosquet.agent.agent
+(ns bosquet.agent.tool
   (:require
     [taoensso.timbre :as timbre]
     [io.aviso.ansi :as ansi]
@@ -8,13 +8,13 @@
   {:appenders {:println {:enabled? false}
                :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
 
-(defprotocol Agent
+(defprotocol Tool
   (my-name [this])
   (search [this ctx])
   (lookup [this ctx])
   (finish [this ctx]))
 
-(defn call-agent [agent action ctx]
+(defn call-tool [agent action ctx]
   (condp = action
     :search (let [result (search agent ctx)]
               {:lookup-db    [[0 true result]] #_(mind-reader/lookup-index parameters result)
@@ -23,7 +23,7 @@
     :finish (finish agent ctx)))
 
 ;;
-;; Agent thinking and acting logging
+;; Logging tool/agent thinking/acting
 ;;
 
 (defn print-indexed-step [action plan step]

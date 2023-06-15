@@ -1,6 +1,6 @@
 (ns bosquet.agent.react
   (:require
-    [bosquet.agent.agent :as a]
+    [bosquet.agent.tool :as t]
     [bosquet.agent.agent-mind-reader :as mind-reader]
     [bosquet.generator :as generator]
     [bosquet.template.read :as template]
@@ -38,17 +38,17 @@
 (defn solve-task
   "Solve a task using [ReAct](https://react-lm.github.io)
 
-  First `agent` parameter specifies which agent will be used to solve the task.
+  First `agent` parameter specifies which tool will be used to solve the task.
   Second context parameter gives initialization data to start working
   - `task` is a quesiton ar task formulation for the agent
   - `max-steps` specifies how many thinking steps agent is allowed to do
   it either reaches that number of steps or 'Finish' action, and then terminates.
 
   :react/task contains a question or a claim to be solved"
-  [agent {:keys [task max-steps]
-          :or   {max-steps 5}
-          :as   initial-ctx}]
-  (a/print-thought (format "'%s' agent has the following task" (a/my-name agent)) task)
+  [tool {:keys [task max-steps]
+         :or   {max-steps 5}
+         :as   initial-ctx}]
+  (t/print-thought (format "'%s' tool has the following task" (t/my-name tool)) task)
   (let [{:keys [thoughts reasoning-trace]}
         (generate-thoughts initial-ctx prompt-palette :react/step-0)]
     (loop [step            1
@@ -58,26 +58,26 @@
       (let [{:keys [action thought parameters] :as action-ctx}
             (mind-reader/find-action step thoughts)
             ctx         (merge ctx action-ctx {:step step})
-            _           (a/print-indexed-step "Thought" thought step)
-            _           (a/print-action action parameters step)
-            observation (a/call-agent agent action ctx)]
+            _           (t/print-indexed-step "Thought" thought step)
+            _           (t/print-action action parameters step)
+            observation (t/call-tool tool action ctx)]
         (cond
-          ;; Agent failed to find a solution in max steps allocated
+          ;; Tool failed to find a solution in max steps allocated
           (= step max-steps)
           (do
-              (a/print-too-much-thinking-error step)
+              (t/print-too-much-thinking-error step)
               nil)
 
-          ;; Agent got to the solution. Print and return it
+          ;; Tool got to the solution. Print and return it
           (= :finish action)
           (do
-              (a/print-result observation)
+              (t/print-result observation)
               observation)
 
           ;; Continue thinking
           :else
           (let [current-observation (focus-on-observation observation)
-                _                   (a/print-indexed-step "Observation" current-observation step)
+                _                   (t/print-indexed-step "Observation" current-observation step)
                 {:keys [thoughts reasoning-trace]}
                 (generate-thoughts
                   {:step            (inc step)
