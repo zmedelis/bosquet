@@ -12,5 +12,8 @@
 
 (defn add-tags []
   (parser/add-tag! :llm-generate
-    (fn [args {pretext :selmer/preceding-text}]
-      (openai/complete pretext (args->map args)))))
+    (fn [args context]
+      (openai/complete (:selmer/preceding-text context) 
+                       (merge 
+                        (args->map args)
+                        (:model-opts context))))))
