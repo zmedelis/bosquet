@@ -13,7 +13,7 @@
            com.taoensso/encore             {:mvn/version "3.59.0"}
            io.aviso/pretty                 {:mvn/version "1.4.3"}}
  :aliases {:dev      {:extra-paths ["dev" "notebook"]}
-           :neil     {:project {:name    zmedelis/bosquet
+           :neil     {:project {:name    io.github.zmedelis/bosquet
                                 :version "0.3.0"}}
            :rebel    {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
                       :main-opts  ["-m" "rebel-readline.main"]}
