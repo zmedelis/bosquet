@@ -24,5 +24,5 @@
 
  :build ;; added by neil
  {:deps {io.github.clojure/tools.build {:git/tag "v0.9.4" :git/sha "76b78fe"}
-         slipset/deps-deploy {:mvn/version "0.3.0"}}
+         slipset/deps-deploy {:mvn/version "0.2.0"}}
   :ns-default build}}}
