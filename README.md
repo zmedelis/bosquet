@@ -1,3 +1,5 @@
+[![Clojars Project](https://img.shields.io/clojars/v/io.github.zmedelis/bosquet.svg)](https://clojars.org/io.github.zmedelis/bosquet)
+
 # LLMOps for Large Language Model based applications 
 
 ![bosquet chain](/doc/img/generation-chain.png)
