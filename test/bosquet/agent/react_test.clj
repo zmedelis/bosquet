@@ -1,5 +1,4 @@
 (ns bosquet.agent.react-test
-  (:import [bosquet.agent.wikipedia Wikipedia])
   (:require [clojure.test :refer [deftest is]]
             [bosquet.agent.wikipedia :as w]
             [bosquet.agent.react :refer [solve-task generate-thoughts]]))
