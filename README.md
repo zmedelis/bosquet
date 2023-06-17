@@ -74,6 +74,35 @@ A template example using for loop to fill in the data passed in as a collection
 
 ![selmer template](/doc/img/selmer-template.png)
 
+### Agents
+
+Initial support for working with Agents implements ReAct pattern and adds a Wikipedia tool to fulfill tasks.
+
+#### Example code
+
+```
+(import '[bosquet.agent.wikipedia Wikipedia])
+(def prompt-palette (template/load-palettes "resources/prompt-palette/agent"))
+(def question
+    "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
+(solve-task (Wikipedia.) prompt-palette {:task question})
+```
+
+`solve-task` call accepts:
+- tool parameter (obvious next step is to provide a tool DB and agent will pick the tool for work)
+- `prompt-palette` defining prompt templates for the agent (see section bellow)
+- `parameters` defining the task, agent prompt template will define what parameters are needed
+
+#### Prompt Template
+
+ReAct oriented prompt template structure
+
+* `prompt-palette` is where the ReAct flow is defined and where customizations can be made to fine-tune this to solve different tasks.
+* `:react/examples` this section provides examples of how to solve tasks
+* `:react/step-0` prompt template for the initialization of the task
+* `:react/step-n` prompt template for subsequent thinking steps
+
+
 ## Instalation
 
 One time action need to prep the libs
