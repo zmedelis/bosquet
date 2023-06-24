@@ -15,7 +15,10 @@
   [template slots model-opts] 
   (template/fill-slots
    template    
-   (assoc slots :model-opts model-opts)))
+   (assoc slots 
+          :opts {:complete-template-key model-opts}
+          :the-key :complete-template-key
+          )))
 
 (defn output-keys [k template]
   (vec (concat [k] (template/generation-vars template))))
@@ -39,16 +42,19 @@
        ::pco/resolve
        (fn [_env input]
          (timbre/info "Resolving: " the-key)
-         (let [[completed completion] (template/fill-slots template (assoc input :model-opts model-opts))]
+         (let [[completed completion] (template/fill-slots template (assoc input 
+                                                                           :opts model-opts
+                                                                           :the-key the-key
+                                                                           ))]
            (merge
              {the-key completed}
              completion
              input)))})))
 
-(defn- prompt-indexes [prompts model-opts]
+(defn- prompt-indexes [prompts opts]
   (pci/register
     (mapv
-      (fn [prompt-key] (generation-resolver prompt-key (prompt-key prompts) model-opts))
+      (fn [prompt-key] (generation-resolver prompt-key (prompt-key prompts) opts))
       (keys prompts))))
 
 (defn all-keys
@@ -73,11 +79,11 @@
   prompts can be invoked"
   ([prompt-palette data]
    (complete prompt-palette data nil {}))
-  ([prompt-palette data entry-prompt-keys model-opts]
+  ([prompt-palette data entry-prompt-keys opts]
    (let [entry-prompts   (if (empty? entry-prompt-keys) (keys prompt-palette) entry-prompt-keys)
          extraction-keys (all-keys (select-keys prompt-palette entry-prompts) data)]
      (timbre/info "Resolving keys: " extraction-keys)
-     (-> (prompt-indexes prompt-palette model-opts)
+     (-> (prompt-indexes prompt-palette opts)
          (psm/smart-map data)
          (select-keys extraction-keys)))))
 

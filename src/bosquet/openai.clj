@@ -27,7 +27,6 @@
 (defn- create-completion
   "Create completion (not chat) for `prompt` based on model `params` and invocation `opts`"
   [prompt params opts]
-  (println :create-completion params opts)
   (-> (api/create-completion
         (assoc params :prompt prompt) opts)
     :choices first :text))
@@ -70,4 +69,7 @@
 (comment
   (complete "What is your name?" {:max-tokens 10 :model cgpt})
   (complete "What is your name?" {:max-tokens 10})
-  (complete "1 + 10 =" {:model "testtextdavanci003" :impl :azure}))
+  (complete "1 + 10 =" {:model "text-davinci-003"
+                        :impl :azure
+                        :api-key "xxxx"
+                        :api-endpoint "https://xxxxxx.openai.azure.com/"}))

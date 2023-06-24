@@ -16,4 +16,6 @@
       (openai/complete (:selmer/preceding-text context) 
                        (merge 
                         (args->map args)
-                        (:model-opts context))))))
+                        (get-in context [:opts (-> context :the-key) :llm-generate])
+                        
+                        )))))
