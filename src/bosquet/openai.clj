@@ -1,6 +1,5 @@
 (ns bosquet.openai
   (:require
-   [clojure.string :as string]
    [taoensso.timbre :as timbre]
    [wkok.openai-clojure.api :as api]))
 
@@ -11,14 +10,6 @@
 
 #_:clj-kondo/ignore
 (def cgpt "gpt-3.5-turbo")
-
-(defn- get-api-key
-  "Read the API key from the environment variable OPENAI_API_KEY or
-  form ~/.openai_api_key file"
-  []
-  (or (System/getenv "OPENAI_API_KEY")
-    (string/trim
-      (slurp (str (System/getProperty "user.home") "/.openai_api_key")))))
 
 (defn- create-chat
   "Completion using Chat GPT model. This one is loosing the conversation
@@ -45,10 +36,10 @@
   be passed to `complete-chat`"
   ([prompt] (complete prompt nil))
   ([prompt {:keys [impl api-key
+                   api-endpoint
                    model temperature max-tokens n top-p
                    presence-penalty frequence-penalty]
             :or   {impl              :openai
-                   api-key           (get-api-key)
                    model             ada
                    temperature       0.2
                    max-tokens        250
@@ -56,7 +47,7 @@
                    frequence-penalty 0.2
                    top-p             1
                    n                 1}}]
-   (let [params {:impl              impl
+   (let [params {
                  :model             model
                  :temperature       temperature
                  :max_tokens        max-tokens
@@ -65,8 +56,12 @@
                  :n                 n
                  :top_p             top-p
                  :prompt            prompt}
-         opts   {:api-key api-key}]
+         opts   {:api-key api-key
+                 :impl impl
+                 :api-endpoint api-endpoint}]
      (timbre/infof "Calling OAI with params: '%s'" (dissoc params :prompt))
+     (timbre/infof "Calling OAI with opts: '%s'" opts)
+
      (if (= model cgpt)
        (create-chat prompt params opts)
        (create-completion prompt params opts)))))
@@ -74,4 +69,7 @@
 (comment
   (complete "What is your name?" {:max-tokens 10 :model cgpt})
   (complete "What is your name?" {:max-tokens 10})
-  (complete "1 + 10 =" {:model "testtextdavanci003" :impl :azure}))
+  (complete "1 + 10 =" {:model "text-davinci-003"
+                        :impl :azure
+                        :api-key "xxxx"
+                        :api-endpoint "https://xxxxxx.openai.azure.com/"}))

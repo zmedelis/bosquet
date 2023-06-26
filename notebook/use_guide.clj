@@ -4,6 +4,13 @@
     [bosquet.generator :as gen]
     [nextjournal.clerk :as clerk]))
 
+(comment
+  (clerk/serve! {})
+  (clerk/show! "notebook/use_guide.clj")
+  )
+
+
+
 ;; # Bosquet Tutorial
 ;;
 ;; This notebook will demonstrate the following things:
@@ -11,6 +18,24 @@
 ;; - resolve *dependencies* between prompts
 ;; - produce AI *completions*.
 ;;
+;; ## Setup models
+;; This notebook will showcase how to use 2 model configurations at the same time
+;; They could be both the same as well
+
+;; OpenAI model
+(def open-ai-config
+  {:impl :openai
+   :api-key "xxxxx"})
+
+
+;; Azure OpenAI model
+(def azure-open-ai-config
+  {:impl :azure
+   :model "yyyy"      ;; deployment name
+   :api-key "xxxx"
+   :api-endpoint "https://xxxxxxx.openai.azure.com/"})
+
+
 ;; ## A simple single template case
 ;;
 ;; Let's say we want to generate a synopsis of the play, based only on the `title` and `genre` we want this play to be in.
@@ -90,8 +115,9 @@ Playwright: This is a synopsis for the above play:
 ;; The *second* member of the tuple will contain only the AI-completed part.
 (def synopsis
   (gen/complete-template
-    synopsis-template
-    {:title "Mr. X" :genre "crime"}))
+   synopsis-template
+   {:title "Mr. X" :genre "crime"}
+   {:llm-generate azure-open-ai-config}))
 
 ;; #### Full *Bosquet* produced text
 ^{::clerk/visibility {:code :hide}}
@@ -136,7 +162,11 @@ Review from a New York Times play critic of the above play:
 
 (def review (gen/complete play-review
                           {:title "Mr. X" :genre "crime"}
-                          [:synopsis :evrything]))
+                          [:synopsis :evrything]
+                          
+                          {:synopsis { :llm-generate open-ai-config}
+                           :evrything {:llm-generate azure-open-ai-config}}
+                          ))
 
 ;; ### Fully generated review
 ^{::clerk/visibility {:code :hide}}
@@ -181,7 +211,9 @@ Sentiments:
     "The biggest disappointment of my life came a year ago."])
 
 (def sentiments (gen/complete-template sentimental
-                                       {:text-type "tweets" :tweets tweets}))
+                                       {:text-type "tweets" :tweets tweets}
+                                       {:llm-generate azure-open-ai-config}
+                                       ))
 
 ;; Generation results in the same order as `tweets`
 ^{::clerk/visibility {:code :hide}}
