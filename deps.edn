@@ -13,6 +13,8 @@
            com.taoensso/encore             {:mvn/version "3.59.0"}
            io.aviso/pretty                 {:mvn/version "1.4.3"}}
  :aliases {:dev      {:extra-paths ["dev" "notebook"]}
+           :neil     {:project {:name    io.github.zmedelis/bosquet
+                                :version "0.3.0"}}
            :rebel    {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
                       :main-opts  ["-m" "rebel-readline.main"]}
            :outdated {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
@@ -20,4 +22,9 @@
            :test     {:main-opts   ["-m" "kaocha.runner"]
                       :extra-paths ["test"]
                       :extra-deps  {lambdaisland/kaocha        {:mvn/version "1.85.1342"}
-                                    nubank/matcher-combinators {:mvn/version "3.8.5"}}}}}
+                                    nubank/matcher-combinators {:mvn/version "3.8.5"}}}
+
+           :build ;; added by neil
+           {:deps       {io.github.clojure/tools.build {:git/tag "v0.9.4" :git/sha "76b78fe"}
+                         slipset/deps-deploy           {:mvn/version "0.2.0"}}
+            :ns-default build}}}
