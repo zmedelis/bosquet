@@ -4,7 +4,7 @@
    [bosquet.complete]
    [bosquet.generator :as gen]
    [nextjournal.clerk :as clerk]
-   [bosquet.complete :as complete]))
+   [bosquet.openai :as openai]))
 
 (comment
   (clerk/serve! {})
@@ -32,7 +32,7 @@
 
 ;; Azure OpenAI model
 (def azure-open-ai-config
-  {:impl bosquet.complete/complete-azure-openai
+  {:impl openai/complete-azure-openai
    :model "yyyy"      ;; deployment name
    :api-key "xxxx"
    :api-endpoint "https://xxxxxxx.openai.azure.com/"})

@@ -66,6 +66,13 @@
        (create-chat prompt params opts)
        (create-completion prompt params opts)))))
 
+(defn complete-openai [prompt params]
+  (complete prompt (assoc params :impl :openai)))
+
+(defn complete-azure-openai [prompt params]
+  (complete prompt (assoc params :impl :azure)))
+
+
 (comment
   (complete "What is your name?" {:max-tokens 10 :model cgpt})
   (complete "What is your name?" {:max-tokens 10})
