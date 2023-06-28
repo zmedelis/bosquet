@@ -79,6 +79,8 @@
   prompts can be invoked"
   ([prompt-palette data]
    (complete prompt-palette data nil {}))
+  ([prompt-palette data entry-prompt-keys]
+   (complete prompt-palette data entry-prompt-keys {}))
   ([prompt-palette data entry-prompt-keys opts]
    (let [entry-prompts   (if (empty? entry-prompt-keys) (keys prompt-palette) entry-prompt-keys)
          extraction-keys (all-keys (select-keys prompt-palette entry-prompts) data)]
