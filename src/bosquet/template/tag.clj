@@ -13,7 +13,9 @@
 (defn add-tags []
   (parser/add-tag! :llm-generate
     (fn [args context]
-      (openai/complete (:selmer/preceding-text context)
-                       (merge
-                         (args->map args)
-                         (get-in context [:opts (-> context :the-key) :llm-generate]))))))
+      (openai/complete (:selmer/preceding-text context) 
+                       (merge 
+                        (args->map args)
+                        (get-in context [:opts (-> context :the-key) :llm-generate])
+                        
+                        )))))
