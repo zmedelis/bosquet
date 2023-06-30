@@ -9,8 +9,9 @@ Bosquet is building LLMOps functionality (see the tutorial bellow for the parts 
 
 ## Setup
 
-Bosquet expects OpenAI key to be found in `OPENAI_API_KEY` environment variable or
-`~/.openai_api_key` file.
+Bosquet allows to specify model parameters incl. access keys either in the prompt
+definition or when any of the generation functions is run. The second allows
+to keep secrets and model specific parameters out of the prompt definitions. See below for details.
 
 ## Quick example
 
@@ -167,8 +168,7 @@ Note the optional `var-name` parameter. This is the name of the var to hold gene
 
 ### Generation
 
-Bosquet will be invoking *OpenAI API* thus make sure that `OPENAI_API_KEY`
-is present as the environment variable.
+Bosquet will be invoking *OpenAI API* thus make sure to specify the correct model params including API keys.
 
 `llm-generate` call to the *OpenAI* will use configuration parameters specfied
 in that tag and reflect parameters specified by [Open AI API](https://beta.openai.com/docs/api-reference/completions).
@@ -176,7 +176,7 @@ The tag uses the same names. If config parameters are not used, then defaults
 are used. Note that the default model is *Ada*, in production *Davinci* would be a
 natural choice.
 
-The `impl` can be usd to switch between the original openai API or thr Azure OpenAI API.
+The `impl` can be used to switch between the original openai API or thr Azure OpenAI API.
 They need different environemnt variables for authentication, see [here](https://github.com/wkok/openai-clojure)
 
 
@@ -194,6 +194,7 @@ They need different environemnt variables for authentication, see [here](https:/
 The call to generation function takes in:
 - `template` defined above
 - `data` is the data to fill in the template slots (`title` and `genre`)
+- `model-opts` optional options for the model, merge with config from the tag
 
 The generation comes back with a tuple where the *first* member will contain all
 the text which got its slots filled in and generated completion.
@@ -203,9 +204,30 @@ The *second* member of the tuple will contain only the AI-completed part.
 (def synopsis
   (gen/complete-template
     synopsis-template
-    {:title "Mr. X" :genre "crime"}))
+    {:title "Mr. X" :genre "crime"}
+    {:impl :openai
+     :api-key "<my-key>"}))
 
 ```
+
+#### Specify model parameter
+The `gen/complete-template` function takes an optional `model-opts`
+map which gets merged with the model parametes from inside teh template and overides them, if present.
+So we cat pass params to the "llm-generate" tag in a template like this:
+
+
+``` clojure
+(def synopsis
+  (gen/complete-template
+    synopsis-template
+    {:title "Mr. X" :genre "crime"}
+    {:llm-generate {:model "text-davinci-003"
+                    :impl :azure
+                    :api-key "xxxx"
+                    :api-endpoint "https://xxxxxx.openai.azure.com/"}))
+
+```
+
 
 ## Generating from templates with dependencies
 
@@ -255,8 +277,21 @@ To process this more advanced case of templates in the dependency graph,
 * `data` to fill in fixed slots (Selmer templating)
 
 ``` clojure
-(def review (gen/complete play {:title "Mr. X" :genre "crime"}))
+(def review (gen/complete play 
+    {:title "Mr. X" :genre "crime"}
+    {:synopsis {:llm-generate {:impl :openai :api-key "<my-key>"}}
+     :review   {:llm-generate {:impl :openai :api-key "<my-key>"}}}
+))
 ```
+In this case the model parameter can be specified as seen in a nested map using additionally the template key, ex.:
+
+```clojure
+(gen/complete play 
+  {:title "Mr. X" :genre "crime"}
+  {:synopsis { :llm-generate my-model-params}}
+)
+```
+
 
 ## Advanced templating with Selmer
 
@@ -295,5 +330,6 @@ Tweets to be processed
     "The biggest disappointment of my life came a year ago."])
 
 (def sentiments (gen/complete-template sentimental
-                  {:text-type "tweets" :tweets tweets}))
+                  {:text-type "tweets" :tweets tweets}
+                  ... model options ....))
 ```
