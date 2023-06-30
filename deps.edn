@@ -11,7 +11,9 @@
            http-kit/http-kit               {:mvn/version "2.6.0"}
            metosin/jsonista                {:mvn/version "0.3.7"}
            com.taoensso/encore             {:mvn/version "3.59.0"}
-           io.aviso/pretty                 {:mvn/version "1.4.3"}}
+           io.aviso/pretty                 {:mvn/version "1.4.3"}
+           org.clojure/core.cache          {:mvn/version "1.0.217"}
+           }
  :aliases {:dev      {:extra-paths ["dev" "notebook"]}
            :neil     {:project {:name    io.github.zmedelis/bosquet
                                 :version "0.3.0"}}
