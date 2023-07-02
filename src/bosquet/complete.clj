@@ -19,14 +19,15 @@
 (defn ensure-atom [x]
   (if (atom? x) x (atom x)))
 
-(defn complete [prompt params]
-  (let [impl (:impl params)
-        complete-fn
+(defn complete [prompt {:keys [impl]
+                        :or   {impl :openai}
+                        :as   opts}]
+  (let [complete-fn
         (cond
           (= :azure impl)  openai/complete-azure-openai
           (= :openai impl) openai/complete-openai
-          (fn? impl) impl)]
+          (fn? impl)       impl)]
 
-    (if-let [cache (:cache params)]
-      (complete-with-cache prompt params (ensure-atom cache) complete-fn)
-      (complete-fn prompt params))))
+    (if-let [cache (:cache opts)]
+      (complete-with-cache prompt opts (ensure-atom cache) complete-fn)
+      (complete-fn prompt opts))))
