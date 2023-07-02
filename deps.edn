@@ -4,16 +4,15 @@
                                             :git/sha "88fc2b51817e1ad67f0458c75857222a72db4945"}
            com.wsscode/pathom3             {:mvn/version "2023.01.31-alpha"}
            io.github.nextjournal/clerk     {:mvn/version "0.14.919"}
-           net.clojars.wkok/openai-clojure {:mvn/version "0.6.1"}
+           net.clojars.wkok/openai-clojure {:mvn/version "0.8.0"}
            org.flatland/useful             {:mvn/version "0.11.6"}
-           com.taoensso/timbre             {:mvn/version "6.1.0"}
-           com.knuddels/jtokkit            {:mvn/version "0.5.0"}
-           http-kit/http-kit               {:mvn/version "2.6.0"}
+           com.taoensso/timbre             {:mvn/version "6.2.1"}
+           com.knuddels/jtokkit            {:mvn/version "0.6.0"}
+           http-kit/http-kit               {:mvn/version "2.7.0"}
            metosin/jsonista                {:mvn/version "0.3.7"}
-           com.taoensso/encore             {:mvn/version "3.59.0"}
-           io.aviso/pretty                 {:mvn/version "1.4.3"}
-           org.clojure/core.cache          {:mvn/version "1.0.217"}
-           }
+           com.taoensso/encore             {:mvn/version "3.60.0"}
+           io.aviso/pretty                 {:mvn/version "1.4.4"}
+           org.clojure/core.cache          {:mvn/version "1.0.217"}}
  :aliases {:dev      {:extra-paths ["dev" "notebook"]}
            :neil     {:project {:name    io.github.zmedelis/bosquet
                                 :version "0.3.0"}}
@@ -28,5 +27,5 @@
 
            :build ;; added by neil
            {:deps       {io.github.clojure/tools.build {:git/tag "v0.9.4" :git/sha "76b78fe"}
-                         slipset/deps-deploy           {:mvn/version "0.2.0"}}
+                         slipset/deps-deploy           {:mvn/version "0.2.1"}}
             :ns-default build}}}
