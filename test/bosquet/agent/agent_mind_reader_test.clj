@@ -1,7 +1,7 @@
 (ns bosquet.agent.agent-mind-reader-test
   (:require
    [clojure.test :refer [deftest is]]
-   [bosquet.agent.agent-mind-reader :refer :all]))
+   [bosquet.agent.agent-mind-reader :as mind]))
 
 (def ^:private thought-search
   "Question: Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to
@@ -30,29 +30,29 @@ Observation 2: (Result 1 / 1) Milhouse was named after U.S. president Richard Ni
           "Thought 1: I need to search David Chanoff, find the U.S. Navy admiral he
 collaborated with, then find the President the admiral served under.
 Action 1: Search[David Chanoff]"}
-         (find-action 1 thought-search)))
+         (mind/find-action 1 thought-search)))
   (is (= {:action     :search
           :parameters "James Stockdale"
           :thought
           "Thought 2: U.S. Navy Admiral James Stockdale served as the ambassador to the United Kingdom. I need to search James Stockdale and find which President he served under.
 Action 2: Search[James Stockdale]"}
-        (find-action 2 thought-search)))
+        (mind/find-action 2 thought-search)))
   (is (= {:action     :lookup
           :parameters "named after"
           :thought
           "Thought 2: The paragraph does not tell who Milhouse is named after, maybe I can look up \"named after\".
 Action 2: Lookup[named after]"}
-        (find-action 2 thought-lookup))))
+        (mind/find-action 2 thought-lookup))))
 
 (deftest sentence-splitter
   (is (= ["Sentence one." "Sentence A.B. two?" "Last one!"]
-         (split-sentences "Sentence one.\nSentence A.B. two? Last one!"))))
+         (mind/split-sentences "Sentence one.\nSentence A.B. two? Last one!"))))
 
 (deftest content-lookup-index
   (is (= [[0 true "This sentence one."]
           [1 true "This sentence A.B. two?"]
           [2 false "Almost the last sentence."]
           [3 true "The A.B. is good in this sentence!"]]
-        (lookup-index
+        (mind/lookup-index
           "this Sentence"
           "This sentence one.\nThis sentence A.B. two? Almost the last sentence. The A.B. is good in this sentence!"))))
