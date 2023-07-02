@@ -3,10 +3,9 @@
                       (def jar-file "target/antq.jar"))
          repl     (clojure "-M:dev:rebel")
          outdated (clojure "-M:outdated")
-         tests    (do
-                    (clojure "-M:outdated:1.8 --exclude=clojure/brew-install")
-                    (clojure "clojure -M:dev:1.9:test")
-                    (clojure "clojure -M:dev:test"))
+         test     (do
+                    (clojure "-M:outdated")
+                    (clojure "-M:test"))
          lint     (do (shell "echo cljstyle") ;; I don't have clj-style
                       (shell "clj-kondo --lint src:test"))
          pom      (clojure "-Spom")
