@@ -12,13 +12,14 @@
 (defn complete-template
   "Fill in `template` `slots` with Selmer and call generation function
   (if present) to complete the text"
-  [template slots model-opts] 
-  (template/fill-slots
-   template    
-   (assoc slots 
-          :opts {:complete-template-key model-opts}
-          :the-key :complete-template-key
-          )))
+  ( [template slots model-opts] 
+   (template/fill-slots
+    template    
+    (assoc slots 
+           :opts {:complete-template-key model-opts}
+           :the-key :complete-template-key
+           ))
+    [template slots] (complete-template template slots {})))
 
 (defn output-keys [k template]
   (vec (concat [k] (template/generation-vars template))))
