@@ -1,6 +1,6 @@
 (ns bosquet.template.tag
   (:require
-    [bosquet.openai :as openai]
+    [bosquet.complete :as complete]
     [clojure.string :as string]
     [selmer.parser :as parser]))
 
@@ -13,7 +13,7 @@
 (defn add-tags []
   (parser/add-tag! :llm-generate
     (fn [args context]
-      (openai/complete (:selmer/preceding-text context) 
+      (complete/complete (:selmer/preceding-text context) 
                        (merge 
                         (args->map args)
                         (get-in context [:opts (-> context :the-key) :llm-generate])
