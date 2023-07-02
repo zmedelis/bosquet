@@ -1,7 +1,7 @@
 (ns bosquet.agent.wikipedia-test
   (:require
-    [bosquet.agent.wikipedia :as w]
-    [clojure.test :refer [deftest is]]))
+   [bosquet.agent.wikipedia :as w]
+   [clojure.test :refer [deftest is]]))
 
 (def ^:private fox-result
   ["Fox" "Fox News" "Fox Broadcasting Company"])

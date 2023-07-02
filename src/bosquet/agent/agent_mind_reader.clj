@@ -1,6 +1,6 @@
 (ns bosquet.agent.agent-mind-reader
   (:require
-    [clojure.string :as string]))
+   [clojure.string :as string]))
 
 (defn- normalize-action
   "Normalize `action` name to be used as a key to indicate what kind
@@ -13,8 +13,8 @@
   [cycle]
   (re-pattern
     ;; 'Observation' at the end is optional because there will be none when 'Action=Finish'
-    (format "(?s).*?(Thought %s:.*?)(Action %s:(.*?)\\[(.*?)\\])(\\nObservation %s:)?"
-      cycle cycle cycle)))
+   (format "(?s).*?(Thought %s:.*?)(Action %s:(.*?)\\[(.*?)\\])(\\nObservation %s:)?"
+           cycle cycle cycle)))
 
 (defn find-action
   "Read agent's thoughts and actions. Find the action in its `cycle` of thinking."
@@ -41,9 +41,9 @@
   `sentence` is the sentence itself."
   [query content]
   (vec
-    (map-indexed
-      (fn [idx sentence]
-        [idx
-         (string/includes? (string/lower-case sentence) (string/lower-case query))
-         sentence])
-      (split-sentences content))))
+   (map-indexed
+    (fn [idx sentence]
+      [idx
+       (string/includes? (string/lower-case sentence) (string/lower-case query))
+       sentence])
+    (split-sentences content))))

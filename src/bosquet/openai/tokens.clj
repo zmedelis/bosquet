@@ -2,7 +2,7 @@
   "JTokkit wrapper to get encode/decode and get token counts.
   Plus a price estimator for model produced tokens"
   (:import
-    [com.knuddels.jtokkit Encodings]))
+   [com.knuddels.jtokkit Encodings]))
 
 ;;
 ;; ## Encodings and token counting
@@ -33,11 +33,9 @@
   [text model]
   (count (encode text model)))
 
-
 ;;
 ;; ## Pricing
 ;;
-
 
 (def pricing
   "OAI model prices (per 1k tokens) and token limits specified in a map:
@@ -72,8 +70,8 @@
   ([prompt completion model]
    (let [{:keys [input output]} (model pricing)]
      (+
-       (* (token-count prompt model) input)
-       (* (token-count completion model) output)))))
+      (* (token-count prompt model) input)
+      (* (token-count completion model) output)))))
 
 (defn fits-in-context-window? [token-count model]
   (>= (get-in pricing [model :tokens]) token-count))

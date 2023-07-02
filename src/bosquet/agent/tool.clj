@@ -1,12 +1,12 @@
 (ns bosquet.agent.tool
   (:require
-    [taoensso.timbre :as timbre]
-    [io.aviso.ansi :as ansi]
-    [taoensso.timbre.appenders.core :as appenders]))
+   [taoensso.timbre :as timbre]
+   [io.aviso.ansi :as ansi]
+   [taoensso.timbre.appenders.core :as appenders]))
 
 (timbre/merge-config!
-  {:appenders {:println {:enabled? false}
-               :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
+ {:appenders {:println {:enabled? false}
+              :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
 
 (defprotocol Tool
   (my-name [this])
@@ -48,6 +48,6 @@
 (defn print-too-much-thinking-error [steps]
   (println)
   (println
-    (ansi/compose
-      [:bold.red
-       (format "Agent was thinking for %s steps and failed to find a solution" steps)])))
+   (ansi/compose
+    [:bold.red
+     (format "Agent was thinking for %s steps and failed to find a solution" steps)])))

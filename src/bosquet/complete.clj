@@ -12,7 +12,7 @@
      (complete-fn
       (:prompt item)
       (:params item)))))
- 
+
 (defn atom? [a] (= (type a) clojure.lang.Atom))
 
 ;; lookup-or-miss works with an atom of a cache

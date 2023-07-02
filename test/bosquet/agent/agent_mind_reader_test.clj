@@ -36,13 +36,13 @@ Action 1: Search[David Chanoff]"}
           :thought
           "Thought 2: U.S. Navy Admiral James Stockdale served as the ambassador to the United Kingdom. I need to search James Stockdale and find which President he served under.
 Action 2: Search[James Stockdale]"}
-        (mind/find-action 2 thought-search)))
+         (mind/find-action 2 thought-search)))
   (is (= {:action     :lookup
           :parameters "named after"
           :thought
           "Thought 2: The paragraph does not tell who Milhouse is named after, maybe I can look up \"named after\".
 Action 2: Lookup[named after]"}
-        (mind/find-action 2 thought-lookup))))
+         (mind/find-action 2 thought-lookup))))
 
 (deftest sentence-splitter
   (is (= ["Sentence one." "Sentence A.B. two?" "Last one!"]
@@ -53,6 +53,6 @@ Action 2: Lookup[named after]"}
           [1 true "This sentence A.B. two?"]
           [2 false "Almost the last sentence."]
           [3 true "The A.B. is good in this sentence!"]]
-        (mind/lookup-index
+         (mind/lookup-index
           "this Sentence"
           "This sentence one.\nThis sentence A.B. two? Almost the last sentence. The A.B. is good in this sentence!"))))
