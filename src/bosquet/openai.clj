@@ -47,8 +47,7 @@
                    frequence-penalty 0.2
                    top-p             1
                    n                 1}}]
-   (let [params {
-                 :model             model
+   (let [params {:model             model
                  :temperature       temperature
                  :max_tokens        max-tokens
                  :presence_penalty  presence-penalty

@@ -1,9 +1,7 @@
 (ns bosquet.complete
   (:require [bosquet.openai :as openai]
-            [bosquet.complete :as complete]
             [clojure.core.cache.wrapped :as cache]
-            [clojure.core :as core]
-            ))
+            [clojure.core :as core]))
 
 (defn complete-with-cache [prompt params cache complete-fn]
   (cache/lookup-or-miss
@@ -11,7 +9,6 @@
    {:prompt prompt
     :params (dissoc params :cache)}
    (fn [item]
-     (println :item item)
      (complete-fn
       (:prompt item)
       (:params item)))))
@@ -33,5 +30,3 @@
     (if-let [cache (:cache params)]
       (complete-with-cache prompt params (ensure-atom cache) complete-fn)
       (complete-fn prompt params))))
-
-
