@@ -66,12 +66,23 @@
                        :tokens 4097}})
 
 (defn price-estimate
+  "Estimate price for the `prompt` and `completion` using `model`.
+  If `prompt` and `completion` are strings it will count tokens first.
+  If `prompt` and `completion` are numbers it will assume they are token counts"
   ([prompt model] (price-estimate prompt "" model))
   ([prompt completion model]
    (let [{:keys [input output]} (model pricing)]
-     (+
-      (* (token-count prompt model) input)
-      (* (token-count completion model) output)))))
+     ;; If we have got strings count tokens first
+     (cond
+       (and (string? prompt) (string? completion))
+       (+
+         (* (token-count prompt model) input)
+         (* (token-count completion model) output))
+       ;; If we have got numbers it must be token counts already
+       (and (number? prompt) (number? completion))
+       (+
+         (* prompt input)
+         (* completion output))))))
 
 (defn fits-in-context-window? [token-count model]
   (>= (get-in pricing [model :tokens]) token-count))
