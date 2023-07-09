@@ -59,7 +59,7 @@
                  :impl impl
                  :api-endpoint api-endpoint}]
      (timbre/infof "Calling OAI with params: '%s'" (dissoc params :prompt))
-     (timbre/infof "Calling OAI with opts: '%s'" opts)
+     (timbre/infof "Calling OAI with opts: '%s'" (dissoc opts :api-key))
 
      (if (= model cgpt)
        (create-chat prompt params opts)
