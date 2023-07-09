@@ -7,10 +7,10 @@
            net.clojars.wkok/openai-clojure {:mvn/version "0.8.0"}
            org.flatland/useful             {:mvn/version "0.11.6"}
            com.taoensso/timbre             {:mvn/version "6.2.1"}
-           com.knuddels/jtokkit            {:mvn/version "0.6.0"}
+           com.knuddels/jtokkit            {:mvn/version "0.6.1"}
            http-kit/http-kit               {:mvn/version "2.7.0"}
            metosin/jsonista                {:mvn/version "0.3.7"}
-           com.taoensso/encore             {:mvn/version "3.60.0"}
+           com.taoensso/encore             {:mvn/version "3.61.1"}
            io.aviso/pretty                 {:mvn/version "1.4.4"}
            org.clojure/core.cache          {:mvn/version "1.0.225"}}
  :aliases {:dev      {:extra-paths ["dev" "notebook"]}
