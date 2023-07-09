@@ -3,7 +3,7 @@
    [clojure.string :as s]))
 
 (defn- drop-digit [item]
-    (s/trim (s/replace-first item #"\d+\." "")))
+  (s/trim (s/replace-first item #"\d+\." "")))
 
 (defn numbered-items->list
   "Converts numbered item list given as a new line
@@ -16,7 +16,7 @@
   [\"foo\" \"bar\" \"baz\"]"
   [items]
   (map drop-digit
-    (s/split (s/trim items) #"\n")))
+       (s/split (s/trim items) #"\n")))
 
 (defn yes-no->bool
   "Converts yes/no answer to boolean
@@ -24,7 +24,7 @@
    Yes => true
    NO => false"
   [answer]
-  (condp = (-> answer s/trim s/lower-case )
+  (condp = (-> answer s/trim s/lower-case)
     "yes" true
     "no"  false
     nil))

@@ -1,7 +1,7 @@
 (ns bosquet.splitter-test
   (:require
-     [clojure.test :refer [deftest is]]
-     [bosquet.splitter :as splitter]))
+   [clojure.test :refer [deftest is]]
+   [bosquet.splitter :as splitter]))
 
 (deftest max-tokens-under
   (is (= [2 2 1]

@@ -1,16 +1,16 @@
 (ns bosquet.agent.react
   (:require
-    [bosquet.agent.tool :as t]
-    [bosquet.agent.agent-mind-reader :as mind-reader]
-    [bosquet.generator :as generator]
-    [bosquet.template.read :as template]
-    [clojure.string :as string]
-    [taoensso.timbre :as timbre]
-    [taoensso.timbre.appenders.core :as appenders]))
+   [bosquet.agent.tool :as t]
+   [bosquet.agent.agent-mind-reader :as mind-reader]
+   [bosquet.generator :as generator]
+   [bosquet.template.read :as template]
+   [clojure.string :as string]
+   [taoensso.timbre :as timbre]
+   [taoensso.timbre.appenders.core :as appenders]))
 
 (timbre/merge-config!
-  {:appenders {:println {:enabled? false}
-               :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
+ {:appenders {:println {:enabled? false}
+              :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
 
 (defn generate-thoughts
   "Generate ReAct thoughts.
@@ -64,14 +64,14 @@
           ;; Tool failed to find a solution in max steps allocated
           (= step max-steps)
           (do
-              (t/print-too-much-thinking-error step)
-              nil)
+            (t/print-too-much-thinking-error step)
+            nil)
 
           ;; Tool got to the solution. Print and return it
           (= :finish action)
           (do
-              (t/print-result observation)
-              observation)
+            (t/print-result observation)
+            observation)
 
           ;; Continue thinking
           :else
@@ -79,10 +79,10 @@
                 _                   (t/print-indexed-step "Observation" current-observation step)
                 {:keys [thoughts reasoning-trace]}
                 (generate-thoughts
-                  {:step            (inc step)
-                   :reasoning-trace (str reasoning-trace thought)
-                   :observation     current-observation}
-                  prompt-palette :react/step-n)]
+                 {:step            (inc step)
+                  :reasoning-trace (str reasoning-trace thought)
+                  :observation     current-observation}
+                 prompt-palette :react/step-n)]
             (recur (inc step) ctx thoughts reasoning-trace)))))))
 
 (comment
@@ -92,6 +92,6 @@
     "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
 
   (solve-task
-    (Wikipedia.)
-    prompt-palette
-    {:task question}))
+   (Wikipedia.)
+   prompt-palette
+   {:task question}))

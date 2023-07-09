@@ -1,11 +1,10 @@
 (ns bosquet.splitter
   (:require [flatland.useful.seq :as useq]
-            [clojure.string :as str]
-            )
+            [clojure.string :as str])
   (:import [com.knuddels.jtokkit.api  EncodingType]
            [com.knuddels.jtokkit Encodings]))
 
-(defn create-tokkit-gpt-token-count-fn 
+(defn create-tokkit-gpt-token-count-fn
   "Make a fn which counts the tokens for a given string using the encoding-type.
    Should result in the same token count as the GPT API"
   [^EncodingType encoding-type]
@@ -52,11 +51,9 @@
   ([text max-tokens token-count-fn]
    (split-max-tokens text max-tokens token-count-fn " ")))
 
-
 (comment
   (import '[com.knuddels.jtokkit.api EncodingType])
   (import 'com.knuddels.jtokkit.Encodings)
-
 
   (def enc (.getEncoding (Encodings/newDefaultEncodingRegistry)
                          EncodingType/CL100K_BASE))
@@ -71,7 +68,6 @@
        (map #(hash-map :c (gpt-count enc %) :s %))
 
        (map :c))
-  (def tokkit-count-fn (create-tokkit-gpt-token-count-fn EncodingType/CL100K_BASE) )
+  (def tokkit-count-fn (create-tokkit-gpt-token-count-fn EncodingType/CL100K_BASE))
   (split-max-tokens text 10 tokkit-count-fn)
-  :ok
-  )
+  :ok)

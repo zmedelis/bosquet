@@ -17,19 +17,19 @@
   conversation and then use `prompt` as the `user` in the chat "
   [prompt params opts]
   (-> (api/create-chat-completion
-        (assoc params
-          :model cgpt
-          :messages [{:role "system" :content "You are a helpful assistant."}
-                     {:role "user" :content prompt}])
-        opts)
-    :choices first :message :content))
+       (assoc params
+              :model cgpt
+              :messages [{:role "system" :content "You are a helpful assistant."}
+                         {:role "user" :content prompt}])
+       opts)
+      :choices first :message :content))
 
 (defn- create-completion
   "Create completion (not chat) for `prompt` based on model `params` and invocation `opts`"
   [prompt params opts]
   (-> (api/create-completion
-        (assoc params :prompt prompt) opts)
-    :choices first :text))
+       (assoc params :prompt prompt) opts)
+      :choices first :text))
 
 (defn complete
   "Complete `prompt` if passed in `model` is cGPT the completion will
@@ -47,8 +47,7 @@
                    frequence-penalty 0.2
                    top-p             1
                    n                 1}}]
-   (let [params {
-                 :model             model
+   (let [params {:model             model
                  :temperature       temperature
                  :max_tokens        max-tokens
                  :presence_penalty  presence-penalty
@@ -65,6 +64,12 @@
      (if (= model cgpt)
        (create-chat prompt params opts)
        (create-completion prompt params opts)))))
+
+(defn complete-openai [prompt params]
+  (complete prompt (assoc params :impl :openai)))
+
+(defn complete-azure-openai [prompt params]
+  (complete prompt (assoc params :impl :azure)))
 
 (comment
   (complete "What is your name?" {:max-tokens 10 :model cgpt})
