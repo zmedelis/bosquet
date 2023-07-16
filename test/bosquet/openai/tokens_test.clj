@@ -10,11 +10,11 @@
 
 (deftest price-estimation
   (is (= (+ (* 7 0.003))
-        (price-estimate
+         (price-estimate
           "A screaming comes across the sky."
           :gpt-4)))
   (is (= (+ (* 7 0.003) (* 15 0.006))
-        (price-estimate
+         (price-estimate
           "A screaming comes across the sky."
           "It has happened before, but there is nothing to compare it to now."
           :gpt-4)))

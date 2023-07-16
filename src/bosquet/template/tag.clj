@@ -11,9 +11,10 @@
           {} args))
 
 (defn add-tags []
-  (parser/add-tag! :llm-generate
-                   (fn [args context]
-                     (complete/complete (:selmer/preceding-text context)
-                                        (merge
-                                         (args->map args)
-                                         (get-in context [:opts (-> context :the-key) :llm-generate]))))))
+  (parser/add-tag!
+   :llm-generate
+   (fn [args context]
+     (complete/complete (:selmer/preceding-text context)
+                        (merge
+                         (args->map args)
+                         (get-in context [:opts (-> context :the-key) :llm-generate]))))))

@@ -76,13 +76,13 @@
      (cond
        (and (string? prompt) (string? completion))
        (+
-         (* (token-count prompt model) input)
-         (* (token-count completion model) output))
+        (* (token-count prompt model) input)
+        (* (token-count completion model) output))
        ;; If we have got numbers it must be token counts already
        (and (number? prompt) (number? completion))
        (+
-         (* prompt input)
-         (* completion output))))))
+        (* prompt input)
+        (* completion output))))))
 
 (defn fits-in-context-window? [token-count model]
   (>= (get-in pricing [model :tokens]) token-count))
