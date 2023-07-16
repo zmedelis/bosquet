@@ -8,9 +8,7 @@
 
 (comment
   (clerk/serve! {})
-  (clerk/show! "notebook/use_guide.clj")
-  )
-
+  (clerk/show! "notebook/use_guide.clj"))
 
 
 ;; # Bosquet Tutorial
@@ -214,8 +212,7 @@ Sentiments:
 
 (def sentiments (gen/complete-template sentimental
                                        {:text-type "tweets" :tweets tweets}
-                                       {:llm-generate azure-open-ai-config}
-                                       ))
+                                       {:llm-generate azure-open-ai-config}))
 
 ;; Generation results in the same order as `tweets`
 ^{::clerk/visibility {:code :hide}}

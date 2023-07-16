@@ -1,7 +1,8 @@
 (ns bosquet.openai
   (:require
-   [taoensso.timbre :as timbre]
-   [wkok.openai-clojure.api :as api]))
+    [jsonista.core :as j]
+    [taoensso.timbre :as timbre]
+    [wkok.openai-clojure.api :as api]))
 
 (def ada "text-ada-001")
 
@@ -61,9 +62,16 @@
      (timbre/infof "Calling OAI with params: '%s'" (dissoc params :prompt))
      (timbre/infof "Calling OAI with opts: '%s'" (dissoc opts :api-key))
 
-     (if (= model cgpt)
-       (create-chat prompt params opts)
-       (create-completion prompt params opts)))))
+     (try
+       (if (= model cgpt)
+         (create-chat prompt params opts)
+         (create-completion prompt params opts))
+       (catch Exception e
+         (throw
+           (ex-info "OpenAI API error"
+             (-> e ex-data :body
+                 (j/read-value j/keyword-keys-object-mapper)
+                 :error))))))))
 
 (defn complete-openai [prompt params]
   (complete prompt (assoc params :impl :openai)))
@@ -73,6 +81,7 @@
 
 (comment
   (complete "What is your name?" {:max-tokens 10 :model cgpt})
+  (complete "What is your name?" {:max-tokens 10 :model :ccgpt})
   (complete "What is your name?" {:max-tokens 10})
   (complete "1 + 10 =" {:model "text-davinci-003"
                         :impl :azure
