@@ -1,11 +1,12 @@
 (ns bosquet.generator
   (:require
-   [taoensso.timbre :as timbre]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
-   [com.wsscode.pathom3.interface.smart-map :as psm]))
+   [com.wsscode.pathom3.interface.smart-map :as psm]
+   [com.wsscode.pathom3.plugin :as p.plugin]
+   [taoensso.timbre :as timbre]))
 
 (tag/add-tags)
 
@@ -29,9 +30,9 @@
   For the output check if themplate is producing generated content
   anf if so add a key for it into the output"
   [the-key template model-opts]
-  (let [str-k        (str (.-sym the-key))
-        input        (vec (template/slots-required template))
-        output       (into input (output-keys the-key template))]
+  (let [str-k  (str (.-sym the-key))
+        input  (vec (template/slots-required template))
+        output (into input (output-keys the-key template))]
     (timbre/info "Resolver: " the-key)
     (timbre/info "  Input: " input)
     (timbre/info "  Output: " output)
@@ -42,13 +43,22 @@
       ::pco/resolve
       (fn [_env input]
         (timbre/info "Resolving: " the-key)
-        (let [[completed completion] (template/fill-slots template (assoc input
-                                                                          :opts model-opts
-                                                                          :the-key the-key))]
-          (merge
-           {the-key completed}
-           completion
-           input)))})))
+        (let [[completed completion] (template/fill-slots template
+                                                          (assoc input
+                                                                 :opts model-opts
+                                                                 :the-key the-key))]
+          (merge {the-key completed} completion input)))})))
+
+(defn- resolver-error-wrapper
+  [env]
+  (p.plugin/register
+   env
+   {::p.plugin/id 'err
+    :com.wsscode.pathom3.connect.runner/wrap-resolver-error
+    (fn [_]
+      (fn [_env {op-name :com.wsscode.pathom3.connect.operation/op-name} error]
+        (timbre/errorf "Resolver operation '%s' failed" op-name)
+        (timbre/error error)))}))
 
 (defn- prompt-indexes [prompts opts]
   (pci/register
@@ -85,6 +95,7 @@
          extraction-keys (all-keys (select-keys prompt-palette entry-prompts) data)]
      (timbre/info "Resolving keys: " extraction-keys)
      (-> (prompt-indexes prompt-palette opts)
+         (resolver-error-wrapper)
          (psm/smart-map data)
          (select-keys extraction-keys)))))
 
@@ -96,4 +107,5 @@
     :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
-   [:question-answer :self-eval]))
+   [:question-answer :self-eval])
+  #__)

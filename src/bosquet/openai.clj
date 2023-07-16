@@ -1,8 +1,8 @@
 (ns bosquet.openai
   (:require
-    [jsonista.core :as j]
-    [taoensso.timbre :as timbre]
-    [wkok.openai-clojure.api :as api]))
+   [jsonista.core :as j]
+   [taoensso.timbre :as timbre]
+   [wkok.openai-clojure.api :as api]))
 
 (def ada "text-ada-001")
 
@@ -68,10 +68,10 @@
          (create-completion prompt params opts))
        (catch Exception e
          (throw
-           (ex-info "OpenAI API error"
-             (-> e ex-data :body
-                 (j/read-value j/keyword-keys-object-mapper)
-                 :error))))))))
+          (ex-info "OpenAI API error"
+                   (-> e ex-data :body
+                       (j/read-value j/keyword-keys-object-mapper)
+                       :error))))))))
 
 (defn complete-openai [prompt params]
   (complete prompt (assoc params :impl :openai)))
