@@ -25,7 +25,7 @@
 ;; OpenAI model
 (def open-ai-config
   {:impl :openai
-   :api-key "xxxxx"})
+   :api-key (System/getenv "OPENAI_API_KEY")})
 
 
 ;; Azure OpenAI model
@@ -117,7 +117,7 @@ Playwright: This is a synopsis for the above play:
   (gen/complete-template
    synopsis-template
    {:title "Mr. X" :genre "crime"}
-   {:llm-generate azure-open-ai-config}))
+   {:llm-generate open-ai-config}))
 
 ;; #### Full *Bosquet* produced text
 ^{::clerk/visibility {:code :hide}}
@@ -164,9 +164,8 @@ Review from a New York Times play critic of the above play:
                           {:title "Mr. X" :genre "crime"}
                           [:synopsis :evrything]
                           
-                          {:synopsis { :llm-generate open-ai-config}
-                           :evrything {:llm-generate azure-open-ai-config}}
-                          ))
+                          {:synopsis  {:llm-generate open-ai-config}
+                           :evrything {:llm-generate open-ai-config}}))
 
 ;; ### Fully generated review
 ^{::clerk/visibility {:code :hide}}
@@ -212,7 +211,7 @@ Sentiments:
 
 (def sentiments (gen/complete-template sentimental
                                        {:text-type "tweets" :tweets tweets}
-                                       {:llm-generate azure-open-ai-config}))
+                                       {:llm-generate open-ai-config}))
 
 ;; Generation results in the same order as `tweets`
 ^{::clerk/visibility {:code :hide}}
