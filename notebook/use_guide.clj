@@ -116,8 +116,7 @@ Playwright: This is a synopsis for the above play:
 (def synopsis
   (gen/complete-template
    synopsis-template
-   {:title "Mr. X" :genre "crime"}
-   {:llm-generate open-ai-config}))
+   {:title "Mr. X" :genre "crime"}))
 
 ;; #### Full *Bosquet* produced text
 ^{::clerk/visibility {:code :hide}}
