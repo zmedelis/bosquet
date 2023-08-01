@@ -77,7 +77,7 @@ Title: {{title}}
 Genre: {{genre}}
 
 Playwright: This is a synopsis for the above play:
-{% llm-generate model=text-davinci-003 var-name=play %}")
+{% llm-generate model=gpt-4 var-name=play %}")
 
 
 ;; Note the optional `var-name` parameter. This is the name of the var to hold

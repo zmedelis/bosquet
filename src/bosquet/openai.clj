@@ -1,5 +1,6 @@
 (ns bosquet.openai
   (:require
+   [clojure.string :as string]
    [jsonista.core :as j]
    [taoensso.timbre :as timbre]
    [wkok.openai-clojure.api :as api]))
@@ -11,6 +12,11 @@
 
 #_:clj-kondo/ignore
 (def cgpt "gpt-3.5-turbo")
+
+(defn chat-model?
+  "Check if `model` (name provided as string) is a chat model"
+  [model]
+  (string/starts-with? model "gpt-"))
 
 (defn- create-chat
   "Completion using Chat GPT model. This one is loosing the conversation
@@ -63,7 +69,7 @@
      (timbre/infof "Calling OAI with opts: '%s'" (dissoc opts :api-key))
 
      (try
-       (if (= model cgpt)
+       (if (chat-model? model)
          (create-chat prompt params opts)
          (create-completion prompt params opts))
        (catch Exception e
@@ -80,7 +86,7 @@
   (complete prompt (assoc params :impl :azure)))
 
 (comment
-  (complete "What is your name?" {:max-tokens 10 :model cgpt})
+  (complete "What is your name?" {:max-tokens 10 :model "gpt-3.5-turbo"})
   (complete "What is your name?" {:max-tokens 10 :model :ccgpt})
   (complete "What is your name?" {:max-tokens 10})
   (complete "1 + 10 =" {:model "text-davinci-003"

@@ -16,10 +16,10 @@
   ([template slots] (complete-template template slots {}))
   ([template slots model-opts]
    (template/fill-slots
-     template
-     (assoc slots
-       :opts {:complete-template-key model-opts}
-       :the-key :complete-template-key))))
+    template
+    (assoc slots
+           :opts {:complete-template-key model-opts}
+           :the-key :complete-template-key))))
 
 (defn output-keys [k template]
   (vec (concat [k] (template/generation-vars template))))
