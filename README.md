@@ -15,10 +15,16 @@ to keep secrets and model specific parameters out of the prompt definitions. See
 
 ## Quick example
 
-An example of a composable prompt definition to define a prompt answering question with role assumption.
+An example of a composable prompt definition to define a prompt answering a question with a 'role assumption' prompt pattern.
+
+```bash
+export OPENAI_API_KEY=[YOUR OPEN AI API KEY]
+```
 
 ```clojure
-(complete
+(require '[bosquet.generator :as bg])
+
+(bg/complete
    {:role            "As a brilliant {{you-are}} answer the following question."
     :question        "What is the distance between Io and Europa?"
     :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
