@@ -2,10 +2,16 @@
 
 # LLMOps for Large Language Model based applications 
 
-![bosquet chain](/doc/img/generation-chain.png)
+Bosquet is on a mission to make building AI applications simple. All nontrivial AI applications need to work with prompt templates that quickly grow in complexity, limited LLM context windows require memory management, and agents are needed for AI applications to interact with the outside world.
 
-All but most trivial LLM applications require complex prompt handling, development, evaluation, secure use, and deployment techniques.
-Bosquet is building LLMOps functionality (see the tutorial bellow for the parts that are now implemented):
+Bosquet provides instruments to work with those AI application concepts:
+* Prompt templating via integration with the excellent [Selmer](https://github.com/yogthos/Selmer) templating library
+* Prompt chaining and composition via a powerful [Pathom](https://pathom3.wsscode.com/) graph processing machine
+* Agent and tools definition abstractions for the interactions with external APIs.
+* LLM memory handling (in progress, to be added in the next release)
+* Other instruments like call response caching (see documentation)
+
+![bosquet chain](/doc/img/generation-chain.png)
 
 ## Setup
 
