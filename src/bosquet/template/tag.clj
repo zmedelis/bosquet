@@ -4,17 +4,24 @@
    [clojure.string :as string]
    [selmer.parser :as parser]))
 
-(defn args->map [args]
+(defn args->map
+  "Convert tag arguments to a clojure map. Tag arguments are passed in
+  as a vector of 'key=value' strings."
+  [args]
   (reduce (fn [m arg]
             (let [[k v] (string/split arg #"=")]
               (assoc m (keyword k) v)))
           {} args))
 
+(defn gen-tag
+  "Selmer custom tag to invoke AI generation"
+  [args context]
+  (complete/complete (:selmer/preceding-text context)
+                     (merge
+                      (args->map args)
+                      (get-in context [:opts (-> context :the-key) :llm-generate]))))
+
 (defn add-tags []
-  (parser/add-tag!
-   :llm-generate
-   (fn [args context]
-     (complete/complete (:selmer/preceding-text context)
-                        (merge
-                         (args->map args)
-                         (get-in context [:opts (-> context :the-key) :llm-generate]))))))
+  (parser/add-tag! :gen gen-tag)
+  ;; for backwards compatability
+  (parser/add-tag! :llm-generate gen-tag))
