@@ -158,8 +158,8 @@ Review from a New York Times play critic of the above play:
                           {:title "Mr. X" :genre "crime"}
                           [:synopsis :evrything]
                           
-                          {:synopsis  {:gen open-ai-config}
-                           :evrything {:gen open-ai-config}}))
+                          {:synopsis  {:llm-generate open-ai-config}
+                           :evrything {:llm-generate open-ai-config}}))
 
 ;; ### Fully generated review
 ^{::clerk/visibility {:code :hide}}
@@ -205,7 +205,7 @@ Sentiments:
 
 (def sentiments (bg/complete-template sentimental
                                        {:text-type "tweets" :tweets tweets}
-                                       {:gen open-ai-config}))
+                                       {:llm-generate open-ai-config}))
 
 ;; Generation results in the same order as `tweets`
 ^{::clerk/visibility {:code :hide}}
