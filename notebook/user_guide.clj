@@ -1,15 +1,10 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
-(ns use-guide
+(ns user-guide
   (:require
    [bosquet.complete]
-   [bosquet.generator :as gen]
+   [bosquet.generator :as bg]
    [nextjournal.clerk :as clerk]
    [bosquet.openai :as openai]))
-
-(comment
-  (clerk/serve! {})
-  (clerk/show! "notebook/use_guide.clj"))
-
 
 ;; # Bosquet Tutorial
 ;;
@@ -44,10 +39,10 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm
              "Title:
-Crime Drama
+The Fifth Man
 
 Genre:
-The Fifth Man
+Crime Drama
 
 Synopsys:
 The Fifth Man is a suspenseful crime drama set in a small town in the USA. Five childhood friends, now in their mid-twenties, have grown up together and are as close as brothers. One evening, the group is out at a nightclub wherein the lead of the group, John, finds an envelope stuffed with hundreds of thousands of dollars. Despite their better judgment, John and his friends decide to keep the money and use it to fund a life of pleasure and excitement."])
@@ -60,10 +55,10 @@ The Fifth Man is a suspenseful crime drama set in a small town in the USA. Five 
 ;; It uses `{{DATA}}` syntax to specify where data needs to be injected.
 ;;
 ;; *Bosquet* adds to *Selmer* a specification of where AI generation calls should
-;; happen. This is indicated with the `{% llm-generate %}` [tag](https://github.com/zmedelis/Selmer#tags).
+;; happen. This is indicated with the `{% gen %}` [tag](https://github.com/zmedelis/Selmer#tags).
 ;;
 ;; Generation is done with the following *Bosquet* features:
-;; - `llm-generate` will recieve all the text preceeding it with already filled in template slots. This text
+;; - `gen` will recieve all the text preceeding it with already filled in template slots. This text
 ;; is used as the prompt to be sent to the competion API.
 ;; - `bosquet.openai` namespace defines completion function, that calls *OpenAI API* to initiate the completion
 ;;
@@ -77,12 +72,12 @@ Title: {{title}}
 Genre: {{genre}}
 
 Playwright: This is a synopsis for the above play:
-{% llm-generate model=gpt-4 var-name=play %}")
+{% gen model=gpt-4 var-name=play %}")
 
 
 ;; Note the optional `var-name` parameter. This is the name of the var to hold
 ;; generation generation result and it can an be used as a reference in other templates
-;; or the same template further down. If `var-name` is  not specified `llm-generate` will be
+;; or the same template further down. If `var-name` is  not specified `gen` will be
 ;; used as the name.
 
 ;; ### Generation
@@ -90,7 +85,7 @@ Playwright: This is a synopsis for the above play:
 ;; Bosquet will be invoking *OpenAI API* thus make sure that `OPENAI_API_KEY`
 ;; is present as the environment variable.
 ;;
-;; `llm-generate` call to the *OpenAI* will use configuration parameters specfied
+;; `gen` call to the *OpenAI* will use configuration parameters specfied
 ;; in that tag and reflect parameters specified by [Open AI API](https://beta.openai.com/docs/api-reference/completions).
 ;; The tag uses the same names. If config parameters are not used, then defaults
 ;; are used. Note that default model is *Ada*, in production *Davinci* would be a
@@ -114,7 +109,7 @@ Playwright: This is a synopsis for the above play:
 ;; the text which got its slots filled in and generated completion.
 ;; The *second* member of the tuple will contain only the AI-completed part.
 (def synopsis
-  (gen/complete-template
+  (bg/complete-template
    synopsis-template
    {:title "Mr. X" :genre "crime"}))
 
@@ -143,7 +138,7 @@ Play Synopsis:
 {{play}}
 
 Review from a New York Times play critic of the above play:
-{% llm-generate model=text-davinci-003 var-name=review %}")
+{% gen model=text-davinci-003 var-name=review %}")
 
 ;; Both templates need to be added to a map to be jointly processed by *Bosquet*.
 
@@ -159,12 +154,12 @@ Review from a New York Times play critic of the above play:
 ;; * `prompts` map defined above
 ;; * `data` to fill in fixed slots (Selmer templating)
 
-(def review (gen/complete play-review
+(def review (bg/complete play-review
                           {:title "Mr. X" :genre "crime"}
                           [:synopsis :evrything]
                           
-                          {:synopsis  {:llm-generate open-ai-config}
-                           :evrything {:llm-generate open-ai-config}}))
+                          {:synopsis  {:gen open-ai-config}
+                           :evrything {:gen open-ai-config}}))
 
 ;; ### Fully generated review
 ^{::clerk/visibility {:code :hide}}
@@ -194,7 +189,7 @@ Review from a New York Times play critic of the above play:
 {% endfor %}
 
 Sentiments:
-{% llm-generate model=text-davinci-003 %}")
+{% gen model=text-davinci-003 %}")
 
 ;; First, *Selmer* provides [for tag](https://github.com/yogthos/Selmer#for)
 ;; to process collections of data.
@@ -208,10 +203,10 @@ Sentiments:
     "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
     "The biggest disappointment of my life came a year ago."])
 
-(def sentiments (gen/complete-template sentimental
+(def sentiments (bg/complete-template sentimental
                                        {:text-type "tweets" :tweets tweets}
-                                       {:llm-generate open-ai-config}))
+                                       {:gen open-ai-config}))
 
 ;; Generation results in the same order as `tweets`
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:pre (-> sentiments second :llm-generate)])
+(clerk/html [:pre (-> sentiments second :gen)])

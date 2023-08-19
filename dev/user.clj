@@ -10,6 +10,6 @@
 (clerk/serve! {:watch-paths ["notebook"]})
 
 (comment
-  (clerk/show! "notebook/use_guide.clj")
+  (clerk/show! "notebook/user_guide.clj")
   (clerk/show! "notebook/text_analyzers.clj")
   (clerk/show! "notebook/wedding_guest_example.clj"))
