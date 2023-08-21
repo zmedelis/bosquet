@@ -17,10 +17,10 @@
   "Selmer custom tag to invoke AI generation"
   [args context]
   (complete/complete
-    (:selmer/preceding-text context)
-    (merge
-      (args->map args)
-      (get-in context [:opts (-> context :the-key) :llm-generate]))))
+   (:selmer/preceding-text context)
+   (merge
+    (args->map args)
+    (get-in context [:opts (-> context :the-key) :llm-generate]))))
 
 (defn add-tags []
   (parser/add-tag! :gen gen-tag)

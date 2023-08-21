@@ -27,17 +27,17 @@
 (defn- generation-resolver
   "Build dynamic resolvers figuring out what each prompt tempalte needs
   and set it as required inputs for the resolver.
+
   For the output check if themplate is producing generated content
   anf if so add a key for it into the output"
   [the-key template model-opts]
-  (let [str-k  (str (.-sym the-key))
-        input  (vec (template/slots-required template))
+  (let [input  (vec (template/slots-required template))
         output (into input (output-keys the-key template))]
     (timbre/info "Resolver: " the-key)
     (timbre/info "  Input: " input)
     (timbre/info "  Output: " output)
     (pco/resolver
-     {::pco/op-name (symbol (keyword (str str-k "-gen")))
+     {::pco/op-name (-> the-key .-sym (str "-gen") keyword symbol)
       ::pco/output  output
       ::pco/input   input
       ::pco/resolve
