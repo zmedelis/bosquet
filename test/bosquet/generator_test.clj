@@ -1,7 +1,7 @@
 (ns bosquet.generator-test
   (:require
    [bosquet.generator :refer [complete all-keys]]
-   [bosquet.openai :as openai]
+   [bosquet.llm.openai :as openai]
    [clojure.test :refer [deftest is]]
    [matcher-combinators.matchers :as m]
    [matcher-combinators.test :refer [match?]]))

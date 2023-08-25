@@ -1,4 +1,4 @@
-(ns bosquet.openai
+(ns bosquet.llm.openai
   (:require
    [clojure.string :as string]
    [jsonista.core :as j]

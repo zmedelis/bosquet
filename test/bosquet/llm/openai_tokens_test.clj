@@ -1,7 +1,7 @@
-(ns bosquet.openai.tokens-test
+(ns bosquet.llm.openai-tokens-test
   (:require
    [clojure.test :refer [deftest is]]
-   [bosquet.openai.tokens :refer [price-estimate encode decode fits-in-context-window?]]))
+   [bosquet.llm.openai-tokens :refer [price-estimate encode decode fits-in-context-window?]]))
 
 (deftest encoding-decoding
   (let [txt    "A screaming comes across the sky."

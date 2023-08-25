@@ -1,4 +1,4 @@
-(ns bosquet.openai.tokens
+(ns bosquet.llm.openai-tokens
   "JTokkit wrapper to get encode/decode and get token counts.
   Plus a price estimator for model produced tokens"
   (:import

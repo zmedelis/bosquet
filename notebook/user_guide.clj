@@ -4,7 +4,7 @@
    [bosquet.complete]
    [bosquet.generator :as bg]
    [nextjournal.clerk :as clerk]
-   [bosquet.openai :as openai]))
+   [bosquet.llm.openaienai :as openai]))
 
 ;; # Bosquet Tutorial
 ;;

@@ -1,5 +1,5 @@
 (ns bosquet.complete
-  (:require [bosquet.openai :as openai]
+  (:require [bosquet.llm.openai :as openai]
             [clojure.core.cache.wrapped :as cache]
             [clojure.core :as core]))
 
