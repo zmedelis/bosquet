@@ -32,3 +32,4 @@
 /target
 .idea/
 *.iml
+config.edn

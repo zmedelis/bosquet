@@ -1,7 +1,7 @@
 {:paths ["src" "test"]
  :tasks {:init      (do (def standalone-jar-file "target/antq-standalone.jar")
                       (def jar-file "target/antq.jar"))
-         repl       (clojure "-M:dev:rebel")
+         rebel      (clojure "-M:dev:rebel")
          outdated   (clojure "-M:outdated")
          test       (do
                     (clojure "-M:outdated")
