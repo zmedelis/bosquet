@@ -1,5 +1,6 @@
 (ns bosquet.llm.openai
   (:require
+   [bosquet.llm.llm :as llm]
    [clojure.string :as string]
    [jsonista.core :as j]
    [taoensso.timbre :as timbre]
@@ -84,6 +85,13 @@
 
 (defn complete-azure-openai [prompt params]
   (complete prompt (assoc params :impl :azure)))
+
+(deftype OpenAI
+         [opts]
+  llm/LLM
+  (generate [_this prompt]
+    (complete prompt opts))
+  (chat     [_this _system _conversation]))
 
 (comment
   (complete "What is your name?" {:max-tokens 10 :model "gpt-3.5-turbo"})

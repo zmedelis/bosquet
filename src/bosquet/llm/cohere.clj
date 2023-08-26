@@ -1,9 +1,7 @@
 (ns bosquet.llm.cohere
-  (:require [cohere.client :as client]))
-
-
-(System/setProperty "cohere.api.key" (System/getenv "COHERE_API_KEY"))
-
+  (:require
+   [bosquet.llm.llm :as llm]
+   [cohere.client :as client]))
 
 ;; TODO make sure that the params are in sync with OpenAI options, implement
 ;; protocol and param normalization
@@ -25,8 +23,15 @@
 (defn complete
   ([prompt opts]
    (-> (client/generate (assoc opts :prompt prompt))
-     :generations
-     first
-     :text))
+       :generations
+       first
+       :text))
   ([prompt]
    (complete prompt {})))
+
+(deftype Cohere
+         [opts]
+  llm/LLM
+  (generate [_this prompt]
+    (complete prompt opts))
+  (chat     [_this _system _conversation]))
