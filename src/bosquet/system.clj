@@ -1,31 +1,12 @@
 (ns bosquet.system
-  (:require [clojure.edn :as edn]
-            [clojure.java.io :as io]
+  (:require [bosquet.llm.cohere :as cohere]
+            [bosquet.llm.openai :as oai]
+            [aero.core :as aero]
             [integrant.core :as ig])
   (:import [bosquet.llm.cohere Cohere]
            [bosquet.llm.openai OpenAI]))
 
-(defn- load-opts [filename]
-  (with-open [r (io/reader filename)]
-    (edn/read (java.io.PushbackReader. r))))
-
-(def ^:private opts (load-opts "config.edn"))
-
-(defn- config-val
-  "Get configuration value from environment (priority) or config.edn"
-  [k]
-  (or (System/getenv k) (opts k)))
-
-(def config
-  {;; Config for OpenAI LLM provided by OpenAI
-   [:llm/openai :provider/openai] {:api-key (config-val "OPENAI_API_KEY")
-                                   :impl    :openai}
-   ;; Config for OpenAI LLM provided by MS Azure
-   [:llm/openai :provider/azure]  {:api-key      (config-val "AZURE_OPENAI_API_KEY")
-                                   :api-endpoint (config-val "AZURE_OPENAI_API_ENDPOINT")
-                                   :impl         :azure}
-   ;; Config for Cohere LLM
-   :llm/cohere                    {:api-key (config-val "COHERE_API_KEY")}})
+(def config (dissoc (aero/read-config "system.edn") :props))
 
 (defmethod ig/init-key :llm/openai [_ opts]
   (OpenAI. opts))

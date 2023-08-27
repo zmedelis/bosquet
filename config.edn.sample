@@ -1,4 +1,4 @@
-{"OPENAI_API_KEY"            ""
- "AZURE_OPENAI_API_KEY"      ""
- "COHERE_API_KEY"            ""
- "AZURE_OPENAI_API_ENDPOINT" ""}
+{:azure-openai-api-key      "<AZURE OPENAI API KEY>"
+ :azure-openai-api-endpoint "<URL TO AZURE ENDPOINT>"
+ :openai-api-key            "<OPENAI API KEY>"
+ :cohere-api-key            "<COHERE API KEY>"}

@@ -1,0 +1,23 @@
+{:props #include "./config.edn"
+
+ ;; config.edn is a file that contains settings for the LLM services,
+ ;; Tools, and other components. Those include config options as well as
+ ;; sensitive information like keys, passwords or other secrets. In case of
+ ;; *secrets* config bellow does not setup alternative - env var based -
+ ;; config values.
+
+ ;; Config for OpenAI LLM provided by OpenAI
+ [:llm/openai :provider/openai]
+ {:api-key #ref [:props :openai-api-key]
+  :impl         :openai}
+
+ ;; Config for OpenAI LLM provided by MS Azure
+ [:llm/openai :provider/azure]
+ {:api-key      #ref [:props :azure-openai-api-key]
+  :api-endpoint #or  [#env "AZURE_OPENAI_API_ENDPOINT"
+                      #ref [:props :azure-openai-api-endpoint]]
+  :impl              :azure}
+
+ ;; Config for Cohere LLM
+ :llm/cohere
+ {:api-key #ref [:props :cohere-api-key]}}
