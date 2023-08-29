@@ -8,8 +8,12 @@
 
 ;; Key to reference sytem in option maps
 (def system-key :bosquet/system)
+(def default-llm-key :llm/default)
 
-(def config (dissoc (aero/read-config "system.edn") :props))
+(def ^:private config (aero/read-config "system.edn"))
+
+(def ^:private sys-config
+  (dissoc config :config :llm/default))
 
 (defmethod ig/init-key :llm/openai [_ opts]
   (OpenAI. opts))
@@ -19,15 +23,26 @@
   (Cohere. opts))
 
 (def system
-  (ig/init config))
+  (ig/init sys-config))
 
-
-(defn resource [key] (get system key))
 
 ;;; Convenience functions to get LLM API instances
 
-(defn openai [] (get system [:llm/openai :provider/openai]))
+(defn default-llm []
+  (get system (config default-llm-key)))
 
-(defn azure [] (get system [:llm/openai :provider/azure]))
+(defn openai []
+  (get system [:llm/openai :provider/openai]))
 
-(defn cohere [] (get system :llm/cohere))
+(defn azure []
+  (get system [:llm/openai :provider/azure]))
+
+(defn cohere []
+  (get system :llm/cohere))
+
+(defn llm-service
+  "Get LLM service by Integrant confg key. If there is none
+  configured under that key - get the default one specified under
+  `:llm/default` key."
+  [key]
+  (or (get system key) (default-llm)))
