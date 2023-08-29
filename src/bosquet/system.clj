@@ -6,6 +6,9 @@
   (:import [bosquet.llm.cohere Cohere]
            [bosquet.llm.openai OpenAI]))
 
+;; Key to reference sytem in option maps
+(def system-key :bosquet/system)
+
 (def config (dissoc (aero/read-config "system.edn") :props))
 
 (defmethod ig/init-key :llm/openai [_ opts]
@@ -17,6 +20,9 @@
 
 (def system
   (ig/init config))
+
+
+(defn resource [key] (get system key))
 
 ;;; Convenience functions to get LLM API instances
 
