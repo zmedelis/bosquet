@@ -1,6 +1,6 @@
 (ns bosquet.generator-test
   (:require
-   [bosquet.generator :refer [complete all-keys]]
+   [bosquet.generator :refer [generate all-keys]]
    [bosquet.llm.openai :as openai]
    [clojure.test :refer [deftest is]]
    [matcher-combinators.matchers :as m]
@@ -10,12 +10,12 @@
   (condp = model
     "galileo" "0.0017 AU"
     "hubble"  "Yes"
-    (throw (ex-info "Unknown model" {}))))
+    (throw (ex-info (str "Unknown model: " model) {}))))
 
 (def astronomy-prompt
   {:role            "As a brilliant {{you-are}} answer the following question."
-   :question-answer "Question: {{question}} Answer: {% llm-generate var-name=answer model=galileo %}"
-   :self-eval       "{{answer}}. Is this a correct answer? {% llm-generate var-name=test model=hubble %}"})
+   :question-answer "Question: {{question}} Answer: {% gen var-name=answer model=galileo %}"
+   :self-eval       "{{answer}}. Is this a correct answer? {% gen var-name=test model=hubble %}"})
 
 (deftest keys-to-produce
   (is (match? (m/in-any-order [:role :question :question-answer :self-eval :you-are :answer :test])
@@ -31,7 +31,7 @@
      :test            "Yes"
      :you-are         "astronomer"}
     (with-redefs [openai/complete dummy-generator]
-      (complete astronomy-prompt
+      (generate astronomy-prompt
                 {:you-are  "astronomer"
                  :question "What is the distance from Moon to Io?"})))))
 
@@ -44,7 +44,7 @@
         :test            nil
         :you-are         "astronomer"}
        (with-redefs [openai/complete dummy-generator]
-         (complete
-          (assoc astronomy-prompt :self-eval "{% llm-generate var-name=test model=AGI %}")
+         (generate
+          (assoc astronomy-prompt :self-eval "{% gen var-name=test model=AGI %}")
           {:you-are  "astronomer"
            :question "What is the distance from Moon to Io?"})))))

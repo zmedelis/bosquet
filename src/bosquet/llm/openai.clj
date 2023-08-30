@@ -87,11 +87,11 @@
   (complete prompt (assoc params :impl :azure)))
 
 (deftype OpenAI
-         [opts]
+         [config]
   llm/LLM
-  (generate [_this prompt]
-    (complete prompt opts))
-  (chat     [_this _system _conversation]))
+  (generate [_this prompt props]
+    (complete prompt (merge config props)))
+  (chat     [_this _system _conversation props]))
 
 (comment
   (complete "What is your name?" {:max-tokens 10 :model "gpt-3.5-turbo"})

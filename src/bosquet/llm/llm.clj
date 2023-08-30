@@ -4,5 +4,5 @@
 ;; services that provide the LLM calls to OpenAI, or any other
 ;; supported LLM service.
 (defprotocol LLM
-  (generate [this prompt])
-  (chat     [this system conversation]))
+  (generate [this prompt props])
+  (chat     [this system conversation props]))

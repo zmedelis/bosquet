@@ -1,7 +1,7 @@
 (ns bosquet.complete
-  (:require [bosquet.llm.openai :as openai]
-            [clojure.core.cache.wrapped :as cache]
-            [clojure.core :as core]))
+  (:require [bosquet.system :as system]
+            [clojure.core :as core]
+            [clojure.core.cache.wrapped :as cache]))
 
 (defn complete-with-cache [prompt params cache complete-fn]
   (cache/lookup-or-miss
@@ -19,15 +19,17 @@
 (defn ensure-atom [x]
   (if (atom? x) x (atom x)))
 
-(defn complete [prompt {:keys [impl]
-                        :or   {impl :openai}
-                        :as   opts}]
-  (let [complete-fn
-        (cond
-          (= :azure impl)  openai/complete-azure-openai
-          (= :openai impl) openai/complete-openai
-          (fn? impl)       impl)]
+(defn complete [prompt {gen-key :the-key :as opts}]
+  (let [llm (system/llm-service (get-in opts [system/system-key gen-key]))]
+    (.generate llm prompt opts))
+  ;; TODO bring back the cache
+  ;; use Integrant system to setup the cache component
+  #_(let [complete-fn
+          (cond
+            (= :azure impl)  openai/complete-azure-openai
+            (= :openai impl) openai/complete-openai
+            (fn? impl)       impl)]
 
-    (if-let [cache (:cache opts)]
-      (complete-with-cache prompt opts (ensure-atom cache) complete-fn)
-      (complete-fn prompt opts))))
+      (if-let [cache (:cache opts)]
+        (complete-with-cache prompt opts (ensure-atom cache) complete-fn)
+        (complete-fn prompt opts))))

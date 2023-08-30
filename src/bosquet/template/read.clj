@@ -1,5 +1,6 @@
 (ns bosquet.template.read
   (:require
+   [bosquet.system :as system]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as string]
@@ -52,6 +53,7 @@
 
 (defn fill-slots
   "Use Selmer to fill in `text` template `slots`"
-  [text slots]
+  [text ctx system]
   (without-escaping
-   (selmer/render-with-values text slots)))
+   (selmer/render-with-values text
+                              (assoc ctx system/system-key system))))

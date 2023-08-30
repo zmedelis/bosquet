@@ -30,8 +30,8 @@
    (complete prompt {})))
 
 (deftype Cohere
-         [opts]
+         [config]
   llm/LLM
-  (generate [_this prompt]
-    (complete prompt opts))
-  (chat     [_this _system _conversation]))
+  (generate [_this prompt props]
+    (complete prompt (merge config props)))
+  (chat     [_this _system _conversation _props]))

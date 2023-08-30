@@ -6,7 +6,9 @@
   (:import [bosquet.llm.cohere Cohere]
            [bosquet.llm.openai OpenAI]))
 
-;; Key to reference sytem in option maps
+;;
+;; Keys to reference sytem components in option maps
+;;
 (def system-key :bosquet/system)
 (def default-llm-key :llm/default)
 
@@ -25,8 +27,9 @@
 (def system
   (ig/init sys-config))
 
-
-;;; Convenience functions to get LLM API instances
+;;
+;; Convenience functions to get LLM API instances
+;;
 
 (defn default-llm []
   (get system (config default-llm-key)))

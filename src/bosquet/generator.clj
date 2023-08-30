@@ -14,12 +14,8 @@
   "Fill in `template` `slots` with Selmer and call generation function
   (if present) to complete the text"
   ([template slots] (complete-template template slots {}))
-  ([template slots model-opts]
-   (template/fill-slots
-    template
-    (assoc slots
-           :opts {:complete-template-key model-opts}
-           :the-key :complete-template-key))))
+  ([template slots config]
+   (template/fill-slots template slots config)))
 
 (defn output-keys [k template]
   (vec (concat [k] (template/generation-vars template))))
@@ -30,7 +26,7 @@
 
   For the output check if themplate is producing generated content
   anf if so add a key for it into the output"
-  [the-key template model-opts]
+  [the-key template system-config]
   (let [input  (vec (template/slots-required template))
         output (into input (output-keys the-key template))]
     (timbre/info "Resolver: " the-key)
@@ -44,9 +40,9 @@
       (fn [_env input]
         (timbre/info "Resolving: " the-key)
         (let [[completed completion] (template/fill-slots template
-                                                          (assoc input
-                                                                 :opts model-opts
-                                                                 :the-key the-key))]
+                                       ;; TODO refactor out `the-key`
+                                       (assoc input :the-key the-key)
+                                       system-config)]
           (merge {the-key completed} completion input)))})))
 
 (defn- resolver-error-wrapper
@@ -66,17 +62,25 @@
     (fn [prompt-key] (generation-resolver prompt-key (prompt-key prompts) opts))
     (keys prompts))))
 
+(defn- prompt-indexes2 [prompts system]
+  (pci/register
+   (mapv
+    (fn [prompt-key] (generation-resolver prompt-key (prompt-key prompts) system))
+    (keys prompts))))
+
 (defn all-keys
   "Produce a list of all the data keys that will come out of the Pathom processing.
   Whatever is refered in `prompts` and comes in via input `data`"
   [prompts data]
-  (into (vec (keys data))
-        (mapcat
-         (fn [prompt-key]
-           (output-keys prompt-key (get prompts prompt-key)))
-         (keys prompts))))
+  (into
+   (vec (keys data))
+   (mapcat
+    (fn [prompt-key]
+      (output-keys prompt-key (get prompts prompt-key)))
+    (keys prompts))))
 
-(defn complete
+(defn ^{:deprecated "0.4" :superseded-by "generate"}
+  complete
   "Given a `prompt-palette` and a map of `data` to fill in template slots,
   generate text as a combination of template slot filling and AI generation.
 
@@ -99,7 +103,26 @@
          (psm/smart-map data)
          (select-keys extraction-keys)))))
 
+(defn generate
+  ([prompts inputs] (generate prompts inputs nil))
+  ([prompts inputs config]
+   (let [extraction-keys (all-keys prompts inputs)]
+     (timbre/info "Resolving for: " extraction-keys)
+     (-> (prompt-indexes2 prompts config)
+         (resolver-error-wrapper)
+         (psm/smart-map inputs)
+         (select-keys extraction-keys)))))
+
 (comment
+  (generate
+   {:role            "As a brilliant {{you-are}} answer the following question."
+    :question        "What is the distance between Io and Europa?"
+    :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
+   {:you-are  "astronomer"
+    :question "What is the distance from Moon to Io?"}
+   {:question-answer [:llm/openai :provider/openai]})
+
   (complete
    {:role            "As a brilliant {{you-are}} answer the following question."
     :question        "What is the distance between Io and Europa?"

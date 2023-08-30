@@ -1,10 +1,10 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (ns user-guide
-  (:require
-   [bosquet.complete]
-   [bosquet.generator :as bg]
-   [nextjournal.clerk :as clerk]
-   [bosquet.llm.openaienai :as openai]))
+  (:require [bosquet.complete]
+            [bosquet.generator :as bg]
+            [bosquet.llm.openai :as openai]
+            [bosquet.system :as system]
+            [nextjournal.clerk :as clerk]))
 
 ;; # Bosquet Tutorial
 ;;
@@ -154,12 +154,11 @@ Review from a New York Times play critic of the above play:
 ;; * `prompts` map defined above
 ;; * `data` to fill in fixed slots (Selmer templating)
 
-(def review (bg/complete play-review
-                          {:title "Mr. X" :genre "crime"}
-                          [:synopsis :evrything]
-                          
-                          {:synopsis  {:llm-generate open-ai-config}
-                           :evrything {:llm-generate open-ai-config}}))
+(def review (bg/generate
+              play-review
+              {:title "Mr. X" :genre "crime"}
+              {:synopsis  (system/openai)
+               :evrything (system/openai)}))
 
 ;; ### Fully generated review
 ^{::clerk/visibility {:code :hide}}
@@ -204,8 +203,8 @@ Sentiments:
     "The biggest disappointment of my life came a year ago."])
 
 (def sentiments (bg/complete-template sentimental
-                                       {:text-type "tweets" :tweets tweets}
-                                       {:llm-generate open-ai-config}))
+                  {:text-type "tweets" :tweets tweets}
+                  {:gen [:llm/openai :provider/openai]}))
 
 ;; Generation results in the same order as `tweets`
 ^{::clerk/visibility {:code :hide}}
