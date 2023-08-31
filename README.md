@@ -1,10 +1,11 @@
 [![Clojars Project](https://img.shields.io/clojars/v/io.github.zmedelis/bosquet.svg)](https://clojars.org/io.github.zmedelis/bosquet)
 
-# LLMOps for Large Language Model based applications 
+# LLMOps for Large Language Model-based applications 
 
 Bosquet is on a mission to make building AI applications simple. All nontrivial AI applications need to work with prompt templates that quickly grow in complexity, limited LLM context windows require memory management, and agents are needed for AI applications to interact with the outside world.
 
 Bosquet provides instruments to work with those AI application concepts:
+* LLM and Tool service management via [Integrant](https://github.com/weavejester/integrant)
 * Prompt templating via integration with the excellent [Selmer](https://github.com/yogthos/Selmer) templating library
 * Prompt chaining and composition via a powerful [Pathom](https://pathom3.wsscode.com/) graph processing machine
 * Agent and tools definition abstractions for the interactions with external APIs.
@@ -15,13 +16,13 @@ Bosquet provides instruments to work with those AI application concepts:
 
 ## Setup
 
-Bosquet allows to specify model parameters incl. access keys either in the prompt
+Bosquet allows to specify model parameters including access keys either in the prompt
 definition or when any of the generation functions is run. The second allows
 to keep secrets and model specific parameters out of the prompt definitions. See below for details.
 
 ## Quick example
 
-An example of a composable prompt definition to define a prompt answering a question with a 'role assumption' prompt pattern.
+An example of a composable prompt definition. It is a prompt to answer a question with a 'role assumption' pattern.
 
 ```bash
 export OPENAI_API_KEY=[YOUR OPEN AI API KEY]
@@ -30,14 +31,13 @@ export OPENAI_API_KEY=[YOUR OPEN AI API KEY]
 ```clojure
 (require '[bosquet.generator :as bg])
 
-(bg/complete
+(bg/generate
    {:role            "As a brilliant {{you-are}} answer the following question."
     :question        "What is the distance between Io and Europa?"
-    :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
+    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test model=text-curie-001 %}"}
    {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"}
-   [:question-answer :self-eval])
+    :question "What is the distance from Moon to Io?"})
 =>
 {:you-are "astronomer",
  :question "What is the distance from Moon to Io?",
