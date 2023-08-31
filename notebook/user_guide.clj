@@ -2,35 +2,50 @@
 (ns user-guide
   (:require [bosquet.complete]
             [bosquet.generator :as bg]
-            [bosquet.llm.openai :as openai]
             [bosquet.system :as system]
             [nextjournal.clerk :as clerk]))
 
 ;; # Bosquet Tutorial
 ;;
 ;; This notebook will demonstrate the following things:
+;; - system configuration
 ;; - define prompt *templates*
 ;; - resolve *dependencies* between prompts
 ;; - produce AI *completions*.
 ;;
-;; ## Setup models
-;; This notebook will showcase how to use 2 model configurations at the same time
-;; They could be both the same as well
-
-;; OpenAI model
-(def open-ai-config
-  {:impl :openai
-   :api-key (System/getenv "OPENAI_API_KEY")})
-
-
-;; Azure OpenAI model
-(def azure-open-ai-config
-  {:impl openai/complete-azure-openai
-   :model "yyyy"      ;; deployment name
-   :api-key "xxxx"
-   :api-endpoint "https://xxxxxxx.openai.azure.com/"})
-
-
+;; ## System Configuration
+;;
+;; *Bosquet* uses [Integrant](https://github.com/weavejester/integrant) to setup its
+;; components. With [Aero](https://github.com/juxt/aero) brining in some nice configuration
+;; setup features to make it easier to declare and use configuration.
+;;
+;; Prensently *Bosquet* defines two types of components:
+;; 1. LLM services
+;; 2. Tools for the Agnets to use
+;;
+;; ### LLM services
+;;
+;; LLM service componens wrap access to the APIs provided by the likes of *OpenAI*, *Cohere*,
+;; maybe localy deployed llamas.
+;;
+;; Let's take as an example OpenAI model access on MS Azure
+;;
+;;```edn
+;;[:llm/openai :provider/azure]
+;;{:api-key      #ref [:config :azure-openai-api-key]
+;; :api-endpoint #or [#env "AZURE_OPENAI_API_ENDPOINT"
+;;                    #ref [:config :azure-openai-api-endpoint]]
+;; :impl         :azure}
+;; ```
+;;
+;; As per *Integrant* setup `[:llm/openai :provider/azure]` is the key to the component, the
+;; value specifies all the properties needed to start it up. Note the `#or` construct coming
+;; from *Aero* which allows to take values either from environment variables or from the
+;; config file.
+;;
+;; See the text generation examples bellow on how to use LLM components to generate text.
+;; *Bosquet* allows you to change the LLM in use while processing the chained prompts.
+;;
 ;; ## A simple single template case
 ;;
 ;; Let's say we want to generate a synopsis of the play, based only on the `title` and `genre` we want this play to be in.
