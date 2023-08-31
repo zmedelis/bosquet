@@ -62,12 +62,6 @@
     (fn [prompt-key] (generation-resolver prompt-key (prompt-key prompts) opts))
     (keys prompts))))
 
-(defn- prompt-indexes2 [prompts system]
-  (pci/register
-   (mapv
-    (fn [prompt-key] (generation-resolver prompt-key (prompt-key prompts) system))
-    (keys prompts))))
-
 (defn all-keys
   "Produce a list of all the data keys that will come out of the Pathom processing.
   Whatever is refered in `prompts` and comes in via input `data`"
@@ -108,7 +102,7 @@
   ([prompts inputs config]
    (let [extraction-keys (all-keys prompts inputs)]
      (timbre/info "Resolving for: " extraction-keys)
-     (-> (prompt-indexes2 prompts config)
+     (-> (prompt-indexes prompts config)
          (resolver-error-wrapper)
          (psm/smart-map inputs)
          (select-keys extraction-keys)))))
@@ -120,15 +114,5 @@
     :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
     :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
    {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"}
-   {:question-answer [:llm/openai :provider/openai]})
-
-  (complete
-   {:role            "As a brilliant {{you-are}} answer the following question."
-    :question        "What is the distance between Io and Europa?"
-    :question-answer "Question: {{question}}  Answer: {% llm-generate var-name=answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% llm-generate var-name=test model=text-curie-001 %}"}
-   {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"}
-   [:question-answer :self-eval])
+    :question "What is the distance from Moon to Io?"})
   #__)
