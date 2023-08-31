@@ -14,19 +14,13 @@ Bosquet provides instruments to work with those AI application concepts:
 
 ![bosquet chain](/doc/img/generation-chain.png)
 
-## Setup
-
-Bosquet allows to specify model parameters including access keys either in the prompt
-definition or when any of the generation functions is run. The second allows
-to keep secrets and model specific parameters out of the prompt definitions. See below for details.
-
 ## Quick example
 
 An example of a composable prompt definition. It is a prompt to answer a question with a 'role assumption' pattern.
 
-```bash
-export OPENAI_API_KEY=[YOUR OPEN AI API KEY]
-```
+Secrets and other local parameters are kept in `config.edn`. Make a copy of `config.edn.sample` and enter your account API KEYS from OpenAI, Cohere,
+or other providers.
+
 
 ```clojure
 (require '[bosquet.generator :as bg])
@@ -49,16 +43,7 @@ export OPENAI_API_KEY=[YOUR OPEN AI API KEY]
  :test "The distance from Earth to Io is about 93,000 miles."}
 ```
 
-## Planned features
-
-* Support access to all main LLM **models**: [GPT](https://openai.com/api/), [Bloom](https://bigscience.huggingface.co/blog/bloom), and [Stable Diffusion](https://stability.ai/blog/stable-diffusion-v2-release) to start with.
-* Provide scaffolding for prompt building **methods**: Role Promoting, Chain of Thought, Zero-Shot CoT, Self Consistency, and more.
-* **Vulnerability** assessment and monitoring. How possible are prompt leak or injection attacks? Can prompt generate harmful content?
-* Prompt quality **evaluation**.
-* Developed and tested prompt **deployment** to [Cloudflare Workers](https://workers.cloudflare.com/), [AWS Lambda](https://aws.amazon.com/lambda/), or self-host via REST API.
-* Prompt service **reliability** guarantees.
-
-## Current Features
+## Features
 
 *Bosquet* relies on [Selmer](https://github.com/yogthos/Selmer) and [Pathom](https://pathom3.wsscode.com/) to implement composable prompts with 
 advanced template definition functionality.
