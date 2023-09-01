@@ -167,14 +167,14 @@ Note the optional `var-name` parameter. This is the name of the var to hold gene
 
 Bosquet will be invoking *OpenAI API* thus make sure to specify the correct model params including API keys.
 
-`llm-generate` call to the *OpenAI* will use configuration parameters specfied
+`llm-generate` call to the *OpenAI* will use configuration parameters specified
 in that tag and reflect parameters specified by [Open AI API](https://beta.openai.com/docs/api-reference/completions).
 The tag uses the same names. If config parameters are not used, then defaults
 are used. Note that the default model is *Ada*, in production *Davinci* would be a
 natural choice.
 
 The `impl` can be used to switch between the original openai API or thr Azure OpenAI API.
-They need different environemnt variables for authentication, see [here](https://github.com/wkok/openai-clojure)
+They need different environment variables for authentication, see [here](https://github.com/wkok/openai-clojure)
 
 
 ```clojure
