@@ -1,7 +1,5 @@
-^{:nextjournal.clerk/visibility {:code :hide}}
 (ns user-guide
-  (:require [bosquet.complete]
-            [bosquet.generator :as bg]
+  (:require [bosquet.generator :as bg]
             [bosquet.system :as system]
             [nextjournal.clerk :as clerk]))
 
@@ -75,7 +73,7 @@ The Fifth Man is a suspenseful crime drama set in a small town in the USA. Five 
 ;; Generation is done with the following *Bosquet* features:
 ;; - `gen` will recieve all the text preceeding it with already filled in template slots. This text
 ;; is used as the prompt to be sent to the competion API.
-;; - `bosquet.openai` namespace defines completion function, that calls *OpenAI API* to initiate the completion
+;; - `system` defines completion components implementing API call to LLM provider
 ;;
 ;; ### Synopsis template
 
@@ -87,7 +85,7 @@ Title: {{title}}
 Genre: {{genre}}
 
 Playwright: This is a synopsis for the above play:
-{% gen model=gpt-4 var-name=play %}")
+{% gen model=gpt-3.5 var-name=play %}")
 
 
 ;; Note the optional `var-name` parameter. This is the name of the var to hold
@@ -153,7 +151,7 @@ Play Synopsis:
 {{play}}
 
 Review from a New York Times play critic of the above play:
-{% gen model=text-davinci-003 var-name=review %}")
+{% gen model=gpt-3.5 var-name=review %}")
 
 ;; Both templates need to be added to a map to be jointly processed by *Bosquet*.
 
@@ -187,8 +185,8 @@ Review from a New York Times play critic of the above play:
 
 ;; ## Advanced templating with Selmer
 ;;
-;; *Selmer* provides lots of great templating functionality.
-;; An example of some of those features.
+;; [*Selmer*](https://github.com/yogthos/Selmer) provides lots of great templating
+;; functionality. An example of some of those features.
 ;;
 ;; ### Tweet sentiment batch processing
 ;;
@@ -203,7 +201,7 @@ Review from a New York Times play critic of the above play:
 {% endfor %}
 
 Sentiments:
-{% gen model=text-davinci-003 %}")
+{% gen model=gpt-3.5 %}")
 
 ;; First, *Selmer* provides [for tag](https://github.com/yogthos/Selmer#for)
 ;; to process collections of data.
@@ -219,6 +217,8 @@ Sentiments:
 
 (def sentiments (bg/complete-template sentimental
                   {:text-type "tweets" :tweets tweets}
+                  ;; It is the same as in `review` example, just not using
+                  ;; `system/openai` helper
                   {:gen [:llm/openai :provider/openai]}))
 
 ;; Generation results in the same order as `tweets`

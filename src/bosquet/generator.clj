@@ -41,8 +41,8 @@
         (timbre/info "Resolving: " the-key)
         (let [[completed completion] (template/fill-slots template
                                        ;; TODO refactor out `the-key`
-                                       (assoc input :the-key the-key)
-                                       system-config)]
+                                                          (assoc input :the-key the-key)
+                                                          system-config)]
           (merge {the-key completed} completion input)))})))
 
 (defn- resolver-error-wrapper

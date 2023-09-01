@@ -32,7 +32,7 @@
 
 ;; ## The Instructions
 ;;
-;; Large Language Model needs to learn how to write thank you letters. LLMs need only a few examples
+;; Large Language Model needs to learn how to write thank you letters. LLMs need only [a few examples](https://www.promptingguide.ai/techniques/fewshot)
 ;; and instructions on how to write a letter. The examples need to illustrate how different
 ;; relationship types, gifts, and distances traveled impact the tone and content of the letter.
 ;;
@@ -141,8 +141,9 @@ Best, Jack and Diane"}]})
 ;; * `letter-generation` - this one is different, it is defined in `llm-generate` and specfies which key will hold only the generated text
 (def letter-writter
   {:context
-   "Jack and Diane just had their wedding in Puerto Rico and it is time to write thank you cards.
-For each guest, write a thoughtful, sincere, and personalized thank you note using the information provided below."
+   "Jack and Diane just had their wedding in Puerto Rico and it is time to write thank
+you cards. For each guest, write a thoughtful, sincere, and personalized thank you note
+using the information provided below."
 
    :few-shot-examples
    "{% for example in examples %}
@@ -166,16 +167,18 @@ Gift: {{gift}}
 Hometown: {{hometown}}
 
 First, let's think step by step:
-{% llm-generate model=text-davinci-003 var-name=letter-generation %}"})
+{% gen model=gpt-3.5 var-name=letter-generation %}"})
 
 ;; ## Generate letters
 ;;
 ;; With the promts defined we can now generate the letters.
 
+
+^{::clerk/visibility {:result :hide}}
 (def letters
   (pmap
     (fn [guest]
-      (gen/complete letter-writter
+      (gen/generate letter-writter
         (merge guest thank-you-letters-few-shot-exmples)))
     guests))
 
