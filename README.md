@@ -74,6 +74,14 @@ A template example using for loop to fill in the data passed in as a collection
 
 ![selmer template](/doc/img/selmer-template.png)
 
+### LLM Services
+
+Currently, the following LLM APIs are supported
+* OpenAI
+* Cohere
+
+See [Generation](#generation) section for service configuration.
+
 ### Agents
 
 Initial support for working with Agents implements ReAct pattern and adds a Wikipedia tool to fulfill tasks.
@@ -89,8 +97,8 @@ Initial support for working with Agents implements ReAct pattern and adds a Wiki
 ```
 
 `solve-task` call accepts:
-- tool parameter (obvious next step is to provide a tool DB and agent will pick the tool for work)
-- `prompt-palette` defining prompt templates for the agent (see section bellow)
+- tool parameter (obvious next step is to provide a tool DB and the agent will pick the tool for work)
+- `prompt-palette` defining prompt templates for the agent (see the section below)
 - `parameters` defining the task, agent prompt template will define what parameters are needed
 
 #### Prompt Template
@@ -98,14 +106,14 @@ Initial support for working with Agents implements ReAct pattern and adds a Wiki
 ReAct oriented prompt template structure
 
 * `prompt-palette` is where the ReAct flow is defined and where customizations can be made to fine-tune this to solve different tasks.
-* `:react/examples` this section provides examples of how to solve tasks
+* `:react/examples` provides examples of how to solve tasks
 * `:react/step-0` prompt template for the initialization of the task
 * `:react/step-n` prompt template for subsequent thinking steps
 
 
 ## Instalation
 
-One time action need to prep the libs
+One-time action to prep the libs
 
 ```bash
 clj -X:deps prep
@@ -167,34 +175,22 @@ Note the optional `var-name` parameter. This is the name of the var to hold gene
 
 Bosquet will be invoking *OpenAI API* thus make sure to specify the correct model params including API keys.
 
-`llm-generate` call to the *OpenAI* will use configuration parameters specified
+`gen` call to the *OpenAI* will use configuration parameters specified
 in that tag and reflect parameters specified by [Open AI API](https://beta.openai.com/docs/api-reference/completions).
 The tag uses the same names. If config parameters are not used, then defaults
-are used. Note that the default model is *Ada*, in production *Davinci* would be a
-natural choice.
-
-The `impl` can be used to switch between the original openai API or thr Azure OpenAI API.
-They need different environment variables for authentication, see [here](https://github.com/wkok/openai-clojure)
+are used. Note that the default model is *Ada*, in production *GPT-3.5* would be a
+better choice.
 
 
-```clojure
-{impl              openai or azure  , openai default 
- model             ada
- temperature       0.6
- max-tokens        80
- presence-penalty  0.4
- frequence-penalty 0.2
- top-p             1
- n                 1}
 ```
 
 The call to generation function takes in:
 - `template` defined above
 - `data` is the data to fill in the template slots (`title` and `genre`)
-- `model-opts` optional options for the model, merge with config from the tag
+- `params` optional parameters specifying which service to use, merge with config from the tag
 
 The generation comes back with a tuple where the *first* member will contain all
-the text which got its slots filled in and generated completion.
+the text that got its slots filled in and generated completion.
 The *second* member of the tuple will contain only the AI-completed part.
 
 ``` clojure
@@ -202,29 +198,15 @@ The *second* member of the tuple will contain only the AI-completed part.
   (gen/complete-template
     synopsis-template
     {:title "Mr. X" :genre "crime"}
-    {:impl :openai
-     :api-key "<my-key>"}))
+    {:play   :llm/openai
+     :review :llm/cohere}))
 
 ```
 
-#### Specify model parameter
-The `gen/complete-template` function takes an optional `model-opts`
-map which gets merged with the model parametes from inside teh template and overides them, if present.
-So we cat pass params to the "llm-generate" tag in a template like this:
+Note that in the above example different LLMs are used to generate different parts of the prompt.
 
-
-``` clojure
-(def synopsis
-  (gen/complete-template
-    synopsis-template
-    {:title "Mr. X" :genre "crime"}
-    {:llm-generate {:model "text-davinci-003"
-                    :impl :azure
-                    :api-key "xxxx"
-                    :api-endpoint "https://xxxxxx.openai.azure.com/"}))
-
-```
-
+For more details on how system configuration is done refer to [User Guide notebook](https://github.com/zmedelis/bosquet/blob/main/notebook/user_guide.clj) 
+section - *System Configuration*
 
 ## Generating from templates with dependencies
 
@@ -277,16 +259,14 @@ To process this more advanced case of templates in the dependency graph,
 (def review (gen/complete play 
     {:title "Mr. X" :genre "crime"}
     {:synopsis {:llm-generate {:impl :openai :api-key "<my-key>"}}
-     :review   {:llm-generate {:impl :openai :api-key "<my-key>"}}}
-))
+     :review   {:llm-generate {:impl :openai :api-key "<my-key>"}}}))
 ```
-In this case the model parameter can be specified as seen in a nested map using additionally the template key, ex.:
+In this case the model parameter can be specified as seen in a nested map using the template key, e.g.:
 
 ```clojure
 (gen/complete play 
   {:title "Mr. X" :genre "crime"}
-  {:synopsis { :llm-generate my-model-params}}
-)
+  {:synopsis { :llm-generate my-model-params}})
 ```
 
 
