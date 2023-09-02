@@ -26,7 +26,7 @@
            :test     {:main-opts   ["-m" "kaocha.runner"]
                       :extra-paths ["test"]
                       :extra-deps  {lambdaisland/kaocha        {:mvn/version "1.86.1355"}
-                                    nubank/matcher-combinators {:mvn/version "3.8.6"}}}
+                                    nubank/matcher-combinators {:mvn/version "3.8.7"}}}
 
            :build ;; added by neil
            {:deps       {io.github.clojure/tools.build {:git/tag "v0.9.5" :git/sha "24f2894"}
