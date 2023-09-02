@@ -24,4 +24,9 @@
 
  ;; Config for Cohere LLM
  :llm/cohere
- {:api-key #ref [:config :cohere-api-key]}}
+ {:api-key #ref [:config :cohere-api-key]
+  :model-name-mapping
+  {:gpt-3.5        :command
+   :gpt-4          :command
+   :text-ada-001   :command-light
+   :text-curie-001 :command-light}}}

@@ -22,6 +22,10 @@
 (def ^:private sys-config
   (dissoc config :config default-llm-key))
 
+;;
+;; LLM Services
+;;
+
 (defmethod ig/init-key :llm/openai [_ opts]
   (OpenAI. opts))
 

@@ -33,5 +33,8 @@
          [config]
   llm/LLM
   (generate [_this prompt props]
-    (complete prompt (merge config props)))
+    (complete prompt (merge config
+                            (assoc
+                             props
+                             :model (llm/model-mapping config (keyword (:model props)))))))
   (chat     [_this _system _conversation _props]))
