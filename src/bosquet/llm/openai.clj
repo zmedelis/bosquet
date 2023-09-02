@@ -66,8 +66,9 @@
          opts   {:api-key api-key
                  :impl impl
                  :api-endpoint api-endpoint}]
-     (timbre/infof "Calling OAI with params: '%s'" (dissoc params :prompt))
-     (timbre/infof "Calling OAI with opts: '%s'" (dissoc opts :api-key))
+     (timbre/infof "Calling OAI with:")
+     (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
+     (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
 
      (try
        (if (chat-model? model)
