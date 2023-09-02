@@ -18,7 +18,9 @@
                      #ref [:config :azure-openai-api-endpoint]]
   :impl         :azure}
 
- :llm/default [:llm/openai :provider/openai]
+ ;; Default LLM service to use if this is not specified in the
+ ;; `generate` call options
+ :llm/default-llm [:llm/openai :provider/openai]
 
  ;; Config for Cohere LLM
  :llm/cohere

@@ -9,13 +9,18 @@
 ;;
 ;; Keys to reference sytem components in option maps
 ;;
-(def system-key :bosquet/system)
-(def default-llm-key :llm/default)
+(def llm-service-key
+  "Key to reference LLM service components in props when making `generate` calls."
+  :bosquet/llm-services)
+
+(def default-llm-key
+  "Key referencing default LLM service in a `system.edn` system config."
+  :llm/default-llm)
 
 (def ^:private config (aero/read-config "system.edn"))
 
 (def ^:private sys-config
-  (dissoc config :config :llm/default))
+  (dissoc config :config default-llm-key))
 
 (defmethod ig/init-key :llm/openai [_ opts]
   (OpenAI. opts))

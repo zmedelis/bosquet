@@ -20,9 +20,9 @@
   (if (atom? x) x (atom x)))
 
 (defn complete [prompt {gen-key :the-key :as opts}]
-  (let [llm (system/llm-service (get-in opts [system/system-key gen-key]))]
+  (let [llm (system/llm-service (get-in opts [system/llm-service-key gen-key]))]
     (.generate llm prompt opts))
-  ;; TODO bring back the cache
+  ;; TODO bring back the cache immediately
   ;; use Integrant system to setup the cache component
   #_(let [complete-fn
           (cond

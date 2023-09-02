@@ -56,4 +56,4 @@
   [text ctx system]
   (without-escaping
    (selmer/render-with-values text
-                              (assoc ctx system/system-key system))))
+                              (assoc ctx system/llm-service-key system))))
