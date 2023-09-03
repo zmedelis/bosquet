@@ -20,7 +20,7 @@
   [ctx prompt-palette prompt-key]
   (let [{gen-output  :thoughts
          full-output prompt-key}
-        (generator/complete prompt-palette ctx [prompt-key :thoughts])
+        (generator/generate prompt-palette ctx)
         prompt                   (string/replace full-output gen-output "")]
     ;; :resoning-trace will contain only the thoughts from before,
     ;; most recent observation goes into :thoughts
@@ -89,9 +89,8 @@
   (import '[bosquet.agent.wikipedia Wikipedia])
   (def prompt-palette (template/load-palettes "resources/prompt-palette/agent"))
   (def question
-    "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
+    "What does Lithuania share borders with?"
+    #_"Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
 
-  (solve-task
-   (Wikipedia.)
-   prompt-palette
-   {:task question}))
+  (solve-task (Wikipedia.) prompt-palette {:task question})
+  #__)

@@ -70,5 +70,5 @@
 (comment
   (def w (Wikipedia.))
   (t/my-name w)
-  (t/search w {:parameters "Fox"})
+  (t/search w {:parameters "David Chanoff"})
   #__)

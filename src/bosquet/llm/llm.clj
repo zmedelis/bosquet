@@ -3,19 +3,19 @@
             [malli.core :as m]))
 
 #_(def llm-model-parameters
-  (m/schema
-    [:map
-     [:model string?]
-     [:max-tokens {:optional true} int?]
-     [:temperature {:optional true} float?]
-     [:n {:optional true} int?]         ; num_generations (max 5 on cohere)
-     [:stream {:optional true} boolean?]
-     [:logprobs {:optional true} int?]
-     [:echo {:optional true} :boolean]                       ;not in Cohere
-     [:stop {:optional true} (or nil string? [:list string?])] ; stop-sequences always array in Cohere
-     [:presence-penalty {:optional true} float?]
-     [:frequence-penalty {:optional true} float?]
-     [:logit-bias {:optional true} float?]]))
+    (m/schema
+     [:map
+      [:model string?]
+      [:max-tokens {:optional true} int?]
+      [:temperature {:optional true} float?]
+      [:n {:optional true} int?]         ; num_generations (max 5 on cohere)
+      [:stream {:optional true} boolean?]
+      [:logprobs {:optional true} int?]
+      [:echo {:optional true} :boolean]                       ;not in Cohere
+      [:stop {:optional true} (or nil string? [:list string?])] ; stop-sequences always array in Cohere
+      [:presence-penalty {:optional true} float?]
+      [:frequence-penalty {:optional true} float?]
+      [:logit-bias {:optional true} float?]]))
 
 (defn model-mapping
   "Check LLM service config if there are any aliases defined.

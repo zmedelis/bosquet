@@ -7,15 +7,15 @@
   "Convert general LLM model properties to Cohere specific ones."
   [{:keys [n stop] :as props}]
   (-> props
-    (assoc :num-generations n) (dissoc :n)
-    (assoc :stop-sequences stop) (dissoc :stop)))
+      (assoc :num-generations n) (dissoc :n)
+      (assoc :stop-sequences stop) (dissoc :stop)))
 
 (defn complete
   ([prompt opts]
    (-> (client/generate (assoc opts :prompt prompt))
-     :generations
-     first
-     :text))
+       :generations
+       first
+       :text))
   ([prompt]
    (complete prompt {})))
 
@@ -28,16 +28,16 @@
       (timbre/infof "\tParms: '%s'" (dissoc props :prompt))
       (timbre/infof "\tConfig: '%s'" (dissoc config :api-key))
       (complete prompt (merge config
-                         (assoc
-                           props
-                           :model (llm/model-mapping config (keyword (:model props))))))))
+                              (assoc
+                               props
+                               :model (llm/model-mapping config (keyword (:model props))))))))
   (chat     [_this _system _conversation _props]))
 
 (comment
   (.generate
-    (bosquet.system/cohere)
-    "A party is about to begin."
-    {:model "command"
-     :n 2
-     :stop-sequences ["\n"]
-     :temperature 0.2}))
+   (bosquet.system/cohere)
+   "A party is about to begin."
+   {:model "command"
+    :n 2
+    :stop-sequences ["\n"]
+    :temperature 0.2}))

@@ -1,12 +1,12 @@
 {:react/step-0
  "{{react/examples}}
 Question: {{task}}
-{% llm-generate temperature=0 var-name=thoughts %}"
+{% gen temperature=0 var-name=thoughts model=gpt-4%}"
 
  :react/step-n
  "{{reasoning-trace}}
 Observation {{step}}: {{observation}}
-{% llm-generate temperature=0 var-name=thoughts %}"
+{% gen temperature=0 var-name=thoughts model=gpt-4%}"
 
  :react/examples
  "Question: What is the elevation range for the area that the eastern sector of the
