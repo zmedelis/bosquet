@@ -19,7 +19,7 @@
            metosin/malli                   {:mvn/version "0.12.0"}}
  :aliases {:dev      {:extra-paths ["dev" "notebook"]}
            :neil     {:project {:name    io.github.zmedelis/bosquet
-                                :version "0.3.0"}}
+                                :version "0.3.5"}}
            :rebel    {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
                       :main-opts  ["-m" "rebel-readline.main"]}
            :outdated {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
