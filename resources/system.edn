@@ -1,4 +1,4 @@
-{:config #include "./config.edn"
+{:config #include "config.edn"
 
  ;; config.edn is a file that contains settings for the LLM services,
  ;; Tools, and other components. Those include config options as well as
@@ -11,7 +11,7 @@
  {:api-key      #ref [:config :openai-api-key]
   :api-endpoint #or [#env "OPENAI_API_ENDPOINT"
                      #ref [:config :openai-api-endpoint]
-                     "----"]
+                     "https://api.openai.com/v1"]
   :impl         :openai}
 
  ;; Config for OpenAI LLM provided by MS Azure

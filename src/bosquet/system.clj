@@ -21,8 +21,7 @@
 (def ^:private config
   (aero/read-config
    (io/resource "system.edn")
-   {:resolver
-    root-resolver}))
+   {:resolver root-resolver}))
 
 (def ^:private sys-config
   (dissoc config :config default-llm-key))
