@@ -1,4 +1,5 @@
 {:azure-openai-api-key      "<AZURE OPENAI API KEY>"
- :azure-openai-api-endpoint "<URL TO AZURE ENDPOINT>"
+ :azure-openai-api-endpoint nil
  :openai-api-key            "<OPENAI API KEY>"
+ :openai-api-endpoint       nil
  :cohere-api-key            "<COHERE API KEY>"}
