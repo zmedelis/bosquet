@@ -115,6 +115,6 @@
     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test model=text-curie-001 %}"}
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
-   {:question-answer :llm/cohere
-    :self-eval       :llm/cohere})
+   {:question-answer [:llm/openai :provider/openai]
+    :self-eval       [:llm/openai :provider/openai]})
   #__)

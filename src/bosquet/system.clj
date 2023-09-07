@@ -1,7 +1,8 @@
 (ns bosquet.system
-  (:require [bosquet.llm.cohere :as cohere]
+  (:require [aero.core :as aero :refer [root-resolver]]
+            [bosquet.llm.cohere :as cohere]
             [bosquet.llm.openai :as oai]
-            [aero.core :as aero]
+            [clojure.java.io :as io]
             [integrant.core :as ig])
   (:import [bosquet.llm.cohere Cohere]
            [bosquet.llm.openai OpenAI]))
@@ -17,7 +18,11 @@
   "Key referencing default LLM service in a `system.edn` system config."
   :llm/default-llm)
 
-(def ^:private config (aero/read-config "system.edn"))
+(def ^:private config
+  (aero/read-config
+   (io/resource "system.edn")
+   {:resolver
+    root-resolver}))
 
 (def ^:private sys-config
   (dissoc config :config default-llm-key))
