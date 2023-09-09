@@ -2,6 +2,8 @@
   (:require
    [clojure.string :as s]))
 
+;; WIP - a place to start building output conversion functions
+
 (defn- drop-digit [item]
   (s/trim (s/replace-first item #"\d+\." "")))
 

@@ -1,4 +1,4 @@
-(ns bosquet.chat)
+(ns bosquet.llm.chat)
 
 ;;
 ;; Keys to reference sytem components in option maps

@@ -1,7 +1,7 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (ns wedding-guest-example
   (:require
-   [bosquet.generator :as gen]
+   [bosquet.llm.generator :as gen]
    [nextjournal.clerk :as clerk]))
 
 ;; # Generating thank you letters

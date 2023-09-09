@@ -2,7 +2,7 @@
   (:require
    [bosquet.agent.tool :as t]
    [bosquet.agent.agent-mind-reader :as mind-reader]
-   [bosquet.generator :as generator]
+   [bosquet.llm.generator :as generator]
    [bosquet.template.read :as template]
    [clojure.string :as string]
    [taoensso.timbre :as timbre]

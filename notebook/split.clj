@@ -1,7 +1,7 @@
 (ns split
   (:require
     [bosquet.splitter :as splitter]
-    [bosquet.generator :as gen]
+    [bosquet.llm.generatorator :as gen]
     [nextjournal.clerk :as clerk]))
 (comment
   (clerk/serve! {:browse? true}))

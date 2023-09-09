@@ -1,4 +1,4 @@
-(ns bosquet.generator
+(ns bosquet.llm.generator
   (:require
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]

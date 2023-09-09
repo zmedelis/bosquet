@@ -1,7 +1,7 @@
 (ns bosquet.prompt-palette
   (:require
    [bosquet.template.read :as template]
-   [bosquet.generator :as generator]))
+   [bosquet.llm.generatorator :as generator]))
 
 (def palettes (template/load-palettes "resources/prompt-palette"))
 
