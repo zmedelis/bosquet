@@ -1,5 +1,6 @@
 (ns bosquet.llm.generator
   (:require
+   [bosquet.llm.chat :as llm.chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
    [com.wsscode.pathom3.connect.indexes :as pci]
@@ -107,7 +108,25 @@
          (psm/smart-map inputs)
          (select-keys extraction-keys)))))
 
+;; WIP
+(defn chat
+  ([prompts inputs role message] (chat prompts inputs role message nil))
+  ([prompts inputs role message config]
+   (let [context (generate prompts inputs config)]
+     (bosquet.llm.openai/chat-completion
+      [{:role    :system
+        :content (llm.chat/system context)}
+       {:role    role
+        :content message}]
+      config))))
+
 (comment
+  (chat
+   {llm.chat/system "You are a helpful assistant."}
+   {}
+   :user "Why the sky is blue?"
+   {:model "gpt-3.5-turbo"})
+
   (generate
    {:role            "As a brilliant {{you-are}} answer the following question."
     :question        "What is the distance between Io and Europa?"

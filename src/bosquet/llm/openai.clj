@@ -81,24 +81,28 @@
                        (j/read-value j/keyword-keys-object-mapper)
                        :error))))))))
 
-(defn complete-openai [prompt params]
-  (complete prompt (assoc params :impl :openai)))
-
-(defn complete-azure-openai [prompt params]
-  (complete prompt (assoc params :impl :azure)))
+(defn chat-completion
+  [messages opts]
+  (-> (assoc opts :messages messages)
+      api/create-chat-completion
+      :choices first :message))
 
 (deftype OpenAI
          [config]
   llm/LLM
   (generate [_this prompt props]
     (complete prompt (merge config props)))
-  (chat     [_this _system _conversation props]))
+  (chat     [_this conversation props]
+    (chat-completion conversation (merge config props))))
 
 (comment
+  (chat-completion
+   [{:role :system :content "You are a helpful assistant."}
+    {:role :user :content "Who won the world series in 2020?"}
+    {:role :assistant :content "The Los Angeles Dodgers won the World Series in 2020."}
+    {:role :user :content "Where was it played?"}]
+   {:model "gpt-3.5-turbo"})
+
   (complete "What is your name?" {:max-tokens 10 :model "gpt-3.5-turbo"})
   (complete "What is your name?" {:max-tokens 10 :model :ccgpt})
-  (complete "What is your name?" {:max-tokens 10})
-  (complete "1 + 10 =" {:model "text-davinci-003"
-                        :impl :azure
-                        :api-key "xxxx"
-                        :api-endpoint "https://xxxxxx.openai.azure.com/"}))
+  (complete "What is your name?" {:max-tokens 10}))

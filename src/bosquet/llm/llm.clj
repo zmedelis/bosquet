@@ -32,4 +32,4 @@
 ;; supported LLM service.
 (defprotocol LLM
   (generate [this prompt props])
-  (chat     [this system conversation props]))
+  (chat     [this conversation props]))

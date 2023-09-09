@@ -31,7 +31,7 @@
                               (assoc
                                props
                                :model (llm/model-mapping config (keyword (:model props))))))))
-  (chat     [_this _system _conversation _props]))
+  (chat     [_this _conversation _props]))
 
 (comment
   (.generate
