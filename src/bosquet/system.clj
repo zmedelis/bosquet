@@ -1,11 +1,14 @@
 (ns bosquet.system
-  (:require [aero.core :as aero :refer [root-resolver]]
-            [bosquet.llm.cohere :as cohere]
-            [bosquet.llm.openai :as oai]
-            [clojure.java.io :as io]
-            [integrant.core :as ig])
-  (:import [bosquet.llm.cohere Cohere]
-           [bosquet.llm.openai OpenAI]))
+  (:require
+   [aero.core :as aero :refer [root-resolver]]
+   [bosquet.llm.cohere :as cohere]
+   [bosquet.llm.openai :as oai]
+   [clojure.java.io :as io]
+   [integrant.core :as ig]
+   [taoensso.timbre :as timbre])
+  (:import
+   [bosquet.llm.cohere Cohere]
+   [bosquet.llm.openai OpenAI]))
 
 ;;
 ;; Keys to reference sytem components in option maps
@@ -30,15 +33,21 @@
 ;; LLM Services
 ;;
 
-(defmethod ig/init-key :llm/openai [_ opts]
-  (OpenAI. opts))
+(defmethod ig/init-key :llm/openai [_ {:keys [api-key impl] :as opts}]
+  (when api-key
+    (timbre/infof " * OpenAI API service (%s)" (name impl))
+    (OpenAI. opts)))
 
 (defmethod ig/init-key :llm/cohere [_ {:keys [api-key] :as opts}]
-  (System/setProperty "cohere.api.key" api-key)
-  (Cohere. opts))
+  (when api-key
+    (timbre/info " * Cohere API service")
+    (System/setProperty "cohere.api.key" api-key)
+    (Cohere. opts)))
 
 (def system
-  (ig/init sys-config))
+  (do
+    (timbre/info "Initializing Bosquet resources:")
+    (ig/init sys-config)))
 
 ;;
 ;; Convenience functions to get LLM API instances
