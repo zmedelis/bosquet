@@ -1,6 +1,7 @@
 (ns bosquet.generator-test
   (:require
-   [bosquet.llm.generator :refer [generate all-keys]]
+   [bosquet.llm.chat :as llm.chat]
+   [bosquet.llm.generator :refer [all-keys chat generate]]
    [bosquet.llm.openai :as openai]
    [clojure.test :refer [deftest is]]
    [matcher-combinators.matchers :as m]
@@ -11,6 +12,10 @@
     "galileo" "0.0017 AU"
     "hubble"  "Yes"
     (throw (ex-info (str "Unknown model: " model) {}))))
+
+(defn dummy-chat [messages _opts]
+  {:role :dummy-assistant
+   :content (str "I have " (count messages))})
 
 (def astronomy-prompt
   {:role            "As a brilliant {{you-are}} answer the following question."
@@ -33,7 +38,11 @@
     (with-redefs [openai/complete dummy-generator]
       (generate astronomy-prompt
                 {:you-are  "astronomer"
-                 :question "What is the distance from Moon to Io?"})))))
+                 :question "What is the distance from Moon to Io?"}
+                {:self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
+                                   :bosquet.llm/model-parameters {:model "hubble"}}
+                 :question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
+                                   :bosquet.llm/model-parameters {:model "galileo"}}})))))
 
 (deftest fail-generation
   (is (match?
@@ -45,6 +54,23 @@
         :you-are         "astronomer"}
        (with-redefs [openai/complete dummy-generator]
          (generate
-          (assoc astronomy-prompt :self-eval "{% gen var-name=test model=AGI %}")
+          astronomy-prompt
           {:you-are  "astronomer"
-           :question "What is the distance from Moon to Io?"})))))
+           :question "What is the distance from Moon to Io?"}
+          {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
+                             :bosquet.llm/model-parameters {:model "galileo"}}
+           :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
+                             :bosquet.llm/model-parameters {:model "AGI"}}})))))
+
+(deftest chat-message-construction
+  (is (= {llm.chat/conversation [{:content "I have 2" :role :dummy-assistant}]
+          llm.chat/last-message {:content "I have 2" :role :dummy-assistant}
+          llm.chat/system "You are a helpful assistant."}
+         (with-redefs [openai/chat-completion dummy-chat]
+           (chat
+            {llm.chat/system "You are a helpful assistant."}
+            {}
+            :user "Why the sky is blue?"
+            {llm.chat/conversation {:bosquet.llm/service [:llm/openai :provider/openai]
+                                    :bosquet.llm/model-parameters {:temperature 0
+                                                                   :model "hubble"}}})))))

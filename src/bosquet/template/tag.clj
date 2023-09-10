@@ -4,7 +4,8 @@
    [clojure.string :as string]
    [selmer.parser :as parser]))
 
-(defn args->map
+(defn ^{:deprecated "0.4"}
+  args->map
   "Convert tag arguments to a clojure map. Tag arguments are passed in
   as a vector of 'key=value' strings."
   [args]

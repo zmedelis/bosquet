@@ -1,5 +1,6 @@
 (ns bosquet.llm.generator
   (:require
+   [bosquet.complete :as complete]
    [bosquet.llm.chat :as llm.chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
@@ -111,21 +112,19 @@
 ;; WIP
 (defn chat
   ([prompts inputs role message] (chat prompts inputs role message nil))
-  ([prompts inputs role message config]
-   (let [context (generate prompts inputs config)]
-     (bosquet.llm.openai/chat-completion
-      [{:role    :system
-        :content (llm.chat/system context)}
-       {:role    role
-        :content message}]
-      config))))
+  ([prompts inputs role message opts]
+   (let [context (generate prompts inputs opts)]
+     (complete/chat-completion
+      context role message opts))))
 
 (comment
   (chat
    {llm.chat/system "You are a helpful assistant."}
    {}
    :user "Why the sky is blue?"
-   {:model "gpt-3.5-turbo"})
+   {llm.chat/conversation {:bosquet.llm/service [:llm/openai :provider/openai]
+                           :bosquet.llm/model-parameters {:temperature 0
+                                                          :model "gpt-3.5-turbo"}}})
 
   (generate
    {:role            "As a brilliant {{you-are}} answer the following question."
@@ -133,7 +132,20 @@
     :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test model=text-curie-001 %}"}
    {:you-are  "astronomer"
+    :question "What is the distance from Moon to Io?"})
+
+  (generate
+   {:role            "As a brilliant {{you-are}} answer the following question."
+    :question        "What is the distance between Io and Europa?"
+    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
+   {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
-   {:question-answer [:llm/openai :provider/openai]
-    :self-eval       [:llm/openai :provider/openai]})
+
+   {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
+                      :bosquet.llm/model-parameters {:temperature 0}}
+    :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
+                      :bosquet.llm/model-parameters {:temperature 0
+                                                     :model "gpt-3.5-turbo"}}})
+
   #__)

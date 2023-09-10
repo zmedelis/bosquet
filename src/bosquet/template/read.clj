@@ -55,5 +55,6 @@
   "Use Selmer to fill in `text` template `slots`"
   [text ctx system]
   (without-escaping
-   (selmer/render-with-values text
-                              (assoc ctx system/llm-service-key system))))
+   (selmer/render-with-values
+    text
+    (assoc ctx system/llm-service-key system))))

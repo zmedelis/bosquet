@@ -6,12 +6,16 @@
 
 (def system
   "Key to reference `system` role in ChatML format"
-  :bosquet.conversation/system)
+  :bosquet.chat/system)
 
-(def history
-  "Key to reference `history` of the conversation"
-  :bosquet.conversation/history)
+(def conversation
+  "Key to reference complete `conversation` - a history"
+  :bosquet.chat/conversation)
 
 (def memory
   "Key to reference `memory` of the conversation"
-  :bosquet.conversation/memory)
+  :bosquet.chat/memory)
+
+(def last-message
+  "Key to reference `last-message` in the conversation"
+  :bosquet.chat/last-message)
