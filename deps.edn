@@ -1,7 +1,6 @@
 {:paths   ["src" "resources"]
  :deps    {org.clojure/clojure             {:mvn/version "1.11.1"}
-           zmedelis/Selmer                 {:git/url "https://github.com/zmedelis/Selmer"
-                                            :git/sha "88fc2b51817e1ad67f0458c75857222a72db4945"}
+           io.github.zmedelis/selmer       {:mvn/version "0.7.9"}
            com.wsscode/pathom3             {:mvn/version "2023.08.22-alpha"}
            io.github.nextjournal/clerk     {:mvn/version "0.14.919"}
            net.clojars.wkok/openai-clojure {:mvn/version "0.10.0"}
