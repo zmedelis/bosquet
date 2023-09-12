@@ -1,5 +1,5 @@
 (ns user-guide
-  (:require [bosquet.llm.generatorator :as bg]
+  (:require [bosquet.llm.generator :as bg]
             [bosquet.system :as system]
             [nextjournal.clerk :as clerk]))
 

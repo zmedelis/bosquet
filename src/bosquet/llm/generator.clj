@@ -14,10 +14,26 @@
 
 (defn complete-template
   "Fill in `template` `slots` with Selmer and call generation function
-  (if present) to complete the text"
+  (if present) to complete the text.
+
+  This is a sole template based generation bypasing Pathom resolver figuring out
+  the sequence of multiple template gen calls. Hence the parameter is not
+  a map with multiple templates but a single template string.
+
+  Likely to be refactored away in the future versions in favour of a single
+  `complete` entry point.
+
+  Note that `template` can have only one `gen` call.
+
+  OK : 'Generate a joke about {{topic}}. {% gen var-name=joke %}'
+  BAD: 'Generate a joke about {{topic}}. {% gen var-name=joke %} and {% gen var-name=another-joke %'"
   ([template slots] (complete-template template slots {}))
   ([template slots config]
-   (template/fill-slots template slots config)))
+   (prn "xx" (template/generation-vars template))
+   (template/fill-slots template (assoc slots :the-key
+                                   ;; only one `gen` is supported in template
+                                        (first (template/generation-vars template)))
+                        config)))
 
 (defn output-keys [k template]
   (vec (concat [k] (template/generation-vars template))))
@@ -61,7 +77,8 @@
 (defn- prompt-indexes [prompts opts]
   (pci/register
    (mapv
-    (fn [prompt-key] (generation-resolver prompt-key (prompt-key prompts) opts))
+    (fn [prompt-key]
+      (generation-resolver prompt-key (prompt-key prompts) opts))
     (keys prompts))))
 
 (defn all-keys
@@ -146,6 +163,14 @@
                       :bosquet.llm/model-parameters {:temperature 0}}
     :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
                       :bosquet.llm/model-parameters {:temperature 0
-                                                     :model "gpt-3.5-turbo"}}})
+                                                     :model "gpt-4"}}})
 
+  (complete-template
+   "You are a playwright. Given the play's title and it's genre write synopsis for that play.
+     Title: {{title}}
+     Genre: {{genre}}
+     Playwright: This is a synopsis for the above play: {% gen var-name=text %}"
+   {:title "Mr. X" :genre "crime"}
+   {:text {:bosquet.llm/service [:llm/openai :provider/openai]
+           :bosquet.llm/model-parameters {:temperature 0 :model "gpt-4"}}})
   #__)
