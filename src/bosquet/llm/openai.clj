@@ -12,7 +12,7 @@
 (def davinci "text-davinci-003")
 
 #_:clj-kondo/ignore
-(def cgpt-3.5 "gpt-3.5-turbo")
+(def cgpt-35 "gpt-3.5-turbo")
 
 (defn chat-model?
   "Check if `model` (name provided as string) is a chat model"
@@ -26,7 +26,7 @@
   [prompt params opts]
   (-> (api/create-chat-completion
        (assoc params
-              :model cgpt-3.5
+              :model cgpt-35
               :messages [{:role "system" :content "You are a helpful assistant."}
                          {:role "user" :content prompt}])
        opts)
@@ -48,7 +48,7 @@
                    model temperature max-tokens n top-p
                    presence-penalty frequence-penalty]
             :or   {impl              :openai
-                   model             cgpt-3.5
+                   model             cgpt-35
                    temperature       0.2
                    max-tokens        250
                    presence-penalty  0.4
