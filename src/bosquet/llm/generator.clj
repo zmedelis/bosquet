@@ -29,7 +29,6 @@
   BAD: 'Generate a joke about {{topic}}. {% gen var-name=joke %} and {% gen var-name=another-joke %'"
   ([template slots] (complete-template template slots {}))
   ([template slots config]
-   (prn "xx" (template/generation-vars template))
    (template/fill-slots template (assoc slots :the-key
                                    ;; only one `gen` is supported in template
                                         (first (template/generation-vars template)))
