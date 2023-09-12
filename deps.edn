@@ -2,7 +2,6 @@
  :deps    {org.clojure/clojure             {:mvn/version "1.11.1"}
            io.github.zmedelis/selmer       {:mvn/version "0.7.9"}
            com.wsscode/pathom3             {:mvn/version "2023.08.22-alpha"}
-           io.github.nextjournal/clerk     {:mvn/version "0.14.919"}
            net.clojars.wkok/openai-clojure {:mvn/version "0.10.0"}
            org.flatland/useful             {:mvn/version "0.11.6"}
            com.taoensso/timbre             {:mvn/version "6.2.2"}
@@ -16,7 +15,8 @@
            aero/aero                       {:mvn/version "1.1.6"}
            org.clojure/core.cache          {:mvn/version "1.0.225"}
            metosin/malli                   {:mvn/version "0.12.0"}}
- :aliases {:dev      {:extra-paths ["dev" "notebook"]}
+ :aliases {:dev      {:extra-paths ["dev" "notebook"]
+                      :extra-deps {io.github.nextjournal/clerk     {:mvn/version "0.14.919"}}}
            :neil     {:project {:name    io.github.zmedelis/bosquet
                                 :version "0.3.7"}}
            :rebel    {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
