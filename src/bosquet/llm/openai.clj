@@ -77,12 +77,12 @@
        (catch Exception e
          (throw
           (ex-info "OpenAI API error"
-            (or
-                (-> e ex-data :body
-                    (j/read-value j/keyword-keys-object-mapper)
-                    :error)
-                ;; Azure has different error data structure
-                {:message (.getMessage e)}))))))))
+                   (or
+                    (-> e ex-data :body
+                        (j/read-value j/keyword-keys-object-mapper)
+                        :error)
+                    ;; Azure has different error data structure
+                    (ex-data e)))))))))
 
 (defn chat-completion
   [messages opts]
