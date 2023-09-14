@@ -106,6 +106,6 @@
     {:role :user :content "Where was it played?"}]
    {:model "gpt-3.5-turbo"})
 
-  (complete "What is your name?" {:max-tokens 10 :model "gpt-3.5-turbo"})
+  (complete "What is your name?" {:max-tokens 10 :model "gpt-4"})
   (complete "What is your name?" {:max-tokens 10 :model :ccgpt})
   (complete "What is your name?" {:max-tokens 10}))

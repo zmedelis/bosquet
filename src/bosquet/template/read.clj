@@ -47,7 +47,7 @@
   [text]
   (set
    (remove
-      ;; remove config values coming from tags like `llm-generate`
+      ;; remove config values coming from tags like `gen`
     (fn [variable] (string/includes? (name variable) "="))
     (selmer/known-variables text))))
 
@@ -57,4 +57,4 @@
   (without-escaping
    (selmer/render-with-values
     text
-    (assoc ctx system/llm-service-key system))))
+    (assoc ctx system/llm-config system))))

@@ -23,7 +23,7 @@
 
 (defn complete [prompt {gen-key :the-key :as opts}]
   (let [{:bosquet.llm/keys [service model-parameters]}
-        (get-in opts [system/llm-service-key gen-key])
+        (get-in opts [system/llm-config gen-key])
         llm (system/llm-service service)]
     (.generate llm prompt model-parameters))
   ;; TODO bring back the cache immediately

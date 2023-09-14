@@ -138,15 +138,16 @@
    {llm.chat/system "You are a helpful assistant."}
    {}
    :user "Why the sky is blue?"
-   {llm.chat/conversation {:bosquet.llm/service [:llm/openai :provider/openai]
-                           :bosquet.llm/model-parameters {:temperature 0
-                                                          :model "gpt-3.5-turbo"}}})
+   {llm.chat/conversation
+    {:bosquet.llm/service          [:llm/openai :provider/openai]
+     :bosquet.llm/model-parameters {:temperature 0
+                                    :model       "gpt-3.5-turbo"}}})
 
   (generate
    {:role            "As a brilliant {{you-are}} answer the following question."
     :question        "What is the distance between Io and Europa?"
     :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test model=text-curie-001 %}"}
+    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"})
 
