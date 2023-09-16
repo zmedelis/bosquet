@@ -1,13 +1,12 @@
 {:paths ["src" "test"]
  :tasks {:init      (do (def standalone-jar-file "target/antq-standalone.jar")
-                      (def jar-file "target/antq.jar"))
+                        (def jar-file "target/antq.jar"))
          rebel      (clojure "-M:dev:rebel")
          outdated   (clojure "-M:outdated")
-         test       (do
-                    (clojure "-M:outdated")
-                    (clojure "-M:test"))
+         kaocha     (do (clojure "-M:outdated")
+                        (clojure "-M:kaocha:test"))
          lint       (do (shell "echo cljstyle") ;; I don't have clj-style
-                      (shell "clj-kondo --lint src:test"))
+                        (shell "clj-kondo --lint src:test"))
          format     (shell "cljfmt check")
          format:fix (shell "cljfmt fix")
          pom        (clojure "-Spom")

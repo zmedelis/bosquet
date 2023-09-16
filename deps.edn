@@ -15,20 +15,19 @@
            aero/aero                       {:mvn/version "1.1.6"}
            org.clojure/core.cache          {:mvn/version "1.0.225"}
            metosin/malli                   {:mvn/version "0.12.0"}}
- :aliases {:dev      {:extra-paths ["dev" "notebook"]
-                      :extra-deps {io.github.nextjournal/clerk     {:mvn/version "0.14.919"}}}
-           :neil     {:project {:name    io.github.zmedelis/bosquet
-                                :version "0.3.7"}}
-           :rebel    {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
-                      :main-opts  ["-m" "rebel-readline.main"]}
-           :outdated {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
-                      :main-opts ["-m" "antq.core" "--upgrade"]}
-           :test     {:main-opts   ["-m" "kaocha.runner"]
-                      :extra-paths ["test"]
-                      :extra-deps  {lambdaisland/kaocha        {:mvn/version "1.86.1355"}
-                                    nubank/matcher-combinators {:mvn/version "3.8.8"}}}
-
-           :build ;; added by neil
-           {:deps       {io.github.clojure/tools.build {:git/tag "v0.9.5" :git/sha "24f2894"}
-                         slipset/deps-deploy           {:mvn/version "0.2.1"}}
-            :ns-default build}}}
+ :aliases {:dev        {:extra-paths ["dev" "notebook"]
+                        :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.14.919"}}}
+           :neil       {:project {:name    io.github.zmedelis/bosquet
+                                  :version "0.3.7"}}
+           :rebel      {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
+                        :main-opts  ["-m" "rebel-readline.main"]}
+           :outdated   {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
+                        :main-opts ["-m" "antq.core" "--upgrade"]}
+           :test       {:extra-deps {nubank/matcher-combinators {:mvn/version "3.8.8"}}}
+           :kaocha     {:main-opts   ["-m" "kaocha.runner"]
+                        :extra-paths ["test"]
+                        :extra-deps  {lambdaisland/kaocha {:mvn/version "1.86.1355"}}}
+           :build      {:deps               {io.github.clojure/tools.build {:git/tag "v0.9.5"
+                                                                            :git/sha "24f2894"}}
+                        slipset/deps-deploy {:mvn/version "0.2.1"}}
+           :ns-default build}}
