@@ -125,19 +125,39 @@
          (psm/smart-map inputs)
          (select-keys extraction-keys)))))
 
+(defn- fill-converation-slots
+  "Fill all the Selmer slots in the conversation context. It will
+  check all roles and fill in `{{slots}}` from the `inputs` map."
+  [messages inputs opts]
+  ;; TODO run `generate` over all the conversation-context to fill in the slots
+  (mapv
+   (fn [{content llm.chat/content :as msg}]
+     (assoc msg
+            llm.chat/content
+            (first (template/fill-slots content inputs opts))))
+   messages))
+
 ;; WIP
 (defn chat
-  ([prompts inputs role message] (chat prompts inputs role message nil))
-  ([prompts inputs role message opts]
-   (let [context (generate prompts inputs opts)]
+  ([messages] (chat messages nil nil nil))
+  ([messages inputs] (chat messages inputs nil nil))
+  ([messages inputs params] (chat messages inputs params nil))
+  ([messages inputs _params opts]
+   (let [updated-context (fill-converation-slots messages inputs opts)]
      (complete/chat-completion
-      context role message opts))))
+      updated-context opts))))
 
 (comment
   (chat
-   {llm.chat/system "You are a helpful assistant."}
-   {}
-   :user "Why the sky is blue?"
+   [(llm.chat/speak llm.chat/system "You are a brilliant {{role}}.")
+    (llm.chat/speak
+     llm.chat/user "What is a good {{meal}}?")
+    (llm.chat/speak
+     llm.chat/assistant "Good {{meal}} is a {{meal}} that is good.")
+    (llm.chat/speak
+     llm.chat/user "Help me to learn the ways of a good {{meal}}.")]
+   {:role "cook"
+    :meal "cake"}
    {llm.chat/conversation
     {:bosquet.llm/service          [:llm/openai :provider/openai]
      :bosquet.llm/model-parameters {:temperature 0
@@ -160,10 +180,10 @@
     :question "What is the distance from Moon to Io?"}
 
    {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
-                      :bosquet.llm/model-parameters {:temperature 0}}
-    :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
                       :bosquet.llm/model-parameters {:temperature 0
-                                                     :model "gpt-4"}}})
+                                                     :model "gpt-4"}}
+    :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
+                      :bosquet.llm/model-parameters {:temperature 0}}})
 
   (complete-template
    "You are a playwright. Given the play's title and it's genre write synopsis for that play.

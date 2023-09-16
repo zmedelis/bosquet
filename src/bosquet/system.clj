@@ -70,10 +70,10 @@
 (defn cohere []
   (get system :llm/cohere))
 
-(defn llm-service
+(defn get-service
   "Get LLM service by Integrant confg key. If there is none
   configured under that key - get the default one specified under
   `:llm/default` key."
   [key]
   (or (get system key)
-    (get system (config default-llm))))
+      (get system (config default-llm))))

@@ -4,8 +4,11 @@
    [clojure.string :as string]
    [selmer.parser :as parser]))
 
-(defn ^{:deprecated "0.4"}
-  args->map
+(def ^:private preceding-text
+  "This is where Selmer places text preceding the `gen` tag"
+  :selmer/preceding-text)
+
+(defn args->map
   "Convert tag arguments to a clojure map. Tag arguments are passed in
   as a vector of 'key=value' strings."
   [args]
@@ -16,11 +19,14 @@
 
 (defn gen-tag
   "Selmer custom tag to invoke AI generation"
-  [args {prompt :selmer/preceding-text
+  [args {prompt preceding-text
          :as    opts}]
   (complete/complete
    prompt
-   (merge (args->map args) opts)))
+    ;; whatever props are specified in the props will take priority
+    ;; over the ones specified in the tag
+    ;; FIXME the merge does not merge at the `llm-config` level
+   opts #_(merge (args->map args) opts)))
 
 (defn add-tags []
   (parser/add-tag! :gen gen-tag)
