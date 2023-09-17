@@ -31,8 +31,8 @@
 
 (def ^:private config
   (aero/read-config
-    (io/resource "system.edn")
-    {:resolver root-resolver}))
+   (io/resource "system.edn")
+   {:resolver root-resolver}))
 
 (def ^:private sys-config
   (dissoc config :config default-llm))
