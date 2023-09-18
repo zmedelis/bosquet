@@ -1,4 +1,7 @@
-(ns bosquet.memory.memory)
+(ns bosquet.memory.memory
+  (:require
+   [bosquet.llm.openai-tokens :as oai.tokenizer]
+   [bosquet.system :as sys]))
 
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
 ;; Memory component is used for one of the following purposes:
@@ -21,6 +24,12 @@
 ;; description, a creation timestamp, and a most recent access timestamp. The most basic element
 ;; of the memory stream is an observation, which is an event directly
 ;; perceived by an agent.
+;;
+;; Components of memory retrieval
+;; - recency
+;; - relevancy
+;; - importance
+;; - reflection
 
 (defprotocol Memory
   ;; Encode and store an observation into memory store
@@ -39,7 +48,7 @@
   (store [this observation])
   (query [this params])
   ;; What is the size in `tokens` of the memory
-  (volume [this tokenizer]))
+  (volume [this opts]))
 
 (defprotocol Retriever
   ;; Recall memory object give a cueue
@@ -50,12 +59,25 @@
   Encoder
   (encode [_this observation] observation))
 
+(defn- token-count [tokenizer-fn text model]
+  (tokenizer-fn text model))
+
 (deftype AtomicStorage
          [atom]
   Storage
   (store [_this observation] (swap! atom conj observation))
   (query [_this pred] (filter pred @atom))
-  (volume [_this tokenizer]))
+    ;; TODO no passing in opts! Construct Memory with Opts and
+    ;; have `volume` calc returned from Memory
+  (volume [_this {service                      sys/llm-service
+                  {model sys/model-parameters} :model}]
+    (let [tokenizer
+          (condp = service
+            [:llm/openai :provider/azure]  oai.tokenizer/token-count
+            [:llm/openai :provider/openai] oai.tokenizer/token-count
+            :else                          oai.tokenizer/token-count)]
+      (reduce (fn [m txt] (+ m  (token-count tokenizer txt model)))
+              0 @atom))))
 
 (deftype ExactRetriever
          []
@@ -81,11 +103,11 @@
 ;; (def x (encode "long doc"))
 
 (comment
-  (def mem
-    (TestMemory.
-     (DummyEncoder.)
-     (AtomicStorage. (atom []))
-     (ExactRetriever.)))
+  (def e (DummyEncoder.))
+  (def s (AtomicStorage. (atom [])))
+  (def r (ExactRetriever.))
+  (def mem (TestMemory. e s r))
   (.remember mem "long doc")
   (.recall mem "long doc")
+  (.volume s)
   #__)
