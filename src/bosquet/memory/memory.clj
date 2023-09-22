@@ -54,10 +54,10 @@
   ;; Recall memory object give a cueue
   (retrieve [this storage cueue]))
 
-(deftype DummyEncoder
-         []
-  Encoder
-  (encode [_this observation] observation))
+(deftype IdentityEncoder
+    []
+    Encoder
+    (encode [_this observation] observation))
 
 (defn- token-count [tokenizer-fn text model]
   (tokenizer-fn text model))
@@ -85,29 +85,30 @@
   (retrieve [_this storage cueue]
     (.query storage #(= cueue %))))
 
-(deftype TestMemory
-         [encoder storage retriever]
-  Memory
-  (remember [_this observation]
-    (.store
-     storage
-     (.encode encoder observation)))
-  (recall [_this cueue]
-    (.retrieve retriever storage cueue))
-  (forget [_this cueue]))
+(deftype SimpleMemory
+    [encoder storage retriever]
+    Memory
+    (remember [_this observation]
+      (.store
+        storage
+        (.encode encoder observation)))
+    (recall [_this cueue]
+      (.retrieve retriever storage cueue))
+    (forget [_this cueue]))
 
-;; Encode:
+;; Encode: Chunking, Semantic, Metadata
 ;; Store: Atom, VectorDB
 ;; Retrieve: Sequential, Cueue, Query
 ;;
-;; (def x (encode "long doc"))
 
 (comment
-  (def e (DummyEncoder.))
+  (def e (IdentityEncoder.))
   (def s (AtomicStorage. (atom [])))
   (def r (ExactRetriever.))
-  (def mem (TestMemory. e s r))
+  (def mem (SimpleMemory e s r))
   (.remember mem "long doc")
   (.recall mem "long doc")
   (.volume s)
+
+
   #__)
