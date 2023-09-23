@@ -1,7 +1,9 @@
 (ns bosquet.memory.memory
   (:require
-   [bosquet.llm.openai-tokens :as oai.tokenizer]
-   [bosquet.system :as sys]))
+    [bosquet.llm.chat :as chat]
+    [bosquet.llm.generator :as gen]
+    [bosquet.llm.openai-tokens :as oai.tokenizer]
+    [bosquet.system :as sys]))
 
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
 ;; Memory component is used for one of the following purposes:
@@ -83,7 +85,7 @@
          []
   Retriever
   (retrieve [_this storage cueue]
-    (.query storage #(= cueue %))))
+    (.query storage #(cueue %))))
 
 (deftype SimpleMemory
     [encoder storage retriever]
@@ -101,14 +103,53 @@
 ;; Retrieve: Sequential, Cueue, Query
 ;;
 
+(defmacro with-memory
+  "This macro will execute LLM `completions` with the aid of supplied
+  `memory`.
+
+  The macro will build a code to execute the following sequence:
+  * recall needed memory items from its storage
+  * inject that retrieved data into `completion` input
+    -  for `chat` generation it will be ChatML messages preappended to the
+       beginning of the conversation
+    - for `completion` generation those will be added as extra data points to
+      the Pathom execution map
+  * make a LLM generation call (chat or completion)
+  * remember the generated data
+  * return generated data"
+  [memory & completions]
+  (let [[gen-fn messages inputs params] (first completions)]
+    `(let [memories# (.recall ~memory identity)
+           res#
+           (~gen-fn
+            (concat memories# ~messages )
+            ~inputs ~params)]
+       (.remember ~memory res#)
+       res#)))
+
+
 (comment
   (def e (IdentityEncoder.))
-  (def s (AtomicStorage. (atom [])))
+  (def m (atom []))
+  (def s (AtomicStorage. m))
   (def r (ExactRetriever.))
-  (def mem (SimpleMemory e s r))
+  (def mem (SimpleMemory. e s r))
   (.remember mem "long doc")
-  (.recall mem "long doc")
+  (.recall mem #(= % "long doc"))
+  (.recall mem identity)
   (.volume s)
 
-
+  (def params {chat/conversation
+               {:bosquet.llm/service          [:llm/openai :provider/openai]
+                :bosquet.llm/model-parameters {:temperature 0
+                                               :model       "gpt-3.5-turbo"}}})
+  (def inputs {:role "cook" :meal "cake"})
+  (.remember mem (chat/speak chat/system "You are a brilliant {{role}}."))
+  (macroexpand-1
+    (quote (with-memory mem
+             (gen/chat
+               [(c/speak c/user "What is a good {{meal}}?")
+                (c/speak c/assistant "Good {{meal}} is a {{meal}} that is good.")
+                (c/speak c/user "Help me to learn the ways of a good {{meal}}.")]
+               inputs params))))
   #__)
