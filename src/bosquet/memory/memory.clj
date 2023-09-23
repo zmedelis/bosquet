@@ -1,9 +1,9 @@
 (ns bosquet.memory.memory
   (:require
-    [bosquet.llm.chat :as chat]
-    [bosquet.llm.generator :as gen]
-    [bosquet.llm.openai-tokens :as oai.tokenizer]
-    [bosquet.system :as sys]))
+   [bosquet.llm.chat :as chat]
+   [bosquet.llm.generator :as gen]
+   [bosquet.llm.openai-tokens :as oai.tokenizer]
+   [bosquet.system :as sys]))
 
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
 ;; Memory component is used for one of the following purposes:
@@ -41,9 +41,9 @@
   ;; Remove all memory objects matching cueue from memory store
   (forget [this cueue]))
 
-(defprotocol Encoder
-  ;; Encode an observation into a memory object
-  (encode [this observation]))
+;; (defprotocol Encoder
+;;   ;; Encode an observation into a memory object
+;;   (encode [this observation]))
 
 (defprotocol Storage
   ;; Store a memory object for later retrieval via recall
@@ -52,14 +52,34 @@
   ;; What is the size in `tokens` of the memory
   (volume [this opts]))
 
-(defprotocol Retriever
-  ;; Recall memory object give a cueue
-  (retrieve [this storage cueue]))
+(defn free-recall [storage _params]
+  (shuffle (.query storage identity)))
 
-(deftype IdentityEncoder
-    []
-    Encoder
-    (encode [_this observation] observation))
+(defn sequential-recall [storage _params]
+  (.query storage identity))
+
+(defn identity-encoder [observation] observation)
+
+#_(defprotocol Retriever
+    "Recall memory object given retrieval `params`. Those parameters will
+  specify how the memory is to be interogated by different Retrievers"
+    (recall [this params]))
+
+;; (deftype FreeRetriever
+;;     []
+;;     Retriever
+;;     (recall [_this params]
+;;       (fn [results] (rand results))))
+
+;; (deftype SequentialRetriever
+;;     []
+;;     Retriever
+;;     (recall [_this params]))
+
+;; (deftype IdentityEncoder
+;;     []
+;;     Encoder
+;;     (encode [_this observation] observation))
 
 (defn- token-count [tokenizer-fn text model]
   (tokenizer-fn text model))
@@ -81,22 +101,22 @@
       (reduce (fn [m txt] (+ m  (token-count tokenizer txt model)))
               0 @atom))))
 
-(deftype ExactRetriever
-         []
-  Retriever
-  (retrieve [_this storage cueue]
-    (.query storage #(cueue %))))
+;; (deftype ExactRetriever
+;;     []
+;;     (retrieve [_this storage cueue]
+;;       (.query storage #(cueue %))))
 
 (deftype SimpleMemory
-    [encoder storage retriever]
-    Memory
-    (remember [_this observation]
-      (.store
-        storage
-        (.encode encoder observation)))
-    (recall [_this cueue]
-      (.retrieve retriever storage cueue))
-    (forget [_this cueue]))
+         [encoder storage retriever]
+  Memory
+  (remember [_this observation]
+    (.store
+     storage
+     (encoder observation)))
+  (recall [_this cueue]
+    (retriever storage {})
+    #_(.retrieve retriever storage cueue))
+  (forget [_this cueue]))
 
 ;; Encode: Chunking, Semantic, Metadata
 ;; Store: Atom, VectorDB
@@ -122,18 +142,18 @@
     `(let [memories# (.recall ~memory identity)
            res#
            (~gen-fn
-            (concat memories# ~messages )
+            (concat memories# ~messages)
             ~inputs ~params)]
        (.remember ~memory res#)
        res#)))
 
-
 (comment
-  (def e (IdentityEncoder.))
+  #_(def e (IdentityEncoder.))
   (def m (atom []))
   (def s (AtomicStorage. m))
-  (def r (ExactRetriever.))
-  (def mem (SimpleMemory. e s r))
+  #_(def r (ExactRetriever.))
+  #_(def mem (SimpleMemory. e s r))
+  (def mem (SimpleMemory. identity-encoder s sequential-recall))
   (.remember mem "long doc")
   (.recall mem #(= % "long doc"))
   (.recall mem identity)
@@ -146,10 +166,10 @@
   (def inputs {:role "cook" :meal "cake"})
   (.remember mem (chat/speak chat/system "You are a brilliant {{role}}."))
   (macroexpand-1
-    (quote (with-memory mem
-             (gen/chat
-               [(c/speak c/user "What is a good {{meal}}?")
-                (c/speak c/assistant "Good {{meal}} is a {{meal}} that is good.")
-                (c/speak c/user "Help me to learn the ways of a good {{meal}}.")]
-               inputs params))))
+   (quote (with-memory mem
+            (gen/chat
+             [(c/speak c/user "What is a good {{meal}}?")
+              (c/speak c/assistant "Good {{meal}} is a {{meal}} that is good.")
+              (c/speak c/user "Help me to learn the ways of a good {{meal}}.")]
+             inputs params))))
   #__)
