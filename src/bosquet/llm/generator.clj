@@ -144,8 +144,7 @@
   ([messages inputs params] (chat messages inputs params nil))
   ([messages inputs _params opts]
    (let [updated-context (fill-converation-slots messages inputs opts)]
-     (complete/chat-completion
-      updated-context opts))))
+     (complete/chat-completion updated-context opts))))
 
 (comment
   (chat

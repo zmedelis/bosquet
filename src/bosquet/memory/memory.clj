@@ -1,9 +1,9 @@
 (ns bosquet.memory.memory
   (:require
-   [bosquet.llm.chat :as chat]
-   [bosquet.llm.generator :as gen]
-   [bosquet.llm.openai-tokens :as oai.tokenizer]
-   [bosquet.system :as sys]))
+    [bosquet.llm.chat :as chat]
+    [bosquet.llm.generator :as gen]
+    [bosquet.llm.openai-tokens :as oai.tokenizer]
+    [bosquet.system :as sys]))
 
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
 ;; Memory component is used for one of the following purposes:
@@ -110,9 +110,8 @@
          [encoder storage retriever]
   Memory
   (remember [_this observation]
-    (.store
-     storage
-     (encoder observation)))
+    (doseq [observation (if (seq? observation) observation [observation])]
+      (.store storage (encoder observation))))
   (recall [_this cueue]
     (retriever storage {})
     #_(.retrieve retriever storage cueue))
@@ -138,26 +137,19 @@
   * remember the generated data
   * return generated data"
   [memory & completions]
-  (let [[gen-fn messages inputs params] (first completions)]
-    `(let [memories# (.recall ~memory identity)
-           res#
-           (~gen-fn
-            (concat memories# ~messages)
-            ~inputs ~params)]
-       (.remember ~memory res#)
-       res#)))
+  `(doseq [~'[gen-fn messages inputs params] ~completions]
+     (let [~'memories (.recall ~memory identity)
+           ~'res      (~'gen-fn (concat ~'memories ~'messages) ~'inputs ~'params)]
+       (.remember ~memory ~'messages)
+       (.remember ~memory ~'res))))
 
 (comment
   #_(def e (IdentityEncoder.))
-  (def m (atom []))
-  (def s (AtomicStorage. m))
   #_(def r (ExactRetriever.))
   #_(def mem (SimpleMemory. e s r))
+  (def m (atom []))
+  (def s (AtomicStorage. m))
   (def mem (SimpleMemory. identity-encoder s sequential-recall))
-  (.remember mem "long doc")
-  (.recall mem #(= % "long doc"))
-  (.recall mem identity)
-  (.volume s)
 
   (def params {chat/conversation
                {:bosquet.llm/service          [:llm/openai :provider/openai]
@@ -165,11 +157,16 @@
                                                :model       "gpt-3.5-turbo"}}})
   (def inputs {:role "cook" :meal "cake"})
   (.remember mem (chat/speak chat/system "You are a brilliant {{role}}."))
-  (macroexpand-1
-   (quote (with-memory mem
-            (gen/chat
-             [(c/speak c/user "What is a good {{meal}}?")
-              (c/speak c/assistant "Good {{meal}} is a {{meal}} that is good.")
-              (c/speak c/user "Help me to learn the ways of a good {{meal}}.")]
-             inputs params))))
+  (clojure.pprint/pprint
+    (macroexpand-1
+      (quote
+        (with-memory mem
+          (gen/chat
+            [(chat/speak chat/user "What is a good {{meal}}?")
+             (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
+             (chat/speak chat/user "Help me to learn the ways of a good {{meal}} by giving me one great recipe")]
+            inputs params)
+          (gen/chat
+            [(chat/speak chat/user "How many calories are in one serving of this recipe?")]
+            inputs params)))))
   #__)
