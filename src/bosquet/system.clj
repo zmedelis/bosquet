@@ -1,5 +1,6 @@
 (ns bosquet.system
   (:require
+   [bosquet.memory.memory :as mem]
    [aero.core :as aero :refer [root-resolver]]
    [bosquet.llm.cohere :as cohere]
    [bosquet.llm.openai :as oai]
@@ -7,6 +8,7 @@
    [integrant.core :as ig]
    [taoensso.timbre :as timbre])
   (:import
+   [bosquet.memory.memory SimpleMemory AtomicStorage Amnesiac]
    [bosquet.llm.cohere Cohere]
    [bosquet.llm.openai OpenAI]))
 
@@ -52,6 +54,19 @@
     (System/setProperty "cohere.api.key" api-key)
     (Cohere. opts)))
 
+;;
+;; Memory Components
+;;
+
+(def in-memory-memory (atom []))
+
+(defmethod ig/init-key :memory/short-term [_ {:keys [store encoder recall] :as opts}]
+  (timbre/infof " * Short term memory with (%s)" opts)
+  (SimpleMemory.
+   mem/identity-encoder
+   (AtomicStorage. in-memory-memory)
+   mem/sequential-recall))
+
 (def system
   (do
     (timbre/info "Initializing Bosquet resources:")
@@ -77,3 +92,7 @@
   [key]
   (or (get system key)
       (get system (config default-llm))))
+
+(defn get-memory
+  [key]
+  (get system key (Amnesiac.)))

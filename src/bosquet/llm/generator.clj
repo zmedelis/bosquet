@@ -1,7 +1,7 @@
 (ns bosquet.llm.generator
   (:require
    [bosquet.complete :as complete]
-   [bosquet.llm.chat :as llm.chat]
+   [bosquet.llm.chat :as chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
    [com.wsscode.pathom3.connect.indexes :as pci]
@@ -131,33 +131,29 @@
   [messages inputs opts]
   ;; TODO run `generate` over all the conversation-context to fill in the slots
   (mapv
-   (fn [{content llm.chat/content :as msg}]
+   (fn [{content chat/content :as msg}]
      (assoc msg
-            llm.chat/content
+            chat/content
             (first (template/fill-slots content inputs opts))))
    messages))
 
 ;; WIP
 (defn chat
-  ([messages] (chat messages nil nil nil))
-  ([messages inputs] (chat messages inputs nil nil))
-  ([messages inputs params] (chat messages inputs params nil))
-  ([messages inputs _params opts]
+  ([messages] (chat messages nil))
+  ([messages inputs] (chat messages inputs nil))
+  ([messages inputs opts]
    (let [updated-context (fill-converation-slots messages inputs opts)]
      (complete/chat-completion updated-context opts))))
 
 (comment
   (chat
-   [(llm.chat/speak llm.chat/system "You are a brilliant {{role}}.")
-    (llm.chat/speak
-     llm.chat/user "What is a good {{meal}}?")
-    (llm.chat/speak
-     llm.chat/assistant "Good {{meal}} is a {{meal}} that is good.")
-    (llm.chat/speak
-     llm.chat/user "Help me to learn the ways of a good {{meal}}.")]
+   [(chat/speak chat/system "You are a brilliant {{role}}.")
+    (chat/speak chat/user "What is a good {{meal}}?")
+    (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
+    (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
    {:role "cook"
     :meal "cake"}
-   {llm.chat/conversation
+   {chat/conversation
     {:bosquet.llm/service          [:llm/openai :provider/openai]
      :bosquet.llm/model-parameters {:temperature 0
                                     :model       "gpt-3.5-turbo"}}})
@@ -179,7 +175,7 @@
     :question "What is the distance from Moon to Io?"}
 
    {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
-                      :bosquet.llm/model-parameters {:temperature 0
+                      :bosquet.llm/model-parameters {:temperature 0.4
                                                      :model "gpt-4"}}
     :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
                       :bosquet.llm/model-parameters {:temperature 0}}})

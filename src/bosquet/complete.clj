@@ -38,16 +38,15 @@
         (complete-with-cache prompt opts (ensure-atom cache) complete-fn)
         (complete-fn prompt opts))))
 
-(defn chat-completion [{conversation  llm.chat/conversation
-                        :as           context
-                        :or           {conversation []}}
+(defn chat-completion [messages
                        opts]
-  (let [{:bosquet.llm/keys [service model-parameters]}
+  (let [{:bosquet.llm/keys    [service model-parameters]
+         :bosquet.memory/keys [type]}
         (get-in opts [llm.chat/conversation])
         llm          (system/get-service service)
-        completion   (.chat llm context model-parameters)]
-    completion
-    #_(assoc context
-             llm.chat/conversation
-             (conj conversation completion)
-             llm.chat/last-message completion)))
+        memory       (system/get-memory type)
+        memories     (.recall memory {:limit 10})
+        completion   (.chat llm (concat memories messages) model-parameters)]
+    (.remember memory messages)
+    (.remember memory completion)
+    completion))

@@ -1,9 +1,6 @@
 (ns bosquet.memory.memory
   (:require
-    [bosquet.llm.chat :as chat]
-    [bosquet.llm.generator :as gen]
-    [bosquet.llm.openai-tokens :as oai.tokenizer]
-    [bosquet.system :as sys]))
+   [bosquet.llm.openai-tokens :as oai.tokenizer]))
 
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
 ;; Memory component is used for one of the following purposes:
@@ -85,21 +82,22 @@
   (tokenizer-fn text model))
 
 (deftype AtomicStorage
-         [atom]
+         [in-memory-memory]
   Storage
-  (store [_this observation] (swap! atom conj observation))
-  (query [_this pred] (filter pred @atom))
+  (store [_this observation]
+    (swap! in-memory-memory conj observation))
+  (query [_this pred] (filter pred @in-memory-memory))
     ;; TODO no passing in opts! Construct Memory with Opts and
     ;; have `volume` calc returned from Memory
-  (volume [_this {service                      sys/llm-service
-                  {model sys/model-parameters} :model}]
+  (volume [_this {service :bosquet.llm/service
+                  {model :bosquet.llm/model-parameters} :model}]
     (let [tokenizer
           (condp = service
             [:llm/openai :provider/azure]  oai.tokenizer/token-count
             [:llm/openai :provider/openai] oai.tokenizer/token-count
             :else                          oai.tokenizer/token-count)]
       (reduce (fn [m txt] (+ m  (token-count tokenizer txt model)))
-              0 @atom))))
+              0 @in-memory-memory))))
 
 ;; (deftype ExactRetriever
 ;;     []
@@ -110,11 +108,21 @@
          [encoder storage retriever]
   Memory
   (remember [_this observation]
-    (doseq [observation (if (seq? observation) observation [observation])]
+    (if (vector? observation)
+      (doseq [item observation]
+        (.store storage (encoder item)))
       (.store storage (encoder observation))))
   (recall [_this cueue]
     (retriever storage {})
     #_(.retrieve retriever storage cueue))
+  (forget [_this cueue]))
+
+;; Someone who forgets it all. To be used when memory is not needed (default)
+(deftype Amnesiac
+         []
+  Memory
+  (remember [_this observation])
+  (recall [_this cueue])
   (forget [_this cueue]))
 
 ;; Encode: Chunking, Semantic, Metadata
@@ -138,17 +146,19 @@
   * return generated data"
   [memory & completions]
   `(doseq [~'[gen-fn messages inputs params] ~completions]
-     (let [~'memories (.recall ~memory identity)
+     (let [~'memories (recall ~memory identity)
            ~'res      (~'gen-fn (concat ~'memories ~'messages) ~'inputs ~'params)]
-       (.remember ~memory ~'messages)
-       (.remember ~memory ~'res))))
+       (remember ~memory ~'messages)
+       (remember ~memory ~'res))))
 
 (comment
+  (require '[bosquet.llm.generator :as gen])
+  (require '[bosquet.llm.chat :as chat])
   #_(def e (IdentityEncoder.))
   #_(def r (ExactRetriever.))
   #_(def mem (SimpleMemory. e s r))
-  (def m (atom []))
-  (def s (AtomicStorage. m))
+  (def a (atom []))
+  (def s (AtomicStorage. a))
   (def mem (SimpleMemory. identity-encoder s sequential-recall))
 
   (def params {chat/conversation
@@ -156,17 +166,54 @@
                 :bosquet.llm/model-parameters {:temperature 0
                                                :model       "gpt-3.5-turbo"}}})
   (def inputs {:role "cook" :meal "cake"})
-  (.remember mem (chat/speak chat/system "You are a brilliant {{role}}."))
+  (remember mem (chat/speak chat/system "You are a brilliant {{role}}."))
   (clojure.pprint/pprint
-    (macroexpand-1
-      (quote
-        (with-memory mem
-          (gen/chat
-            [(chat/speak chat/user "What is a good {{meal}}?")
-             (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
-             (chat/speak chat/user "Help me to learn the ways of a good {{meal}} by giving me one great recipe")]
-            inputs params)
-          (gen/chat
-            [(chat/speak chat/user "How many calories are in one serving of this recipe?")]
-            inputs params)))))
-  #__)
+   (macroexpand-1
+    (quote
+     (with-memory mem
+       (gen/chat
+        [(chat/speak chat/user "What is a good {{meal}}?")
+         (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
+         (chat/speak chat/user "Help me to learn the ways of a good {{meal}} by giving me one great recipe")]
+        inputs params)
+       (gen/chat
+        [(chat/speak chat/user "How many calories are in one serving of this recipe?")]
+        inputs params)))))
+
+  ;; ---
+
+  (def params {chat/conversation
+               {:bosquet.memory/type          :memory/short-term
+                :bosquet.llm/service          [:llm/openai :provider/openai]
+                :bosquet.llm/model-parameters {:temperature 0
+                                               :model       "gpt-3.5-turbo"}}})
+
+  (gen/chat
+   [(chat/speak chat/system "You are a brilliant {{role}}.")
+    (chat/speak chat/user "What is a good {{meal}}?")
+    (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
+    (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
+   {:role "cook" :meal "cake"}
+   params)
+
+  (gen/chat
+   [(chat/speak chat/user "What would be the name of this recipe?")]
+   {:role "cook" :meal "cake"}
+   params)
+
+  (gen/generate
+   {:role            "As a brilliant {{you-are}} answer the following question."
+    :question        "What is the distance between Io and Europa?"
+    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
+   {:you-are  "astronomer"
+    :question "What is the distance from Moon to Io?"}
+
+   {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
+                      :bosquet.llm/model-parameters {:temperature 0.4
+                                                     :model "gpt-4"}
+                       ;; ?
+                      :bosquet.memory/type          :bosquet.memory/short-term}
+    :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
+                      :bosquet.llm/model-parameters {:temperature 0}}}))
+

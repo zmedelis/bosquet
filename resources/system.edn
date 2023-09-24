@@ -2,10 +2,10 @@
  ;; The merge is needed to avoid Aero #ref complaining
  ;; that the key is not found when those keys are not defined
  ;; in the config.edn file.
- [{:cohere-api-key       nil
-   :azure-openai-api-key nil
-   :openai-api-key       nil}
-  #include "config.edn"]
+          [{:cohere-api-key       nil
+            :azure-openai-api-key nil
+            :openai-api-key       nil}
+           #include "config.edn"]
 
  ;; config.edn is a file that contains settings for the LLM services,
  ;; Tools, and other components. Those include config options as well as
@@ -39,4 +39,10 @@
   {:gpt-3.5        :command
    :gpt-4          :command
    :text-ada-001   :command-light
-   :text-curie-001 :command-light}}}
+   :text-curie-001 :command-light}}
+
+ ;; Memory components
+ :memory/short-term
+ {:store   :atom
+  :encoder :identity
+  :recall  :sequential}}
