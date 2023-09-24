@@ -81,8 +81,26 @@
 (defn- token-count [tokenizer-fn text model]
   (tokenizer-fn text model))
 
+(def in-memory-memory (atom []))
+
+(def encoding-handlers
+  {:memory.encoding/as-is identity-encoder})
+
+(def retrieval-handlers
+  {:memory.retrieval/sequential sequential-recall})
+
+(defn ->enconder [encoder-name]
+  (get encoding-handlers encoder-name
+    ;; default is `identity-encoder`
+       identity-encoder))
+
+(defn ->retriever [retriever-name]
+  (get retrieval-handlers retriever-name
+    ;; default is `sequential-retriever`
+       sequential-recall))
+
 (deftype AtomicStorage
-         [in-memory-memory]
+         []
   Storage
   (store [_this observation]
     (swap! in-memory-memory conj observation))
@@ -99,13 +117,8 @@
       (reduce (fn [m txt] (+ m  (token-count tokenizer txt model)))
               0 @in-memory-memory))))
 
-;; (deftype ExactRetriever
-;;     []
-;;     (retrieve [_this storage cueue]
-;;       (.query storage #(cueue %))))
-
 (deftype SimpleMemory
-         [encoder storage retriever]
+         [storage encoder retriever]
   Memory
   (remember [_this observation]
     (if (vector? observation)
@@ -113,8 +126,7 @@
         (.store storage (encoder item)))
       (.store storage (encoder observation))))
   (recall [_this cueue]
-    (retriever storage {})
-    #_(.retrieve retriever storage cueue))
+    (retriever storage {}))
   (forget [_this cueue]))
 
 ;; Someone who forgets it all. To be used when memory is not needed (default)
@@ -154,11 +166,7 @@
 (comment
   (require '[bosquet.llm.generator :as gen])
   (require '[bosquet.llm.chat :as chat])
-  #_(def e (IdentityEncoder.))
-  #_(def r (ExactRetriever.))
-  #_(def mem (SimpleMemory. e s r))
-  (def a (atom []))
-  (def s (AtomicStorage. a))
+  (def s (AtomicStorage.))
   (def mem (SimpleMemory. identity-encoder s sequential-recall))
 
   (def params {chat/conversation
@@ -167,23 +175,20 @@
                                                :model       "gpt-3.5-turbo"}}})
   (def inputs {:role "cook" :meal "cake"})
   (remember mem (chat/speak chat/system "You are a brilliant {{role}}."))
-  (clojure.pprint/pprint
-   (macroexpand-1
-    (quote
-     (with-memory mem
-       (gen/chat
-        [(chat/speak chat/user "What is a good {{meal}}?")
-         (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
-         (chat/speak chat/user "Help me to learn the ways of a good {{meal}} by giving me one great recipe")]
-        inputs params)
-       (gen/chat
-        [(chat/speak chat/user "How many calories are in one serving of this recipe?")]
-        inputs params)))))
+  (with-memory mem
+    (gen/chat
+     [(chat/speak chat/user "What is a good {{meal}}?")
+      (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
+      (chat/speak chat/user "Help me to learn the ways of a good {{meal}} by giving me one great recipe")]
+     inputs params)
+    (gen/chat
+     [(chat/speak chat/user "How many calories are in one serving of this recipe?")]
+     inputs params))
 
   ;; ---
 
   (def params {chat/conversation
-               {:bosquet.memory/type          :memory/short-term
+               {:bosquet.memory/type          :memory/simple-short-term
                 :bosquet.llm/service          [:llm/openai :provider/openai]
                 :bosquet.llm/model-parameters {:temperature 0
                                                :model       "gpt-3.5-turbo"}}})

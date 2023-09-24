@@ -42,7 +42,6 @@
    :text-curie-001 :command-light}}
 
  ;; Memory components
- :memory/short-term
- {:store   :atom
-  :encoder :identity
-  :recall  :sequential}}
+ :memory/simple-short-term
+ {:encoder   :memory.encoding/as-is
+  :retrieval :memory.retrieval/sequential}}

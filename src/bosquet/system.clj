@@ -58,14 +58,12 @@
 ;; Memory Components
 ;;
 
-(def in-memory-memory (atom []))
-
-(defmethod ig/init-key :memory/short-term [_ {:keys [store encoder recall] :as opts}]
+(defmethod ig/init-key :memory/simple-short-term [_ {:keys [encoder retriever] :as opts}]
   (timbre/infof " * Short term memory with (%s)" opts)
   (SimpleMemory.
-   mem/identity-encoder
-   (AtomicStorage. in-memory-memory)
-   mem/sequential-recall))
+   (AtomicStorage.)
+   (mem/->enconder encoder)
+   (mem/->retriever retriever)))
 
 (def system
   (do
