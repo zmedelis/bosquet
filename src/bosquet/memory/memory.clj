@@ -49,14 +49,6 @@
   ;; What is the size in `tokens` of the memory
   (volume [this opts]))
 
-(defn free-recall [storage _params]
-  (shuffle (.query storage identity)))
-
-(defn sequential-recall [storage _params]
-  (.query storage identity))
-
-(defn identity-encoder [observation] observation)
-
 #_(defprotocol Retriever
     "Recall memory object given retrieval `params`. Those parameters will
   specify how the memory is to be interogated by different Retrievers"
@@ -82,22 +74,6 @@
   (tokenizer-fn text model))
 
 (def in-memory-memory (atom []))
-
-(def encoding-handlers
-  {:memory.encoding/as-is identity-encoder})
-
-(def retrieval-handlers
-  {:memory.retrieval/sequential sequential-recall})
-
-(defn ->enconder [encoder-name]
-  (get encoding-handlers encoder-name
-    ;; default is `identity-encoder`
-       identity-encoder))
-
-(defn ->retriever [retriever-name]
-  (get retrieval-handlers retriever-name
-    ;; default is `sequential-retriever`
-       sequential-recall))
 
 (deftype AtomicStorage
          []
@@ -167,7 +143,7 @@
   (require '[bosquet.llm.generator :as gen])
   (require '[bosquet.llm.chat :as chat])
   (def s (AtomicStorage.))
-  (def mem (SimpleMemory. identity-encoder s sequential-recall))
+  (def mem (SimpleMemory.))
 
   (def params {chat/conversation
                {:bosquet.llm/service          [:llm/openai :provider/openai]

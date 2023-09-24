@@ -1,16 +1,18 @@
 (ns bosquet.system
   (:require
-   [bosquet.memory.memory :as mem]
    [aero.core :as aero :refer [root-resolver]]
    [bosquet.llm.cohere :as cohere]
    [bosquet.llm.openai :as oai]
+   [bosquet.memory.encoding :as encoding]
+   [bosquet.memory.memory :as mem]
+   [bosquet.memory.retrieval :as retrieval]
    [clojure.java.io :as io]
    [integrant.core :as ig]
    [taoensso.timbre :as timbre])
   (:import
-   [bosquet.memory.memory SimpleMemory AtomicStorage Amnesiac]
    [bosquet.llm.cohere Cohere]
-   [bosquet.llm.openai OpenAI]))
+   [bosquet.llm.openai OpenAI]
+   [bosquet.memory.memory Amnesiac AtomicStorage SimpleMemory]))
 
 ;;
 ;; Keys to reference sytem components in option maps
@@ -62,8 +64,8 @@
   (timbre/infof " * Short term memory with (%s)" opts)
   (SimpleMemory.
    (AtomicStorage.)
-   (mem/->enconder encoder)
-   (mem/->retriever retriever)))
+   (encoding/handler encoder)
+   (retrieval/handler retriever)))
 
 (def system
   (do
