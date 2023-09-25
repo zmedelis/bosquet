@@ -21,6 +21,21 @@
   [model]
   (string/starts-with? model "gpt-"))
 
+(defn- ->completion [{choices                    :choices
+                      object                     :object
+                      {prompt     :prompt_tokens
+                       completion :completion_tokens
+                       total      :total_tokens} :usage}]
+  (let [{text :text probs :logprobs finish :finish_reason} (first choices)]
+    {llm/completion-content (condp object
+                                   "chat.completion" {:todo true}
+                                   "text_completion" {:text          text
+                                                      :logprobs      probs
+                                                      :finish-reason finish})
+     llm/completion-usage   {:prompt     prompt
+                             :completion completion
+                             :total      total}}))
+
 (defn create-chat-completion
   "Completion using Chat GPT model. This one is loosing the conversation
   aspect of the API. It will construct basic `system` for the
@@ -40,6 +55,16 @@
        (assoc params :prompt prompt) opts)
       :choices first :text))
 
+(defn- ->error [ex]
+  (ex-info
+   "Completion error in OAI call"
+   (or
+    (-> ex ex-data :body
+        (j/read-value j/keyword-keys-object-mapper)
+        :error)
+      ;; Azure has different error data structure
+    (ex-data ex))))
+
 (defn complete
   "Complete `prompt` if passed in `model` is cGPT the completion will
   be passed to `complete-chat`"
@@ -57,14 +82,7 @@
          (create-chat-completion prompt params opts)
          (create-completion prompt params opts))
        (catch Exception e
-         (throw
-          (ex-info "OpenAI API error"
-                   (or
-                    (-> e ex-data :body
-                        (j/read-value j/keyword-keys-object-mapper)
-                        :error)
-               ;; Azure has different error data structure
-                    (ex-data e)))))))))
+         (throw (->error e)))))))
 
 (def ^:private bosquet-chatml-roles
   {llm.chat/system    :system

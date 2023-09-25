@@ -49,27 +49,6 @@
   ;; What is the size in `tokens` of the memory
   (volume [this opts]))
 
-#_(defprotocol Retriever
-    "Recall memory object given retrieval `params`. Those parameters will
-  specify how the memory is to be interogated by different Retrievers"
-    (recall [this params]))
-
-;; (deftype FreeRetriever
-;;     []
-;;     Retriever
-;;     (recall [_this params]
-;;       (fn [results] (rand results))))
-
-;; (deftype SequentialRetriever
-;;     []
-;;     Retriever
-;;     (recall [_this params]))
-
-;; (deftype IdentityEncoder
-;;     []
-;;     Encoder
-;;     (encode [_this observation] observation))
-
 (defn- token-count [tokenizer-fn text model]
   (tokenizer-fn text model))
 
@@ -197,4 +176,3 @@
                       :bosquet.memory/type          :bosquet.memory/short-term}
     :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
                       :bosquet.llm/model-parameters {:temperature 0}}}))
-

@@ -17,6 +17,10 @@
       [:frequence-penalty {:optional true} float?]
       [:logit-bias {:optional true} float?]]))
 
+(def completion-content ::content)
+
+(def completion-usage ::usage)
+
 (defn model-mapping
   "Check LLM service config if there are any aliases defined.
   If model alias is found return it, if not use the `model` as is.
