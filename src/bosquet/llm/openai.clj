@@ -4,6 +4,8 @@
    [bosquet.llm.llm :as llm]
    [clojure.string :as string]
    [jsonista.core :as j]
+   [malli.core :as m]
+   [malli.generator :as mg]
    [taoensso.timbre :as timbre]
    [wkok.openai-clojure.api :as api]))
 
@@ -21,20 +23,31 @@
   [model]
   (string/starts-with? model "gpt-"))
 
-(defn- ->completion [{choices                    :choices
-                      object                     :object
-                      {prompt     :prompt_tokens
-                       completion :completion_tokens
-                       total      :total_tokens} :usage}]
+(defn- ->completion*
+  [content {:keys [prompt_tokens completion_tokens total_tokens]}]
+  {llm/content content
+   llm/usage   {:prompt     prompt_tokens
+                           :completion completion_tokens
+                           :total      total_tokens}})
+
+(defmulti ->completion (fn [{object :object}] object))
+
+(defmethod ->completion "chat.completion"
+  [{:keys [choices usage]}]
+  (let [{msg :message finish :finish_reason} (first choices)]
+    (->completion*
+      {:completion    msg
+       :finish-reason finish}
+      usage)))
+
+(defmethod ->completion "text_completion"
+  [{:keys [choices usage]}]
   (let [{text :text probs :logprobs finish :finish_reason} (first choices)]
-    {llm/completion-content (condp object
-                                   "chat.completion" {:todo true}
-                                   "text_completion" {:text          text
-                                                      :logprobs      probs
-                                                      :finish-reason finish})
-     llm/completion-usage   {:prompt     prompt
-                             :completion completion
-                             :total      total}}))
+    (->completion*
+      {:completion    text
+       :logprobs      probs
+       :finish-reason finish}
+      usage)))
 
 (defn create-chat-completion
   "Completion using Chat GPT model. This one is loosing the conversation
@@ -68,6 +81,12 @@
 (defn complete
   "Complete `prompt` if passed in `model` is cGPT the completion will
   be passed to `complete-chat`"
+  {:malli/schema
+   [:function
+    [:=> [:cat :string] llm/completion-response]
+    [:=> [:cat :string :map] llm/completion-response]
+    [:=> [:cat :string :map :map] llm/completion-response]]
+   :malli/gen mg/generate}
   ([prompt] (complete prompt nil nil))
   ([prompt params] (complete prompt params nil))
   ([prompt {:keys [model]

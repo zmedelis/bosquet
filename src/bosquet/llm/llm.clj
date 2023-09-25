@@ -17,9 +17,33 @@
       [:frequence-penalty {:optional true} float?]
       [:logit-bias {:optional true} float?]]))
 
-(def completion-content ::content)
+(def content ::content)
 
-(def completion-usage ::usage)
+(def usage ::usage)
+
+(def token-usage
+  [:map
+   [:prompt pos-int?]
+   [:completion pos-int?]
+   [:total pos-int?]])
+
+(def chat-ml
+  [:map
+   [:role [:enum :assistant :user]]
+   [:content string?]])
+
+(def chat-response
+  [:map
+   [content chat-ml]
+   [usage token-usage]])
+
+(def completion-response
+  [:map
+   [content string?]
+   [usage token-usage]])
+
+(def generation-response
+  [:or chat-response completion-response])
 
 (defn model-mapping
   "Check LLM service config if there are any aliases defined.

@@ -151,8 +151,7 @@
     (chat/speak chat/user "What is a good {{meal}}?")
     (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
     (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
-   {:role "cook"
-    :meal "cake"}
+   {:role "cook" :meal "cake"}
    {chat/conversation
     {:bosquet.llm/service          [:llm/openai :provider/openai]
      :bosquet.llm/model-parameters {:temperature 0
