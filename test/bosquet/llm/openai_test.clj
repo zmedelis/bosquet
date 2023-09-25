@@ -1,8 +1,9 @@
 (ns bosquet.llm.openai-test
   (:require
-   [clojure.test :refer [deftest is]]
+   [bosquet.llm.chat :as chat]
    [bosquet.llm.llm :as llm]
-   [bosquet.llm.openai :as openai]))
+   [bosquet.llm.openai :as openai]
+   [clojure.test :refer [deftest is]]))
 
 (defn create-chat-completion
   [prompt _params _opts]
@@ -22,7 +23,7 @@
   (let [txt       "Hello there, how may I assist you today?"
         usage-in  {:prompt_tokens 5 :completion_tokens 7 :total_tokens 12}
         usage-out {:prompt 5 :completion 7 :total 12}]
-    (is (= {llm/content {:completion    {:role "assistant" :content txt}
+    (is (= {llm/content {:completion    {chat/role chat/assistant chat/content txt}
                          :finish-reason "stop"}
             llm/usage   usage-out}
            (openai/->completion {:model   "gpt-3.5-turbo"

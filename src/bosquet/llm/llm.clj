@@ -1,6 +1,6 @@
 (ns bosquet.llm.llm
-  (:require [malli.transform :as mt]
-            [malli.core :as m]))
+  (:require
+   [bosquet.llm.chat :as chat]))
 
 #_(def llm-model-parameters
     (m/schema
@@ -29,7 +29,7 @@
 
 (def chat-ml
   [:map
-   [:role [:enum :assistant :user]]
+   [:role [:enum chat/system chat/user chat/assistant]]
    [:content string?]])
 
 (def chat-response

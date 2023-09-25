@@ -1,10 +1,10 @@
 (ns bosquet.llm.openai
   (:require
    [bosquet.llm.chat :as llm.chat]
+   [bosquet.llm.chat :as chat]
    [bosquet.llm.llm :as llm]
    [clojure.string :as string]
    [jsonista.core :as j]
-   [malli.core :as m]
    [malli.generator :as mg]
    [taoensso.timbre :as timbre]
    [wkok.openai-clojure.api :as api]))
@@ -27,8 +27,8 @@
   [content {:keys [prompt_tokens completion_tokens total_tokens]}]
   {llm/content content
    llm/usage   {:prompt     prompt_tokens
-                           :completion completion_tokens
-                           :total      total_tokens}})
+                :completion completion_tokens
+                :total      total_tokens}})
 
 (defmulti ->completion (fn [{object :object}] object))
 
@@ -36,37 +36,40 @@
   [{:keys [choices usage]}]
   (let [{msg :message finish :finish_reason} (first choices)]
     (->completion*
-      {:completion    msg
-       :finish-reason finish}
-      usage)))
+     {:completion    (chat/chatml->bosquet msg)
+      :finish-reason finish}
+     usage)))
 
 (defmethod ->completion "text_completion"
   [{:keys [choices usage]}]
   (let [{text :text probs :logprobs finish :finish_reason} (first choices)]
     (->completion*
-      {:completion    text
-       :logprobs      probs
-       :finish-reason finish}
-      usage)))
+     {:completion    text
+      :logprobs      probs
+      :finish-reason finish}
+     usage)))
+
+(def default-system-prompt
+  {:role :system :content "You are a helpful assistant."})
 
 (defn create-chat-completion
   "Completion using Chat GPT model. This one is loosing the conversation
   aspect of the API. It will construct basic `system` for the
   conversation and then use `prompt` as the `user` in the chat "
   [prompt params opts]
-  (-> (api/create-chat-completion
-       (assoc params
-              :messages [{:role "system" :content "You are a helpful assistant."}
-                         {:role "user" :content prompt}])
-       opts)
-      :choices first :message :content))
+  (->completion
+   (api/create-chat-completion
+    (assoc params
+           :messages [default-system-prompt
+                      {:role :user :content prompt}])
+    opts)))
 
 (defn create-completion
   "Create completion (not chat) for `prompt` based on model `params` and invocation `opts`"
   [prompt params opts]
-  (-> (api/create-completion
-       (assoc params :prompt prompt) opts)
-      :choices first :text))
+  (->completion
+   (api/create-completion
+    (assoc params :prompt prompt) opts)))
 
 (defn- ->error [ex]
   (ex-info
@@ -103,33 +106,17 @@
        (catch Exception e
          (throw (->error e)))))))
 
-(def ^:private bosquet-chatml-roles
-  {llm.chat/system    :system
-   llm.chat/user      :user
-   llm.chat/assistant :assistant})
-
-(def ^:private chatml-bosquet-roles
-  {"system"    llm.chat/system
-   "user"      llm.chat/user
-   "assistant" llm.chat/assistant})
-
-(defn- bosquet->chatml
-  [{role llm.chat/role content llm.chat/content}]
-  {:role (bosquet-chatml-roles role) :content content})
-
-(defn- chatml->bosquet
-  [{:keys [role content]}]
-  {llm.chat/role (chatml-bosquet-roles role) llm.chat/content content})
-
 (defn chat-completion
   [messages {:keys [model] :as params} opts]
-  (let [params (if model params (assoc params :model cgpt-35))]
+  (let [params   (if model params (assoc params :model cgpt-35))
+        messages (mapv chat/bosquet->chatml messages)]
     (timbre/infof "Calling OAI chat with:")
     (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
     (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
-    (-> (assoc params :messages (mapv bosquet->chatml messages))
+    (-> params
+        (assoc :messages messages)
         (api/create-chat-completion opts)
-        :choices first :message chatml->bosquet)))
+        ->completion)))
 
 (deftype OpenAI
          [opts]
@@ -141,13 +128,12 @@
 
 (comment
   (chat-completion
-   [{llm.chat/role :system llm.chat/content "You are a helpful assistant."}
-    {llm.chat/role :user llm.chat/content "Who won the world series in 2020?"}
-    {llm.chat/role :assistant llm.chat/content "The Los Angeles Dodgers won the World Series in 2020."}
-    {llm.chat/role :user llm.chat/content "Where was it played?"}]
-   {:model "gpt-3.5-turbo"}
-   nil)
+   [(llm.chat/speak llm.chat/system "You are a helpful assistant.")
+    (llm.chat/speak llm.chat/user "Who won the world series in 2020?")
+    (llm.chat/speak llm.chat/assistant "The Los Angeles Dodgers won the World Series in 2020.")
+    (llm.chat/speak llm.chat/user "Where was it played?")]
+   nil nil)
 
   (complete "What is your name?" {:max-tokens 10 :model "gpt-4"})
-  (complete "What is your name?" {:max-tokens 10 :model :ccgpt})
-  (complete "What is your name?" {:max-tokens 10}))
+  (complete "What is your name?" {:max-tokens 10 :model "x"})
+  (complete "What is your name?" {:max-tokens 10 :model "text-ada-001"}))

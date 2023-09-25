@@ -30,6 +30,24 @@
   "Key to reference `memory` of the conversation"
   :bosquet.chat/memory)
 
+(def ^:private bosquet-chatml-roles
+  {system    :system
+   user      :user
+   assistant :assistant})
+
+(def ^:private chatml-bosquet-roles
+  {"system"    system
+   "user"      user
+   "assistant" assistant})
+
+(defn bosquet->chatml
+  [{r role c content}]
+  {:role (bosquet-chatml-roles r) :content c})
+
+(defn chatml->bosquet
+  [{r :role c :content}]
+  {role (chatml-bosquet-roles r) content c})
+
 (defn speak
   "Helper function to create a chat message
 
