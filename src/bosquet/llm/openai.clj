@@ -23,11 +23,12 @@
   (string/starts-with? model "gpt-"))
 
 (defn- ->completion*
-  [content {:keys [prompt_tokens completion_tokens total_tokens]}]
-  {llm/content content
-   llm/usage   {:prompt     prompt_tokens
-                :completion completion_tokens
-                :total      total_tokens}})
+  [generation-type content {:keys [prompt_tokens completion_tokens total_tokens]}]
+  {llm/generation-type generation-type
+   llm/content         content
+   llm/usage           {:prompt     prompt_tokens
+                        :completion completion_tokens
+                        :total      total_tokens}})
 
 (defmulti ->completion (fn [{object :object}] object))
 
@@ -35,6 +36,7 @@
   [{:keys [choices usage]}]
   (let [{msg :message finish :finish_reason} (first choices)]
     (->completion*
+     :chat
      {:completion    (chat/chatml->bosquet msg)
       :finish-reason finish}
      usage)))
@@ -43,6 +45,7 @@
   [{:keys [choices usage]}]
   (let [{text :text probs :logprobs finish :finish_reason} (first choices)]
     (->completion*
+     :completion
      {:completion    text
       :logprobs      probs
       :finish-reason finish}

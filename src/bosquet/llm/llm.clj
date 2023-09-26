@@ -21,19 +21,25 @@
 
 (def usage ::usage)
 
+(def generation-type ::type)
+
 (def token-usage
   [:map
    [:prompt pos-int?]
    [:completion pos-int?]
    [:total pos-int?]])
 
+(def generation-type-values [:enum :chat :completion])
+
 (def chat-response
   [:map
+   [generation-type generation-type-values]
    [content chat/chat-ml]
    [usage token-usage]])
 
 (def completion-response
   [:map
+   [generation-type generation-type-values]
    [content string?]
    [usage token-usage]])
 
