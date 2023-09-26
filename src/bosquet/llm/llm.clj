@@ -27,14 +27,9 @@
    [:completion pos-int?]
    [:total pos-int?]])
 
-(def chat-ml
-  [:map
-   [:role [:enum chat/system chat/user chat/assistant]]
-   [:content string?]])
-
 (def chat-response
   [:map
-   [content chat-ml]
+   [content chat/chat-ml]
    [usage token-usage]])
 
 (def completion-response

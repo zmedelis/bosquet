@@ -1,60 +1,65 @@
-(ns bosquet.llm.chat)
+(ns bosquet.llm.chat
+  (:require
+   [clojure.set :as set]
+   [malli.generator :as mg]))
 
-;;
-;; Keys to reference sytem components in option maps
-;;
+;; ## ChatML
+
+(def role
+  :role)
+
+(def content
+  :content)
 
 (def system
   "Key to reference `system` role in ChatML format"
-  :bosquet.chat/system)
-
-(def role
-  :bosquet.chat/role)
-
-(def content
-  :bosquet.chat/content)
+  :system)
 
 (def user
   "Key to reference `user` role in ChatML format"
-  :bosquet.chat/user)
+  :user)
 
 (def assistant
   "Key to reference `assistant` role in ChatML format"
-  :bosquet.chat/assistant)
+  :assistant)
 
-(def conversation
-  "Key to reference complete `conversation` - a history"
-  :bosquet.chat/conversation)
+(def roles [:enum system user assistant])
 
-(def memory
-  "Key to reference `memory` of the conversation"
-  :bosquet.chat/memory)
+(def chat-ml
+  "Schema defining ChatML response format"
+  [:map
+   [:role roles]
+   [:content string?]])
 
-(def ^:private bosquet-chatml-roles
-  {system    :system
-   user      :user
-   assistant :assistant})
-
-(def ^:private chatml-bosquet-roles
-  {"system"    system
-   "user"      user
-   "assistant" assistant})
+(def ^:private role-mapping
+  (let [roles {system    :system
+               user      :user
+               assistant :assistant}]
+    (merge roles (set/map-invert roles))))
 
 (defn bosquet->chatml
   [{r role c content}]
-  {:role (bosquet-chatml-roles r) :content c})
+  {:role (role-mapping r) :content c})
 
 (defn chatml->bosquet
   [{r :role c :content}]
-  {role (chatml-bosquet-roles r) content c})
+  {role (role-mapping (keyword r)) content c})
 
 (defn speak
   "Helper function to create a chat message
 
   ```clojure
-  {:bosquet.chat/role    :assistant
-   :bosqyet.chat/content \"Hello, I am your assistant\"
+  {:role    :assistant
+   :content \"Hello, I am your assistant\"
   ```"
+  {:malli/schema
+   [:function
+    [:=> [:cat roles :string] chat-ml]]
+   :malli/gen mg/generate}
   [speaker-role speaker-content]
   {role    speaker-role
    content speaker-content})
+
+(def conversation
+  "Key to reference complete `conversation` - a history"
+  :bosquet.chat/conversation)

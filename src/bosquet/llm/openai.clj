@@ -1,6 +1,5 @@
 (ns bosquet.llm.openai
   (:require
-   [bosquet.llm.chat :as llm.chat]
    [bosquet.llm.chat :as chat]
    [bosquet.llm.llm :as llm]
    [clojure.string :as string]
