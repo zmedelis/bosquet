@@ -3,6 +3,7 @@
    [bosquet.complete :as complete]
    [bosquet.llm.chat :as llm.chat]
    [bosquet.llm.generator :refer [all-keys chat generate]]
+   [bosquet.llm.llm :as llm]
    [bosquet.llm.openai :as openai]
    [bosquet.system :as b]
    [clojure.test :refer [deftest is]]
@@ -10,10 +11,13 @@
    [matcher-combinators.test :refer [match?]]))
 
 (defn dummy-generator [_text {model :model} _opts]
-  (condp = model
-    "galileo" "0.0017 AU"
-    "hubble"  "Yes"
-    (throw (ex-info (str "Unknown model: " model) {}))))
+  {llm/content
+   {:completion
+    {:content
+     (condp = model
+       "galileo" "0.0017 AU"
+       "hubble"  "Yes"
+       (throw (ex-info (str "Unknown model: " model) {})))}}})
 
 (def astronomy-prompt
   {:role            "As a brilliant {{you-are}} answer the following question."

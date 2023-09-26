@@ -127,10 +127,10 @@
 
 (comment
   (chat-completion
-   [(llm.chat/speak llm.chat/system "You are a helpful assistant.")
-    (llm.chat/speak llm.chat/user "Who won the world series in 2020?")
-    (llm.chat/speak llm.chat/assistant "The Los Angeles Dodgers won the World Series in 2020.")
-    (llm.chat/speak llm.chat/user "Where was it played?")]
+   [(chat/speak chat/system "You are a helpful assistant.")
+    (chat/speak chat/user "Who won the world series in 2020?")
+    (chat/speak chat/assistant "The Los Angeles Dodgers won the World Series in 2020.")
+    (chat/speak chat/user "Where was it played?")]
    nil nil)
 
   (complete "What is your name?" {:max-tokens 10 :model "gpt-4"})
