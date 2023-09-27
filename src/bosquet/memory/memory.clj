@@ -32,13 +32,7 @@
   (remember [this observation])
   (free-recall [this cueue params])
   (sequential-recall [this params])
-  (cue-recall [this cue params]))
-
-(defprotocol Storage
-  ;; Store a memory object for later retrieval via recall
-  (store [this observation])
-  (query [this params])
-  ;; What is the size in `tokens` of the memory
+  (cue-recall [this cue params])
   (volume [this opts]))
 
 ;; Someone who forgets it all. To be used when memory is not needed (default)

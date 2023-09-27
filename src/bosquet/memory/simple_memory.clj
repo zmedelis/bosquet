@@ -8,24 +8,6 @@
 
 (def in-memory-memory (atom []))
 
-#_(deftype AtomicStorage
-           []
-    mem/Storage
-    (store [_this observation]
-      (swap! in-memory-memory conj observation))
-    (query [_this pred] (filter pred @in-memory-memory))
-    ;; TODO no passing in opts! Construct Memory with Opts and
-    ;; have `volume` calc returned from Memory
-    (volume [_this {service :bosquet.llm/service
-                    {model :bosquet.llm/model-parameters} :model}]
-      (let [tokenizer
-            (condp = service
-              [:llm/openai :provider/azure]  oai.tokenizer/token-count
-              [:llm/openai :provider/openai] oai.tokenizer/token-count
-              :else                          oai.tokenizer/token-count)]
-        (reduce (fn [m txt] (+ m  (token-count tokenizer txt model)))
-                0 @in-memory-memory))))
-
 (deftype SimpleMemory
          [encoder]
   mem/Memory
@@ -39,4 +21,14 @@
 
   (sequential-recall [this _params] (.free-recall this nil nil))
 
-  (cue-recall [this _cue _params] (.free-recall this nil nil)))
+  (cue-recall [this _cue _params] (.free-recall this nil nil))
+
+  (volume [_this {service :bosquet.llm/service
+                  {model :model} :bosquet.llm/model-parameters}]
+    (let [tokenizer
+          (condp = service
+            [:llm/openai :provider/azure]  oai.tokenizer/token-count
+            [:llm/openai :provider/openai] oai.tokenizer/token-count
+            :else                          oai.tokenizer/token-count)]
+      (reduce (fn [m {txt :content}] (+ m  (token-count tokenizer txt model)))
+        0 @in-memory-memory))))
