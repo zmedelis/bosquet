@@ -43,5 +43,4 @@
 
  ;; Memory components
  :memory/simple-short-term
- {:encoder   :memory.encoding/as-is
-  :retrieval :memory.retrieval/sequential}}
+ {:encoder   :memory.encoding/as-is}}

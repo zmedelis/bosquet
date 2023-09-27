@@ -5,14 +5,13 @@
    [bosquet.llm.openai :as oai]
    [bosquet.memory.encoding :as encoding]
    [bosquet.memory.memory :as mem]
-   [bosquet.memory.retrieval :as retrieval]
    [clojure.java.io :as io]
    [integrant.core :as ig]
    [taoensso.timbre :as timbre])
   (:import
    [bosquet.llm.cohere Cohere]
    [bosquet.llm.openai OpenAI]
-   [bosquet.memory.simple_memory AtomicStorage SimpleMemory]
+   [bosquet.memory.simple_memory SimpleMemory]
    [bosquet.memory.memory Amnesiac]))
 
 ;;
@@ -61,12 +60,10 @@
 ;; Memory Components
 ;;
 
-(defmethod ig/init-key :memory/simple-short-term [_ {:keys [encoder retriever] :as opts}]
+(defmethod ig/init-key :memory/simple-short-term [_ {:keys [encoder] :as opts}]
   (timbre/infof " * Short term memory with (%s)" opts)
   (SimpleMemory.
-   (AtomicStorage.)
-   (encoding/handler encoder)
-   (retrieval/handler retriever)))
+   (encoding/handler encoder)))
 
 (def system
   (do

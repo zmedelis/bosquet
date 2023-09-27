@@ -44,7 +44,7 @@
         (get-in opts [llm.chat/conversation])
         llm          (system/get-service service)
         memory       (system/get-memory type)
-        memories     (.recall memory {:limit 10})
+        memories     (.sequential-recall memory {:limit 10})
         completion   (.chat llm (concat memories messages) model-parameters)]
     (.remember memory messages)
     (.remember memory (-> completion llm/content :completion))

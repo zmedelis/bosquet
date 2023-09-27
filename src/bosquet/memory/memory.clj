@@ -29,16 +29,10 @@
 ;; - reflection
 
 (defprotocol Memory
-  ;; Encode and store an observation into memory store
   (remember [this observation])
-  ;; Recall the memory by cueue
-  (recall [this cueue])
-  ;; Remove all memory objects matching cueue from memory store
-  (forget [this cueue]))
-
-;; (defprotocol Encoder
-;;   ;; Encode an observation into a memory object
-;;   (encode [this observation]))
+  (free-recall [this cueue params])
+  (sequential-recall [this params])
+  (cue-recall [this cue params]))
 
 (defprotocol Storage
   ;; Store a memory object for later retrieval via recall
@@ -51,9 +45,10 @@
 (deftype Amnesiac
          []
   Memory
-  (remember [_this observation])
-  (recall [_this cueue])
-  (forget [_this cueue]))
+  (remember [this observation])
+  (free-recall [this cueue params])
+  (sequential-recall [this params])
+  (cue-recall [this cue params]))
 
 ;; Encode: Chunking, Semantic, Metadata
 ;; Store: Atom, VectorDB
