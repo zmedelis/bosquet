@@ -1,6 +1,4 @@
-(ns bosquet.memory.memory
-  (:require
-   [bosquet.llm.openai-tokens :as oai.tokenizer]))
+(ns bosquet.memory.memory)
 
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
 ;; Memory component is used for one of the following purposes:
@@ -49,41 +47,6 @@
   ;; What is the size in `tokens` of the memory
   (volume [this opts]))
 
-(defn- token-count [tokenizer-fn text model]
-  (tokenizer-fn text model))
-
-(def in-memory-memory (atom []))
-
-(deftype AtomicStorage
-         []
-  Storage
-  (store [_this observation]
-    (swap! in-memory-memory conj observation))
-  (query [_this pred] (filter pred @in-memory-memory))
-    ;; TODO no passing in opts! Construct Memory with Opts and
-    ;; have `volume` calc returned from Memory
-  (volume [_this {service :bosquet.llm/service
-                  {model :bosquet.llm/model-parameters} :model}]
-    (let [tokenizer
-          (condp = service
-            [:llm/openai :provider/azure]  oai.tokenizer/token-count
-            [:llm/openai :provider/openai] oai.tokenizer/token-count
-            :else                          oai.tokenizer/token-count)]
-      (reduce (fn [m txt] (+ m  (token-count tokenizer txt model)))
-              0 @in-memory-memory))))
-
-(deftype SimpleMemory
-         [storage encoder retriever]
-  Memory
-  (remember [_this observation]
-    (if (vector? observation)
-      (doseq [item observation]
-        (.store storage (encoder item)))
-      (.store storage (encoder observation))))
-  (recall [_this cueue]
-    (retriever storage {}))
-  (forget [_this cueue]))
-
 ;; Someone who forgets it all. To be used when memory is not needed (default)
 (deftype Amnesiac
          []
@@ -109,28 +72,28 @@
   (def inputs {:role "cook" :meal "cake"})
 
   (gen/chat
-    [(chat/speak chat/system "You are a brilliant {{role}}.")
-     (chat/speak chat/user "What is a good {{meal}}?")
-     (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
-     (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
-    inputs params)
+   [(chat/speak chat/system "You are a brilliant {{role}}.")
+    (chat/speak chat/user "What is a good {{meal}}?")
+    (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
+    (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
+   inputs params)
 
   (gen/chat
-    [(chat/speak chat/user "What would be the name of this recipe?")]
-    inputs params)
+   [(chat/speak chat/user "What would be the name of this recipe?")]
+   inputs params)
 
   (gen/generate
-    {:role            "As a brilliant {{you-are}} answer the following question."
-     :question        "What is the distance between Io and Europa?"
-     :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
-     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
-    {:you-are  "astronomer"
-     :question "What is the distance from Moon to Io?"}
+   {:role            "As a brilliant {{you-are}} answer the following question."
+    :question        "What is the distance between Io and Europa?"
+    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
+   {:you-are  "astronomer"
+    :question "What is the distance from Moon to Io?"}
 
-    {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
-                       :bosquet.llm/model-parameters {:temperature 0.4
-                                                      :model "gpt-4"}
+   {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
+                      :bosquet.llm/model-parameters {:temperature 0.4
+                                                     :model "gpt-4"}
                        ;; ?
-                       :bosquet.memory/type          :bosquet.memory/short-term}
-     :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
-                       :bosquet.llm/model-parameters {:temperature 0}}}))
+                      :bosquet.memory/type          :bosquet.memory/short-term}
+    :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
+                      :bosquet.llm/model-parameters {:temperature 0}}}))

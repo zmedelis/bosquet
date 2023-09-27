@@ -12,7 +12,8 @@
   (:import
    [bosquet.llm.cohere Cohere]
    [bosquet.llm.openai OpenAI]
-   [bosquet.memory.memory Amnesiac AtomicStorage SimpleMemory]))
+   [bosquet.memory.simple_memory AtomicStorage SimpleMemory]
+   [bosquet.memory.memory Amnesiac]))
 
 ;;
 ;; Keys to reference sytem components in option maps

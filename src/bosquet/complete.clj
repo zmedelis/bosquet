@@ -1,6 +1,7 @@
 (ns bosquet.complete
   (:require
    [bosquet.llm.chat :as llm.chat]
+   [bosquet.llm.llm :as llm]
    [bosquet.system :as system]
    [clojure.core :as core]
    [clojure.core.cache.wrapped :as cache]))
@@ -46,5 +47,5 @@
         memories     (.recall memory {:limit 10})
         completion   (.chat llm (concat memories messages) model-parameters)]
     (.remember memory messages)
-    (.remember memory completion)
+    (.remember memory (-> completion llm/content :completion))
     completion))
