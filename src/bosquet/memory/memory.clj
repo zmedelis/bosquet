@@ -97,82 +97,40 @@
 ;; Retrieve: Sequential, Cueue, Query
 ;;
 
-(defmacro with-memory
-  "This macro will execute LLM `completions` with the aid of supplied
-  `memory`.
-
-  The macro will build a code to execute the following sequence:
-  * recall needed memory items from its storage
-  * inject that retrieved data into `completion` input
-    -  for `chat` generation it will be ChatML messages preappended to the
-       beginning of the conversation
-    - for `completion` generation those will be added as extra data points to
-      the Pathom execution map
-  * make a LLM generation call (chat or completion)
-  * remember the generated data
-  * return generated data"
-  [memory & completions]
-  `(doseq [~'[gen-fn messages inputs params] ~completions]
-     (let [~'memories (recall ~memory identity)
-           ~'res      (~'gen-fn (concat ~'memories ~'messages) ~'inputs ~'params)]
-       (remember ~memory ~'messages)
-       (remember ~memory ~'res))))
-
 (comment
   (require '[bosquet.llm.generator :as gen])
   (require '[bosquet.llm.chat :as chat])
-  (def s (AtomicStorage.))
-  (def mem (SimpleMemory.))
-
-  (def params {chat/conversation
-               {:bosquet.llm/service          [:llm/openai :provider/openai]
-                :bosquet.llm/model-parameters {:temperature 0
-                                               :model       "gpt-3.5-turbo"}}})
-  (def inputs {:role "cook" :meal "cake"})
-  (remember mem (chat/speak chat/system "You are a brilliant {{role}}."))
-  (with-memory mem
-    (gen/chat
-     [(chat/speak chat/user "What is a good {{meal}}?")
-      (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
-      (chat/speak chat/user "Help me to learn the ways of a good {{meal}} by giving me one great recipe")]
-     inputs params)
-    (gen/chat
-     [(chat/speak chat/user "How many calories are in one serving of this recipe?")]
-     inputs params))
-
-  ;; ---
 
   (def params {chat/conversation
                {:bosquet.memory/type          :memory/simple-short-term
                 :bosquet.llm/service          [:llm/openai :provider/openai]
                 :bosquet.llm/model-parameters {:temperature 0
                                                :model       "gpt-3.5-turbo"}}})
+  (def inputs {:role "cook" :meal "cake"})
 
   (gen/chat
-   [(chat/speak chat/system "You are a brilliant {{role}}.")
-    (chat/speak chat/user "What is a good {{meal}}?")
-    (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
-    (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
-   {:role "cook" :meal "cake"}
-   params)
+    [(chat/speak chat/system "You are a brilliant {{role}}.")
+     (chat/speak chat/user "What is a good {{meal}}?")
+     (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
+     (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
+    inputs params)
 
   (gen/chat
-   [(chat/speak chat/user "What would be the name of this recipe?")]
-   {:role "cook" :meal "cake"}
-   params)
+    [(chat/speak chat/user "What would be the name of this recipe?")]
+    inputs params)
 
   (gen/generate
-   {:role            "As a brilliant {{you-are}} answer the following question."
-    :question        "What is the distance between Io and Europa?"
-    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
-   {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"}
+    {:role            "As a brilliant {{you-are}} answer the following question."
+     :question        "What is the distance between Io and Europa?"
+     :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
+     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
+    {:you-are  "astronomer"
+     :question "What is the distance from Moon to Io?"}
 
-   {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
-                      :bosquet.llm/model-parameters {:temperature 0.4
-                                                     :model "gpt-4"}
+    {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
+                       :bosquet.llm/model-parameters {:temperature 0.4
+                                                      :model "gpt-4"}
                        ;; ?
-                      :bosquet.memory/type          :bosquet.memory/short-term}
-    :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
-                      :bosquet.llm/model-parameters {:temperature 0}}}))
+                       :bosquet.memory/type          :bosquet.memory/short-term}
+     :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
+                       :bosquet.llm/model-parameters {:temperature 0}}}))
