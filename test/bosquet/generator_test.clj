@@ -13,11 +13,10 @@
 (defn dummy-generator [_text {model :model} _opts]
   {llm/content
    {:completion
-    {:content
-     (condp = model
-       "galileo" "0.0017 AU"
-       "hubble"  "Yes"
-       (throw (ex-info (str "Unknown model: " model) {})))}}})
+    (condp = model
+      "galileo" "0.0017 AU"
+      "hubble"  "Yes"
+      (throw (ex-info (str "Unknown model: " model) {})))}})
 
 (def astronomy-prompt
   {:role            "As a brilliant {{you-are}} answer the following question."

@@ -59,12 +59,16 @@
   aspect of the API. It will construct basic `system` for the
   conversation and then use `prompt` as the `user` in the chat "
   [prompt params opts]
-  (->completion
-   (api/create-chat-completion
-    (assoc params
-           :messages [default-system-prompt
-                      {:role :user :content prompt}])
-    opts)))
+  (let [result (->completion
+                (api/create-chat-completion
+                 (assoc params
+                        :messages [default-system-prompt
+                                   {:role :user :content prompt}])
+                 opts))]
+    ;; wrangle the resulting data structure into `completion` format
+    (-> result
+        (assoc-in [llm/generation-type] :completion)
+        (assoc-in [llm/content :completion] (-> result llm/content :completion :content)))))
 
 (defn create-completion
   "Create completion (not chat) for `prompt` based on model `params` and invocation `opts`"
@@ -109,6 +113,12 @@
          (throw (->error e)))))))
 
 (defn chat-completion
+  {:malli/schema
+   [:function
+    [:=> [:cat :string] llm/chat-response]
+    [:=> [:cat :string :map] llm/chat-response]
+    [:=> [:cat :string :map :map] llm/chat-response]]
+   :malli/gen mg/generate}
   [messages {:keys [model] :as params} opts]
   (let [params   (if model params (assoc params :model cgpt-35))
         messages (mapv chat/bosquet->chatml messages)]

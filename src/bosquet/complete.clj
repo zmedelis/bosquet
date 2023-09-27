@@ -1,7 +1,6 @@
 (ns bosquet.complete
   (:require
    [bosquet.llm.chat :as llm.chat]
-   [bosquet.llm.llm :as llm]
    [bosquet.system :as system]
    [clojure.core :as core]
    [clojure.core.cache.wrapped :as cache]))
@@ -24,10 +23,8 @@
 
 (defn complete [prompt {gen-key :the-key :as opts}]
   (let [{:bosquet.llm/keys [service model-parameters]} (get-in opts [system/llm-config gen-key])
-        llm (system/get-service service)
-        {content llm/content} (.generate llm prompt model-parameters)]
-    ;; TODO non-chat model will return different structure
-    (-> content :completion :content))
+        llm (system/get-service service)]
+    (.generate llm prompt model-parameters))
   ;; TODO bring back the cache immediately
   ;; use Integrant system to setup the cache component
   #_(let [complete-fn
@@ -40,8 +37,7 @@
         (complete-with-cache prompt opts (ensure-atom cache) complete-fn)
         (complete-fn prompt opts))))
 
-(defn chat-completion [messages
-                       opts]
+(defn chat-completion [messages opts]
   (let [{:bosquet.llm/keys    [service model-parameters]
          :bosquet.memory/keys [type]}
         (get-in opts [llm.chat/conversation])

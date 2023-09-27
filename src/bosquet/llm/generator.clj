@@ -175,7 +175,7 @@
 
    {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
                       :bosquet.llm/model-parameters {:temperature 0.4
-                                                     :model "gpt-4"}}
+                                                     :model "text-davinci-003"}}
     :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
                       :bosquet.llm/model-parameters {:temperature 0}}})
 
