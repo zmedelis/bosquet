@@ -16,7 +16,8 @@
            org.clojure/core.cache          {:mvn/version "1.0.225"}
            metosin/malli                   {:mvn/version "0.13.0"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
-                        :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.14.919"}}}
+                        :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.14.919"}
+                                      djblue/portal               {:mvn/version "0.48.0"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "0.3.7"}}
            :rebel      {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
