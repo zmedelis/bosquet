@@ -125,10 +125,13 @@
     (timbre/infof "Calling OAI chat with:")
     (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
     (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
-    (-> params
+    (try
+      (-> params
         (assoc :messages messages)
         (api/create-chat-completion opts)
-        ->completion)))
+        ->completion)
+      (catch Exception e
+         (throw (->error e))))))
 
 (deftype OpenAI
          [opts]
