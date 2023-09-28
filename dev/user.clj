@@ -1,8 +1,12 @@
 (ns user
   #_{:clj-kondo/ignore [:unused-namespace]}
-  (:require [nextjournal.clerk :as clerk]))
+  (:require [nextjournal.clerk :as clerk]
+            [portal.api :as p]))
 
 (comment
+  (def p (p/open))
+  (add-tap #'p/submit)
+
   (clerk/serve! {:watch-paths ["notebook"]})
 
   (clerk/show! "notebook/user_guide.clj")
