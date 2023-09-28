@@ -33,6 +33,9 @@
   (free-recall [this cueue params])
   (sequential-recall [this params])
   (cue-recall [this cue params])
+  ;; TODO volume calculation should not be a concern of Memory
+  ;; It can store whatever it can constrained by storage mechanism
+  ;; what can be used by the memory is defined by generation model
   (volume [this opts]))
 
 ;; Someone who forgets it all. To be used when memory is not needed (default)
