@@ -25,12 +25,28 @@
   (timbre/warnf "No tokenizer for '%s' - '%s'. Using OpenAI tokenization (FIXME)" llm model)
   (oai.tokenizer/token-count memory-object model))
 
+(defn take-while-tokens
+  [objects token-limit model llm]
+  (loop [[object & objects] objects
+         retrieved-objects  []
+         token-count        (memory-object-size object model llm)]
+    (if (and object (> token-limit token-count))
+      (recur
+       objects (conj retrieved-objects object)
+       (+ token-count (memory-object-size object model llm)))
+      (reverse retrieved-objects))))
+
 (def memory-objects-limit
   "A limit on how many objects are to be retrieved from the memory.
 
   Note that it does not deal with tokens. Thus even a single memory
   object might be over the token limit"
   :memory.retrieval/object-limit)
+
+(def memory-tokens-limit
+  "A limit on how many tokens are to be retrieved from the memory across
+  different memory objects. "
+  :memory.retrieval/token-limit)
 
 (defn free-recall-handler [storage _params]
   (shuffle (.query storage identity)))
