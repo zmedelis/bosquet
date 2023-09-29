@@ -19,9 +19,14 @@
   ([prompt]
    (complete prompt {})))
 
+(def cohere
+  "Service name to refernece Cohere"
+  ::cohere)
+
 (deftype Cohere
          [config]
   llm/LLM
+  (service-name [_this] cohere)
   (generate [_this prompt props]
     (let [props (props->cohere props)]
       (timbre/infof "Calling Cohere with:")

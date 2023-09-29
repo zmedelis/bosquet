@@ -63,6 +63,7 @@
 (defmethod ig/init-key :memory/simple-short-term [_ {:keys [encoder] :as opts}]
   (timbre/infof " * Short term memory with (%s)" opts)
   (SimpleMemory.
+   (atom [])
    (encoding/handler encoder)))
 
 (def system

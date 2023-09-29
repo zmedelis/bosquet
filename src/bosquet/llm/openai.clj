@@ -127,15 +127,20 @@
     (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
     (try
       (-> params
-        (assoc :messages messages)
-        (api/create-chat-completion opts)
-        ->completion)
+          (assoc :messages messages)
+          (api/create-chat-completion opts)
+          ->completion)
       (catch Exception e
-         (throw (->error e))))))
+        (throw (->error e))))))
+
+(def openai
+  "Service name to refernece OpenAI"
+  ::open-ai)
 
 (deftype OpenAI
          [opts]
   llm/LLM
+  (service-name [_this] openai)
   (generate [_this prompt params]
     (complete prompt params opts))
   (chat     [_this conversation params]

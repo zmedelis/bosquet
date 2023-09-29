@@ -60,5 +60,6 @@
 ;; services that provide the LLM calls to OpenAI, or any other
 ;; supported LLM service.
 (defprotocol LLM
+  (service-name [this])
   (generate [this prompt props])
   (chat     [this conversation props]))
