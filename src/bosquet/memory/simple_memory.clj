@@ -1,5 +1,6 @@
 (ns bosquet.memory.simple-memory
   (:require
+   [bosquet.llm.llm :as llm]
    [bosquet.llm.openai :as openai]
    [bosquet.memory.memory :as mem]
    [bosquet.memory.retrieval :as r]))
@@ -18,18 +19,13 @@
                                             token-limit  3000}}]
     (->> @in-memory-memory shuffle (take object-limit)))
 
-  (sequential-recall [_this {object-limit r/memory-objects-limit
-                             token-limit  r/memory-tokens-limit
-                             :or          {object-limit 5
-                                           token-limit  3000}}]
-    (if token-limit
-      ;; WIP
-      (r/take-while-tokens
-       (reverse (take-last object-limit @in-memory-memory))
-       token-limit
-       "gpt-3.5-turbo"
-       openai/openai)
-      (take-last object-limit @in-memory-memory)))
+  (sequential-recall [_this params]
+    ;; WIP
+    (r/take-while-tokens
+     @in-memory-memory
+     (assoc params
+            llm/model "gpt-3.5-turbo"
+            llm/service openai/openai)))
 
   (cue-recall [this _cue _params] (.free-recall this nil nil))
 

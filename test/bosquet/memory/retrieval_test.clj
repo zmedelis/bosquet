@@ -25,11 +25,11 @@
     (is (= ["One monkey" "Two monkeys" "Three monkeys" "Four monkeys" "Five monkeys"]
            (.sequential-recall mem nil)))
     (is (= ["Four monkeys" "Five monkeys"]
-           (.sequential-recall mem
-                               {r/memory-objects-limit 2})))))
+           (.sequential-recall mem {r/memory-objects-limit 2
+                                    r/memory-content-fn    identity})))))
 
 (deftest retrieval-token-limit
   (let [mem (->memory)]
     (is (= ["Four monkeys" "Five monkeys"]
-           (.sequential-recall mem
-                               {r/memory-tokens-limit 5})))))
+           (.sequential-recall mem {r/memory-tokens-limit 5
+                                    r/memory-content-fn   identity})))))

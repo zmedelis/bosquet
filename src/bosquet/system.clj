@@ -5,6 +5,7 @@
    [bosquet.llm.openai :as oai]
    [bosquet.memory.encoding :as encoding]
    [bosquet.memory.memory :as mem]
+   [bosquet.memory.simple-memory :as simple-memory]
    [clojure.java.io :as io]
    [integrant.core :as ig]
    [taoensso.timbre :as timbre])

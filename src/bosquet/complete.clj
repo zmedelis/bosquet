@@ -40,12 +40,13 @@
 
 (defn chat-completion [messages opts]
   (let [{:bosquet.llm/keys    [service model-parameters]
-         :bosquet.memory/keys [type]}
+         :bosquet.memory/keys [type parameters]}
         (get-in opts [llm.chat/conversation])
-        llm          (system/get-service service)
-        memory       (system/get-memory type)
-        memories     (.sequential-recall memory {:limit 10})
-        completion   (.chat llm (concat memories messages) model-parameters)]
+        llm        (system/get-service service)
+        memory     (system/get-memory type)
+        memories   (.sequential-recall memory parameters)
+        _          (tap> {'memories memories})
+        completion (.chat llm (concat memories messages) model-parameters)]
     (.remember memory messages)
     (.remember memory (-> completion llm/content :completion))
     completion))

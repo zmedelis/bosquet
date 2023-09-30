@@ -17,6 +17,10 @@
       [:frequence-penalty {:optional true} float?]
       [:logit-bias {:optional true} float?]]))
 
+(def model ::model)
+
+(def service ::service)
+
 (def content ::content)
 
 (def usage ::usage)

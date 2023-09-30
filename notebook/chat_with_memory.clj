@@ -1,8 +1,9 @@
 (ns chat-with-memory
   (:require
-    [bosquet.llm.chat :as chat]
-    [bosquet.llm.generator :as gen]
-    [bosquet.system :as system]))
+   [bosquet.llm.chat :as chat]
+   [bosquet.llm.generator :as gen]
+   [bosquet.memory.retrieval :as r]
+   [bosquet.system :as system]))
 
 ;; Example taken from
 ;; https://github.com/pinecone-io/examples/blob/master/learn/generation/langchain/handbook/03a-token-counter.ipynb
@@ -41,7 +42,9 @@
 
 (def params {chat/conversation
              {:bosquet.memory/type          :memory/simple-short-term
+              :bosquet.memory/parameters    {r/memory-tokens-limit 3000}
               :bosquet.llm/service          [:llm/openai :provider/openai]
+              ;; TODO rename `model-parameters` -> `parameters`
               :bosquet.llm/model-parameters {:temperature 0
                                              :model       "gpt-3.5-turbo"}}})
 
@@ -54,5 +57,14 @@
     [(chat/speak chat/system "You are a brilliant assistant")]
     inputs params)
   (doseq [q queries]
-    (println q)
-    (gen/chat [(chat/speak chat/user q)] inputs params)))
+    (let [response (gen/chat [(chat/speak chat/user q)] inputs params)]
+      (tap> {'question q
+             'response response}))))
+
+;; TODO
+;; Completion response is
+;; {:completion
+;;  {:role :assistant,
+;;   :content "Thank you! I strive to be the best assistant I can be. How can I assist you today?" },
+;;  :finish-reason "stop" }
+;; Drop `completion` nesting
