@@ -12,7 +12,7 @@ Bosquet provides instruments to work with those AI application concepts:
 * LLM memory handling (in progress, to be added in the next release)
 * Other instruments like call response caching (see documentation)
 
-![bosquet chain](/doc/img/generation-chain.png)
+![bosquet chain](/docs/img/generation-chain.png)
 
 ## Quick example
 
@@ -52,7 +52,7 @@ advanced template definition functionality.
 
 Composability allows focusing on prompt language and logic, not worrying about resolving the dependencies and sequence of the prompt execution.
 
-![prompt chaining](/doc/img/chained-generation.png)
+![prompt chaining](/docs/img/chained-generation.png)
 
 In this prompt definition, *Bosquet* will ensure the following sequence of execution:
 
@@ -72,7 +72,7 @@ to name a few.
 
 A template example using for loop to fill in the data passed in as a collection
 
-![selmer template](/doc/img/selmer-template.png)
+![selmer template](/docs/img/selmer-template.png)
 
 ### LLM Services
 
