@@ -1,4 +1,4 @@
-{:paths ["src" "test"]
+{:paths ["src" "test" "dev"]
  :tasks {:init      (do (def standalone-jar-file "target/antq-standalone.jar")
                         (def jar-file "target/antq.jar"))
          rebel      (clojure "-M:dev:rebel")
@@ -10,4 +10,6 @@
          format     (shell "cljfmt check")
          format:fix (shell "cljfmt fix")
          pom        (clojure "-Spom")
-         clean      (shell "rm -rf .cpcache target")}}
+         clean      (shell "rm -rf .cpcache target")
+         docs       (do (shell "rm -rf docs")
+                        (clojure "-X:dev user/build-static-docs"))}}
