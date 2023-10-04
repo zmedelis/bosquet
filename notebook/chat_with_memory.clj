@@ -38,33 +38,36 @@
    "Yes I get that, but in the text passed to the model, how do we identify user prompt vs retrieved information?"])
 
 
-
-
 (def params {chat/conversation
              {:bosquet.memory/type          :memory/simple-short-term
               :bosquet.memory/parameters    {r/memory-tokens-limit 3000}
               :bosquet.llm/service          [:llm/openai :provider/openai]
               ;; TODO rename `model-parameters` -> `parameters`
               :bosquet.llm/model-parameters {:temperature 0
+                                             :max-tokens  100
                                              :model       "gpt-3.5-turbo"}}})
 
 (def inputs {})
 
 (def mem (system/get-memory :memory/simple-short-term))
 
-(defn chat-demo []
-  (gen/chat
-    [(chat/speak chat/system "You are a brilliant assistant")]
-    inputs params)
-  (doseq [q queries]
-    (let [response (gen/chat [(chat/speak chat/user q)] inputs params)]
-      (tap> {'question q
-             'response response}))))
+(defn chat-demo [queries]
+  (gen/chat [(chat/speak chat/system "You are a brilliant assistant")] inputs params)
+  ;; TODO `chat/speak` can be called inside `chat` simplify f signature
+  ;; (defn chat [role content role content ...] inputs params)
+  (map
+    (fn [q]
+      (let [message  [(chat/speak chat/user q)]
+            memories (gen/available-memories message params)
+            response (gen/chat message inputs params)
+            result   {:question q
+                      :memories memories
+                      :response response}]
+        (tap> result)
+        result))
+    queries))
 
-;; TODO
-;; Completion response is
-;; {:completion
-;;  {:role :assistant,
-;;   :content "Thank you! I strive to be the best assistant I can be. How can I assist you today?" },
-;;  :finish-reason "stop" }
-;; Drop `completion` nesting
+(map (fn [{:keys [question memories response] :as resp}]
+       (assoc resp
+         :response (get-in response [:bosquet.llm.llm/content :completion])))
+  (chat-demo (take 2 queries)))

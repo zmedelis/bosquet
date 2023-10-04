@@ -38,14 +38,19 @@
         (complete-with-cache prompt opts (ensure-atom cache) complete-fn)
         (complete-fn prompt opts))))
 
+(defn available-memories
+  [_messages opts]
+  (let [{:bosquet.memory/keys [type parameters]}
+        (get-in opts [llm.chat/conversation])]
+    (.sequential-recall (system/get-memory type) parameters)))
+
 (defn chat-completion [messages opts]
   (let [{:bosquet.llm/keys    [service model-parameters]
-         :bosquet.memory/keys [type parameters]}
+         :bosquet.memory/keys [type]}
         (get-in opts [llm.chat/conversation])
         llm        (system/get-service service)
         memory     (system/get-memory type)
-        memories   (.sequential-recall memory parameters)
-        _          (tap> {'memories memories})
+        memories   (available-memories messages opts)
         completion (.chat llm (concat memories messages) model-parameters)]
     (.remember memory messages)
     (.remember memory (-> completion llm/content :completion))

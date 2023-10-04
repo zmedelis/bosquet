@@ -14,10 +14,10 @@
   (def p (p/open))
   (add-tap #'p/submit)
 
-
-
   (clerk/serve! {:watch-paths ["notebook"]})
 
+  (clerk/show! "notebook/getting_started.clj")
   (clerk/show! "notebook/user_guide.clj")
+  (clerk/show! "notebook/chat_with_memory.clj")
   (clerk/show! "notebook/text_analyzers.clj")
   (clerk/show! "notebook/wedding_guest_example.clj"))

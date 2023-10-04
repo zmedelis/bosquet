@@ -24,6 +24,7 @@
     (r/take-while-tokens
      @in-memory-memory
      (assoc params
+            r/memory-content-fn :content
             llm/model "gpt-3.5-turbo"
             llm/service openai/openai)))
 
