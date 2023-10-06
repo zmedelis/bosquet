@@ -3,7 +3,7 @@
    [bosquet.llm.chat :as chat]
    [bosquet.llm.generator :as gen]
    [bosquet.memory.retrieval :as r]
-   [bosquet.system :as system]))
+   [nextjournal.clerk :as clerk]))
 
 ;; Example taken from
 ;; https://github.com/pinecone-io/examples/blob/master/learn/generation/langchain/handbook/03a-token-counter.ipynb
@@ -49,8 +49,6 @@
 
 (def inputs {})
 
-(def mem (system/get-memory :memory/simple-short-term))
-
 (defn chat-demo [queries]
   (gen/chat [(chat/speak chat/system "You are a brilliant assistant")] inputs params)
   ;; TODO `chat/speak` can be called inside `chat` simplify f signature
@@ -67,7 +65,17 @@
         result))
     queries))
 
-(map (fn [{:keys [question memories response] :as resp}]
-       (assoc resp
-         :response (get-in response [:bosquet.llm.llm/content :completion])))
-  (chat-demo (take 2 queries)))
+(def resp (chat-demo (take 2 queries)))
+
+(clerk/html
+  [:div
+   (mapv (fn [{:keys [question memories response]}]
+           (let [{:keys [role content]} (get-in response [:bosquet.llm.llm/content :completion])]
+             [:div
+              [:div.flex.space-x-6
+               [:p "Question"]
+               [:p question]]
+              [:div.flex.space-x-6
+               [:p "Response"]
+               [:p (str role ": " content)]]]))
+     resp)])

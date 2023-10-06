@@ -16,6 +16,8 @@
 
   (clerk/serve! {:watch-paths ["notebook"]})
 
+  (clerk/serve! {:browse? true})
+
   (clerk/show! "notebook/getting_started.clj")
   (clerk/show! "notebook/user_guide.clj")
   (clerk/show! "notebook/chat_with_memory.clj")
