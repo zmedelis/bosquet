@@ -9,6 +9,9 @@
          [in-memory-memory encoder]
   mem/Memory
 
+  (forget [_this]
+    (reset! in-memory-memory []))
+
   (remember [_this observation]
     (doseq [item (if (vector? observation) observation [observation])]
       (swap! in-memory-memory conj item)))
@@ -20,7 +23,7 @@
     (->> @in-memory-memory shuffle (take object-limit)))
 
   (sequential-recall [_this params]
-    ;; WIP
+      ;; WIP
     (r/take-while-tokens
      @in-memory-memory
      (assoc params

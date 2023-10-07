@@ -4,6 +4,7 @@
    [bosquet.llm.generator :as gen]
    [bosquet.llm.llm :as llm]
    [bosquet.memory.retrieval :as r]
+   [bosquet.system :as system]
    [clojure.string :as string]
    [nextjournal.clerk :as clerk]))
 
@@ -30,14 +31,7 @@
    "Can you explain the difference between transformer-XL and longformer?"
    "How much text can be encoded by each of these models?"
    "Okay very interesting, so before returning to earlier in the conversation. I understand now that there are a lot of different transformer (and not transformer) based models for creating the embeddings from vectors. Is that correct?"
-   "Perfect, so I understand text can be encoded into these embeddings. But what then? Once I have my embeddings what do I do?"
-   "I'd like to use these embeddings to help a chatbot or a question-answering system answer questions with help from this external knowledge base. I suppose this would come under information retrieval? Could you explain that process in a little more detail?"
-   "Okay great, that sounds like what I'm hoping to do. When you say the 'chatbot or question-answering system generates an embedding', what do you mean exactly?"
-   "Ah okay, I understand, so it isn't the 'chatbot' model specifically creating the embedding right? That's how I understood your earlier comment. It seems more like there is a separate embedding model? And that encodes the query, then we retrieve the set of relevant documents from the external knowledge base? How is that information then used by the chatbot or question-answering system exactly?"
-   "Okay but how is the information provided to the chatbot or question-answering system?"
-   "So the retrieved information is given to the chatbot / QA system as plain text? But then how do we pass in the original query? How can the system distinguish between a user's query and all of this additional information?"
-   "That doesn't seem correct to me, my question is — if we are giving the chatbot / QA system the user's query AND retrieved information from an external knowledge base, and it's all fed into the model as plain text, how does the model know what part of the plain text is a query vs. retrieved information?"
-   "Yes I get that, but in the text passed to the model, how do we identify user prompt vs retrieved information?"])
+   "Perfect, so I understand text can be encoded into these embeddings. But what then? Once I have my embeddings what do I do?"])
 
 
 (def params {chat/conversation
@@ -50,6 +44,10 @@
                                              :model       "gpt-3.5-turbo"}}})
 
 (def inputs {})
+
+(def mem (system/get-memory :memory/simple-short-term))
+
+(.forget mem)
 
 (defn chat-demo [queries]
   (gen/chat [(chat/speak chat/system "You are a brilliant assistant")] inputs params)
@@ -67,50 +65,7 @@
         result))
     queries))
 
-#_(def resp (chat-demo (take 2 queries)))
-
-(def resp '({:question "Good morning AI?",
-             :memories
-             ({:role :assistant, :content "Good morning! How can I assist you today?"}
-              {:role :user,
-               :content
-               "My interest here is to explore the potential of integrating Large Language Models with external knowledge"}
-              {:role :assistant,
-               :content
-               "That's a fascinating area to explore! Integrating large language models with external knowledge can enhance their capabilities and make them more useful in various domains. Here are a few ways you can approach this integration:\n\n1. Knowledge Graphs: You can leverage existing knowledge graphs, such as Wikidata or Freebase, to provide structured information to the language model. By connecting the language model with a knowledge graph, you can enable it to access and reason over a vast amount of factual information.\n\n2. Pre-training"}
-              {:role :system, :content "You are a brilliant assistant"}
-              {:role :assistant,
-               :content
-               "Thank you for your kind words! I'm here to assist you with any questions or information you need. How can I help you today?"}),
-             :response
-             #:bosquet.llm.llm{:type :chat,
-                               :content
-                               {:completion
-                                {:role :assistant,
-                                 :content "Good morning! How can I assist you today?"},
-                                :finish-reason "stop"},
-                               :usage {:prompt 190, :completion 10, :total 200}}}
-            {:question
-             "My interest here is to explore the potential of integrating Large Language Models with external knowledge",
-             :memories
-             ({:role :assistant,
-               :content
-               "That's a fascinating area to explore! Integrating large language models with external knowledge can enhance their capabilities and make them more useful in various domains. Here are a few ways you can approach this integration:\n\n1. Knowledge Graphs: You can leverage existing knowledge graphs, such as Wikidata or Freebase, to provide structured information to the language model. By connecting the language model with a knowledge graph, you can enable it to access and reason over a vast amount of factual information.\n\n2. Pre-training"}
-              {:role :system, :content "You are a brilliant assistant"}
-              {:role :assistant,
-               :content
-               "Thank you for your kind words! I'm here to assist you with any questions or information you need. How can I help you today?"}
-              {:role :user, :content "Good morning AI?"}
-              {:role :assistant, :content "Good morning! How can I assist you today?"}),
-             :response
-             #:bosquet.llm.llm{:type :chat,
-                               :content
-                               {:completion
-                                {:role :assistant,
-                                 :content
-                                 "That's a fascinating area to explore! Integrating large language models with external knowledge can enhance their capabilities and make them more useful in various domains. Here are a few ways you can approach this integration:\n\n1. Knowledge Graphs: You can leverage existing knowledge graphs, such as Wikidata or Freebase, to provide structured information to the language model. By connecting the language model with a knowledge graph, you can enable it to access and reason over a vast amount of factual information.\n\n2. Pre-training"},
-                                :finish-reason "length"},
-                               :usage {:prompt 190, :completion 100, :total 290}}}))
+(def resp (chat-demo (take 5 queries)))
 
 (defn- kv-cell [k v]
   [:div.flex

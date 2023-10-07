@@ -30,6 +30,7 @@
 
 (defprotocol Memory
   (remember [this observation])
+  (forget [this])
   (free-recall [this cueue params])
   (sequential-recall [this params])
   (cue-recall [this cue params])
@@ -42,10 +43,11 @@
 (deftype Amnesiac
          []
   Memory
-  (remember [this observation])
-  (free-recall [this cueue params])
-  (sequential-recall [this params])
-  (cue-recall [this cue params]))
+  (remember [_this _observation])
+  (forget [_this])
+  (free-recall [_this _cueue _params])
+  (sequential-recall [_this _params])
+  (cue-recall [_this _cue _params]))
 
 ;; Encode: Chunking, Semantic, Metadata
 ;; Store: Atom, VectorDB
