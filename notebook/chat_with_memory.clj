@@ -2,7 +2,9 @@
   (:require
    [bosquet.llm.chat :as chat]
    [bosquet.llm.generator :as gen]
+   [bosquet.llm.llm :as llm]
    [bosquet.memory.retrieval :as r]
+   [clojure.string :as string]
    [nextjournal.clerk :as clerk]))
 
 ;; Example taken from
@@ -65,17 +67,64 @@
         result))
     queries))
 
-(def resp (chat-demo (take 2 queries)))
+#_(def resp (chat-demo (take 2 queries)))
 
-(clerk/html
-  [:div
-   (mapv (fn [{:keys [question memories response]}]
-           (let [{:keys [role content]} (get-in response [:bosquet.llm.llm/content :completion])]
-             [:div
-              [:div.flex.space-x-6
-               [:p "Question"]
-               [:p question]]
-              [:div.flex.space-x-6
-               [:p "Response"]
-               [:p (str role ": " content)]]]))
-     resp)])
+(def resp '({:question "Good morning AI?",
+             :memories
+             ({:role :assistant, :content "Good morning! How can I assist you today?"}
+              {:role :user,
+               :content
+               "My interest here is to explore the potential of integrating Large Language Models with external knowledge"}
+              {:role :assistant,
+               :content
+               "That's a fascinating area to explore! Integrating large language models with external knowledge can enhance their capabilities and make them more useful in various domains. Here are a few ways you can approach this integration:\n\n1. Knowledge Graphs: You can leverage existing knowledge graphs, such as Wikidata or Freebase, to provide structured information to the language model. By connecting the language model with a knowledge graph, you can enable it to access and reason over a vast amount of factual information.\n\n2. Pre-training"}
+              {:role :system, :content "You are a brilliant assistant"}
+              {:role :assistant,
+               :content
+               "Thank you for your kind words! I'm here to assist you with any questions or information you need. How can I help you today?"}),
+             :response
+             #:bosquet.llm.llm{:type :chat,
+                               :content
+                               {:completion
+                                {:role :assistant,
+                                 :content "Good morning! How can I assist you today?"},
+                                :finish-reason "stop"},
+                               :usage {:prompt 190, :completion 10, :total 200}}}
+            {:question
+             "My interest here is to explore the potential of integrating Large Language Models with external knowledge",
+             :memories
+             ({:role :assistant,
+               :content
+               "That's a fascinating area to explore! Integrating large language models with external knowledge can enhance their capabilities and make them more useful in various domains. Here are a few ways you can approach this integration:\n\n1. Knowledge Graphs: You can leverage existing knowledge graphs, such as Wikidata or Freebase, to provide structured information to the language model. By connecting the language model with a knowledge graph, you can enable it to access and reason over a vast amount of factual information.\n\n2. Pre-training"}
+              {:role :system, :content "You are a brilliant assistant"}
+              {:role :assistant,
+               :content
+               "Thank you for your kind words! I'm here to assist you with any questions or information you need. How can I help you today?"}
+              {:role :user, :content "Good morning AI?"}
+              {:role :assistant, :content "Good morning! How can I assist you today?"}),
+             :response
+             #:bosquet.llm.llm{:type :chat,
+                               :content
+                               {:completion
+                                {:role :assistant,
+                                 :content
+                                 "That's a fascinating area to explore! Integrating large language models with external knowledge can enhance their capabilities and make them more useful in various domains. Here are a few ways you can approach this integration:\n\n1. Knowledge Graphs: You can leverage existing knowledge graphs, such as Wikidata or Freebase, to provide structured information to the language model. By connecting the language model with a knowledge graph, you can enable it to access and reason over a vast amount of factual information.\n\n2. Pre-training"},
+                                :finish-reason "length"},
+                               :usage {:prompt 190, :completion 100, :total 290}}}))
+
+(defn- kv-cell [k v]
+  [:div.flex
+   [:div.flex-none.w-24 [:em (str k ":")]]
+   [:div.flex-auto v]])
+
+(defn- chatml-cell [{:keys [role content]}]
+  (kv-cell (string/capitalize (name role)) content))
+
+(clerk/table {:head ["Request" "Memories"]
+              :rows (mapv (fn [{:keys [question memories response]}]
+                            [(clerk/html [:div
+                                          (kv-cell "Question" question)
+                                          (chatml-cell (llm/gen-content response))])
+                             (clerk/html
+                               (vec (cons :div (mapv chatml-cell memories))))])
+                      resp)})

@@ -67,3 +67,10 @@
   (service-name [this])
   (generate [this prompt props])
   (chat     [this conversation props]))
+
+;;
+;; Helper functions
+;;
+
+(defn gen-content [response]
+  (get-in response [content :completion]))
