@@ -178,8 +178,9 @@
     :question "What is the distance from Moon to Io?"}
 
    {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
+                      :bosquet.llm/cache            true
                       :bosquet.llm/model-parameters {:temperature 0.4
-                                                     :model "text-davinci-003"}}
+                                                     :model "gpt-3.5-turbo"}}
     :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
                       :bosquet.llm/model-parameters {:temperature 0}}})
 
@@ -190,5 +191,7 @@
      Playwright: This is a synopsis for the above play: {% gen var-name=text %}"
    {:title "Mr. X" :genre "crime"}
    {:text {:bosquet.llm/service [:llm/openai :provider/openai]
-           :bosquet.llm/model-parameters {:temperature 0 :model "gpt-4"}}})
+           :bosquet.llm/cache            true
+           :bosquet.llm/model-parameters
+           {:temperature 0 :max-tokens 100 :model "gpt-3.5-turbo"}}})
   #__)

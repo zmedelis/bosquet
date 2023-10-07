@@ -3,40 +3,31 @@
    [bosquet.llm.chat :as llm.chat]
    [bosquet.llm.llm :as llm]
    [bosquet.system :as system]
-   [clojure.core :as core]
-   [clojure.core.cache.wrapped :as cache]))
+   [clojure.core.cache.wrapped :as w]))
 
-(defn complete-with-cache [prompt params cache complete-fn]
-  (cache/lookup-or-miss
+;; TODO Cache is basic and experimantal, needs to be improved
+;; at last better configuration instead of hardcoding to FIFO
+;; also should by in System
+
+(defn ->cache []
+  (w/fifo-cache-factory {}))
+
+(def cache (->cache))
+
+(defn complete-with-cache [llm prompt model-parameters]
+  (w/lookup-or-miss
    cache
    {:prompt prompt
-    :params (dissoc params :cache)}
-   (fn [item]
-     (complete-fn
-      (:prompt item)
-      (:params item)))))
-
-(defn atom? [a] (= (type a) clojure.lang.Atom))
-
-;; lookup-or-miss works with an atom of a cache
-(defn ensure-atom [x]
-  (if (atom? x) x (atom x)))
+    :params model-parameters}
+   (fn [_item]
+     (.generate llm prompt model-parameters))))
 
 (defn complete [prompt {gen-key :the-key :as opts}]
-  (let [{:bosquet.llm/keys [service model-parameters]} (get-in opts [system/llm-config gen-key])
+  (let [{:bosquet.llm/keys [service model-parameters cache]} (get-in opts [system/llm-config gen-key])
         llm (system/get-service service)]
-    (.generate llm prompt model-parameters))
-  ;; TODO bring back the cache immediately
-  ;; use Integrant system to setup the cache component
-  #_(let [complete-fn
-          (cond
-            (= :azure impl)  openai/complete-azure-openai
-            (= :openai impl) openai/complete-openai
-            (fn? impl)       impl)]
-
-      (if-let [cache (:cache opts)]
-        (complete-with-cache prompt opts (ensure-atom cache) complete-fn)
-        (complete-fn prompt opts))))
+    (if cache
+      (complete-with-cache llm prompt model-parameters)
+      (.generate llm prompt model-parameters))))
 
 (defn available-memories
   [_messages opts]
