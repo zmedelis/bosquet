@@ -26,10 +26,11 @@
       ;; WIP
     (r/take-while-tokens
      @in-memory-memory
-     (assoc params
-            r/memory-content-fn :content
-            llm/model "gpt-3.5-turbo"
-            llm/service openai/openai)))
+     (merge
+       {r/memory-content-fn :content
+        llm/model "gpt-3.5-turbo"
+        llm/service openai/openai}
+       params)))
 
   (cue-recall [this _cue _params] (.free-recall this nil nil))
 
