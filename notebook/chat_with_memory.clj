@@ -1,12 +1,12 @@
 (ns chat-with-memory
   (:require
-   [bosquet.llm.chat :as chat]
-   [bosquet.llm.generator :as gen]
-   [bosquet.llm.llm :as llm]
-   [bosquet.memory.retrieval :as r]
-   [bosquet.system :as system]
-   [clojure.string :as string]
-   [nextjournal.clerk :as clerk]))
+    [bosquet.llm.chat :as chat]
+    [bosquet.llm.generator :as gen]
+    [bosquet.llm.llm :as llm]
+    [bosquet.memory.retrieval :as r]
+    [bosquet.system :as system]
+    helpers
+    [nextjournal.clerk :as clerk]))
 
 ;; Example taken from
 ;; https://github.com/pinecone-io/examples/blob/master/learn/generation/langchain/handbook/03a-token-counter.ipynb
@@ -43,43 +43,31 @@
                                              :max-tokens  100
                                              :model       "gpt-3.5-turbo"}}})
 
-(def inputs {})
+;; Before running the chat session we need to forget whatever might have been
+;; stored in the memory.
 
 (def mem (system/get-memory :memory/simple-short-term))
-
 (.forget mem)
 
 (defn chat-demo [queries]
-  (gen/chat [(chat/speak chat/system "You are a brilliant assistant")] inputs params)
-  ;; TODO `chat/speak` can be called inside `chat` simplify f signature
-  ;; (defn chat [role content role content ...] inputs params)
+  (gen/chat [(chat/speak chat/system "You are a brilliant assistant")] {} params)
   (map
     (fn [q]
-      (let [message  [(chat/speak chat/user q)]
-            memories (gen/available-memories message params)
-            response (gen/chat message inputs params)
-            result   {:question q
-                      :memories memories
-                      :response response}]
-        (tap> result)
-        result))
+      (let [message  [(chat/speak chat/user q)]]
+        {:question q
+         :memories (gen/available-memories message params)
+         :response (gen/chat message {} params)}))
     queries))
 
 (def resp (chat-demo (take 5 queries)))
 
-(defn- kv-cell [k v]
-  [:div.flex
-   [:div.flex-none.w-24 [:em (str k ":")]]
-   [:div.flex-auto v]])
-
-(defn- chatml-cell [{:keys [role content]}]
-  (kv-cell (string/capitalize (name role)) content))
-
-(clerk/table {:head ["Request" "Memories"]
-              :rows (mapv (fn [{:keys [question memories response]}]
-                            [(clerk/html [:div
-                                          (kv-cell "Question" question)
-                                          (chatml-cell (llm/gen-content response))])
-                             (clerk/html
-                               (vec (cons :div (mapv chatml-cell memories))))])
-                      resp)})
+^{:nextjournal.clerk/visibility {:code :fold}}
+(clerk/table
+  {:head ["Request" "Memories"]
+   :rows (mapv (fn [{:keys [question memories response]}]
+                 [(clerk/html [:div
+                               (helpers/kv-cell "Question" question)
+                               (helpers/chatml-cell (llm/gen-content response))])
+                  (clerk/html
+                    (vec (cons :div (mapv helpers/chatml-cell memories))))])
+           resp)})
