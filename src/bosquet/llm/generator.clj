@@ -4,6 +4,7 @@
    [bosquet.llm.chat :as chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
+   [clojure.string :as string]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
    [com.wsscode.pathom3.interface.smart-map :as psm]
@@ -11,6 +12,9 @@
    [taoensso.timbre :as timbre]))
 
 (tag/add-tags)
+
+(defn- has-gen-tag? [template]
+  (re-find #"\{%\s+gen\s+%\}" template))
 
 (defn complete-template
   "Fill in `template` `slots` with Selmer and call generation function
@@ -20,6 +24,8 @@
   the sequence of multiple template gen calls. Hence the parameter is not
   a map with multiple templates but a single template string.
 
+  If `template` has no `gen` tag, then it will be added to the end of the template.
+
   Likely to be refactored away in the future versions in favour of a single
   `complete` entry point.
 
@@ -27,12 +33,14 @@
 
   OK : 'Generate a joke about {{topic}}. {% gen var-name=joke %}'
   BAD: 'Generate a joke about {{topic}}. {% gen var-name=joke %} and {% gen var-name=another-joke %'"
+  ([template] (complete-template template nil nil))
   ([template slots] (complete-template template slots {}))
   ([template slots config]
-   (template/fill-slots template (assoc slots :the-key
-                                   ;; only one `gen` is supported in template
-                                        (first (template/generation-vars template)))
-                        config)))
+   (let [template (if (has-gen-tag? template) template (str template " {% gen %}"))]
+     (template/fill-slots template (assoc slots :the-key
+                                     ;; only one `gen` is supported in template
+                                     (first (template/generation-vars template)))
+       config))))
 
 (defn output-keys [k template]
   (cons k (template/generation-vars template)))
@@ -119,12 +127,18 @@
   ([prompts] (generate prompts nil nil))
   ([prompts inputs] (generate prompts inputs nil))
   ([prompts inputs config]
-   (let [extraction-keys (all-keys prompts inputs)]
-     (timbre/info "Resolving for: " extraction-keys)
-     (-> (prompt-indexes prompts config)
+   ;; If we get string for `prompts` then we assume it is a single prompt, send it to
+   ;; `complete-template` and return the result. Additionaly if the prompt does not have
+   ;; `gen` tag attach it to the end.
+   (if (string? prompts)
+     (let [[completed completion] (complete-template prompts inputs config)]
+       (merge completion inputs {:bosquet.gen/completed-prompt completed}))
+     (let [extraction-keys (all-keys prompts inputs)]
+       (timbre/info "Resolving for: " extraction-keys)
+       (-> (prompt-indexes prompts config)
          (resolver-error-wrapper)
          (psm/smart-map inputs)
-         (select-keys extraction-keys)))))
+         (select-keys extraction-keys))))))
 
 (defn- fill-converation-slots
   "Fill all the Selmer slots in the conversation context. It will

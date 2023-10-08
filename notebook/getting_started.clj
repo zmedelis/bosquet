@@ -1,6 +1,19 @@
-(ns getting-started)
+(ns getting-started
+  (:require [bosquet.llm.generator :as g]))
 
 ;; ## Getting Started
+;;
+;; Firt, you need to provide configuration parameters to make LLM service calls.
+;; Find `config.edn.sample` at the root of the project, rename it to `config.edn`
+;; and set necessary parameters. The `resources/system.edn` file shows how the config
+;; is loaded and what defaults are available.
+
+;; Generating LLM completions is as simple as calling `generate` function with a prompt.
+;; This will use the default LLM service (OpenAI) and model (GPT-3.5) to generate the
+;; completion.
+
+(g/generate
+  "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
 
 ;; The simplest use case showing some of the basic Bouquet functionality is using linked prompt templates for text generation.
 
@@ -45,8 +58,6 @@
 ;; *Bosquet* will be invoking *OpenAI API* thus make sure that `OPENAI_API_KEY` is present as the environment variable.
 
 ;; With the prerequisite data set, let's run the generation.
-
-(require '[bosquet.llm.generator :as g])
 
 (g/generate template {:title "City of Shadows" :genre "crime"})
 
