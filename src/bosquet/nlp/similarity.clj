@@ -6,7 +6,6 @@
 (defn cosine-similarity [s1 s2]
   (.apply cosine-distance s1 s2))
 
-
 (defn jackard-similarity [s1 s2]
   (.apply (JaccardSimilarity.) s1 s2))
 
@@ -16,7 +15,6 @@
   (def s3 "I want to explore the city")
   (cosine-similarity s1 s2)
   (cosine-similarity s1 s3)
-
 
   (jackard-similarity s1 s2)
   (jackard-similarity s1 s3)

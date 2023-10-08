@@ -63,9 +63,9 @@
            token-count        (memory-object-size (content-fn object) model llm)]
       (if (and object (> token-limit token-count))
         (recur
-          objects
-          (conj retrieved-objects object)
-          (+ token-count (memory-object-size (content-fn (first objects)) model llm)))
+         objects
+         (conj retrieved-objects object)
+         (+ token-count (memory-object-size (content-fn (first objects)) model llm)))
         (reverse retrieved-objects)))
     (take-last object-limit objects)))
 
