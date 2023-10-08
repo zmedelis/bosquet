@@ -31,15 +31,24 @@
         (fn [m file] (merge m (load-prompt-palette-edn file)))
         {})))
 
-(def ^:private var-name ":var-name=")
+(def ^:private ^{:deprecated true} var-name ":var-name=")
+(def ^:prvate var-name2 ":var=")
+
+(defn- var-name? [name]
+  (or
+   (string/starts-with? (str name) var-name)
+   (string/starts-with? (str name) var-name2)))
 
 (defn generation-vars [template]
+  ;; FIXME. This is bad. `known-variables` will return all vars not just `gen`
+  ;; need filter only by gen tag, then allow for gens that do not specify
+  ;; var-name, in that case autogenerate something like
+  ;; `key-gen<index>`
   (->> (selmer/known-variables template)
-       (filter (fn [variable]
-                 (string/starts-with? (str variable) var-name)))
+       (filter var-name?)
        (map (fn [variable]
               (keyword (string/replace-first
-                        (str variable) var-name ""))))
+                        (str variable) #".*=" ""))))
        (set)))
 
 (defn slots-required

@@ -18,6 +18,6 @@
   (testing "slots in for loops"
     (is (= #{:x :text}
            (tpl/slots-required "{{x}} {% for t in text %} {% endfor %}"))))
-  (testing "generation slot extraction"
+  (testing "generation var name extraction"
     (is (= #{:test1 :test2}
-           (tpl/generation-vars "{% debug var-name=test1 %} {% debug var-name=test2 %}")))))
+           (tpl/generation-vars "{% gen var-name=test1 param=none%} {% gen var-name=test2 %}")))))

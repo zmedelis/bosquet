@@ -35,7 +35,7 @@
                         config)))
 
 (defn output-keys [k template]
-  (vec (concat [k] (template/generation-vars template))))
+  (cons k (template/generation-vars template)))
 
 (defn- generation-resolver
   "Build dynamic resolvers figuring out what each prompt tempalte needs
@@ -116,6 +116,7 @@
          (select-keys extraction-keys)))))
 
 (defn generate
+  ([prompts] (generate prompts nil nil))
   ([prompts inputs] (generate prompts inputs nil))
   ([prompts inputs config]
    (let [extraction-keys (all-keys prompts inputs)]
