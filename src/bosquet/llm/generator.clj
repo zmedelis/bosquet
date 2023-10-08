@@ -37,9 +37,10 @@
   ([template slots] (complete-template template slots {}))
   ([template slots config]
    (let [template (if (has-gen-tag? template) template (str template " {% gen %}"))]
-     (template/fill-slots template (assoc slots :the-key
-                                     ;; only one `gen` is supported in template
-                                     (first (template/generation-vars template)))
+     (template/fill-slots template
+       (assoc slots :the-key
+         ;; only one `gen` is supported in template
+         (first (template/generation-vars template)))
        config))))
 
 (defn output-keys [k template]

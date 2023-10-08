@@ -6,5 +6,9 @@
  [:div.viewer-markdown
   [:ul
    [:li
-    [:a.underline {:href (clerk/doc-url "notebook/getting_started/index.html")} "Getting Started"]
-    #_[:a.underline {:href (clerk/doc-url "notebook/user_guide")} "User Guide"]]]])
+    [:a.underline {:href (clerk/doc-url "notebook/getting_started/index.html")} "Getting Started"]]
+   [:li
+    [:div "Examples"]
+    [:ul
+     [:li
+      [:a.underline {:href (clerk/doc-url "notebook/math_generate_code/index.html")} "Math calc with generated code"]]]]]])

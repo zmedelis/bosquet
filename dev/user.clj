@@ -6,7 +6,7 @@
 (defn build-static-docs
   [_]
   (clerk/build! {:paths    ["notebook/getting_started.clj"
-                            #_"notebook/user_guide.clj"]
+                            "notebook/math_generate_code.clj"]
                  :index    "notebook/index.clj"
                  :out-path "docs"}))
 
