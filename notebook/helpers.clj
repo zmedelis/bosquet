@@ -9,3 +9,6 @@
 
 (defn chatml-cell [{:keys [role content]}]
   (kv-cell (string/capitalize (name role)) content))
+
+(defn join [& lines]
+  (apply str (interpose "\n" lines)))
