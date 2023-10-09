@@ -32,7 +32,13 @@
        llm/service openai/openai}
       params)))
 
-  (cue-recall [this _cue _params] (.free-recall this nil nil))
+  (cue-recall [_this cue params]
+    (r/cue-recall-handler @in-memory-memory cue
+                          (merge
+                           {r/memory-content-fn :content
+                            llm/model "gpt-3.5-turbo"
+                            llm/service openai/openai}
+                           params)))
 
   (volume [_this {service        :bosquet.llm/service
                   {model :model} :bosquet.llm/model-parameters}]))

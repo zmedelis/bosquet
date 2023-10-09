@@ -1,5 +1,6 @@
 (ns bosquet.memory.retrieval
   (:require
+   [bosquet.nlp.similarity :as nlp]
    [bosquet.llm.llm :as llm]
    [bosquet.llm.openai :as openai]
    [bosquet.llm.openai-tokens :as oai.tokenizer]
@@ -68,6 +69,17 @@
          (+ token-count (memory-object-size (content-fn (first objects)) model llm)))
         (reverse retrieved-objects)))
     (take-last object-limit objects)))
+
+(defn cue-recall-handler [objects cue
+                          {content-fn memory-content-fn
+                           :or        {content-fn identity}
+                           :as        params}]
+  (let [threshold 0.6]
+    (take-while-tokens
+     (filter (fn [item]
+               (> threshold (nlp/cosine-distance (content-fn item) cue)))
+             objects)
+     params)))
 
 (def handlers
   {sequential-recall sequential-recall-handler

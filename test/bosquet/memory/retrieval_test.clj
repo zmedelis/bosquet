@@ -33,3 +33,11 @@
     (is (= ["Four monkeys" "Five monkeys"]
            (.sequential-recall mem {r/memory-tokens-limit 5
                                     r/memory-content-fn   identity})))))
+
+(deftest cue-retrieval
+  (let [mem (->memory)]
+    (.remember mem "10 jumping donkeys")
+    (is (= ["Two monkeys" "Three monkeys" "Four monkeys" "Five monkeys"]
+           (.cue-recall mem "Four monkeys"
+                        {r/memory-tokens-limit 100
+                         r/memory-content-fn identity})))))

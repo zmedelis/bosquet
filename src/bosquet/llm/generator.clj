@@ -37,11 +37,10 @@
   ([template slots] (complete-template template slots {}))
   ([template slots config]
    (let [template (if (has-gen-tag? template) template (str template " {% gen %}"))]
-     (template/fill-slots template
-       (assoc slots :the-key
-         ;; only one `gen` is supported in template
-         (first (template/generation-vars template)))
-       config))))
+     (template/fill-slots
+      template
+      (assoc slots :the-key (first (template/generation-vars template))) ; only one `gen` is supported in template
+      config))))
 
 (defn output-keys [k template]
   (cons k (template/generation-vars template)))
@@ -137,9 +136,9 @@
      (let [extraction-keys (all-keys prompts inputs)]
        (timbre/info "Resolving for: " extraction-keys)
        (-> (prompt-indexes prompts config)
-         (resolver-error-wrapper)
-         (psm/smart-map inputs)
-         (select-keys extraction-keys))))))
+           (resolver-error-wrapper)
+           (psm/smart-map inputs)
+           (select-keys extraction-keys))))))
 
 (defn- fill-converation-slots
   "Fill all the Selmer slots in the conversation context. It will
