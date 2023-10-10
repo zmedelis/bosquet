@@ -14,7 +14,7 @@ Bosquet provides instruments to work with those AI application concepts:
 
 ## Documentation
 
-[Full project documentation](https://zmedelis.github.io/bosquet/notebook/getting_started/index.html) (WIP)
+[Full project documentation](https://zmedelis.github.io/bosquet/) (WIP)
 
 ## Quick example
 
