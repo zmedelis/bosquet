@@ -10,12 +10,20 @@
       (assoc :num-generations n) (dissoc :n)
       (assoc :stop-sequences stop) (dissoc :stop)))
 
+(defn ->completion
+  [text]
+  {llm/generation-type :completion
+   llm/content        {:completion text}
+   ;; TODO
+   llm/usage           {}})
+
 (defn complete
   ([prompt opts]
    (-> (client/generate (assoc opts :prompt prompt))
-       :generations
-       first
-       :text))
+     :generations
+     first
+     :text
+     ->completion))
   ([prompt]
    (complete prompt {})))
 
@@ -23,20 +31,21 @@
   "Service name to refernece Cohere"
   ::cohere)
 
+
 (deftype Cohere
-         [config]
-  llm/LLM
-  (service-name [_this] cohere)
-  (generate [_this prompt props]
-    (let [props (props->cohere props)]
-      (timbre/infof "Calling Cohere with:")
-      (timbre/infof "\tParms: '%s'" (dissoc props :prompt))
-      (timbre/infof "\tConfig: '%s'" (dissoc config :api-key))
-      (complete prompt (merge config
-                              (assoc
-                               props
-                               :model (llm/model-mapping config (keyword (:model props))))))))
-  (chat     [_this _conversation _props]))
+    [config]
+    llm/LLM
+    (service-name [_this] cohere)
+    (generate [_this prompt props]
+      (let [props (props->cohere props)]
+        (timbre/infof "Calling Cohere with:")
+        (timbre/infof "\tParms: '%s'" (dissoc props :prompt))
+        (timbre/infof "\tConfig: '%s'" (dissoc config :api-key))
+        (complete prompt (merge config
+                           (assoc
+                             props
+                             :model (llm/model-mapping config (keyword (:model props))))))))
+    (chat     [_this _conversation _props]))
 
 (comment
   (.generate
