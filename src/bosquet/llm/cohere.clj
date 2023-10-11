@@ -6,9 +6,10 @@
 (defn- props->cohere
   "Convert general LLM model properties to Cohere specific ones."
   [{:keys [n stop] :as props}]
-  (-> props
-      (assoc :num_generations n) (dissoc :n)
-      (assoc :stop_sequences stop) (dissoc :stop)))
+  (merge
+    (dissoc  props :n :stop)
+    (when n {:num_generations n})
+    (when stop {:stop_sequences stop})))
 
 (defn ->completion
   [text]
