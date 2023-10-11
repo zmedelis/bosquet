@@ -21,7 +21,7 @@
                         :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
                                       djblue/portal               {:mvn/version "0.48.0"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
-                                  :version "0.3.7"}}
+                                  :version "v2023.10.11"}}
            :rebel      {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
                         :main-opts  ["-m" "rebel-readline.main"]}
            :outdated   {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
