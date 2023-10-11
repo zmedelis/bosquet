@@ -11,5 +11,7 @@
          format:fix (shell "cljfmt fix")
          pom        (clojure "-Spom")
          clean      (shell "rm -rf .cpcache target")
+         deploy     (clojure "-T:build" "build/deploy")
+         uber       (clojure "-T:build" "uber")
          docs       (do (shell "rm -rf docs")
                         (clojure "-X:dev user/build-static-docs"))}}

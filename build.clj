@@ -1,6 +1,7 @@
 (ns build
   (:require [clojure.tools.build.api :as b]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [deps-deploy.deps-deploy :as dd]))
 
 (def project (-> (edn/read-string (slurp "deps.edn"))
                  :aliases :neil :project))
@@ -50,10 +51,7 @@
 
 (defn deploy [opts]
   (jar opts)
-  ((requiring-resolve 'deps-deploy.deps-deploy/deploy)
-    (merge {:installer :remote
-                       :artifact jar-file
-                       :pom-file (b/pom-path {:lib lib :class-dir class-dir})}
-                    opts))
-  opts)
-
+  (dd/deploy {:installer :remote
+              :artifact  (b/resolve-path jar-file)
+              :pom-file  (b/pom-path {:lib lib
+                                      :class-dir class-dir})}))
