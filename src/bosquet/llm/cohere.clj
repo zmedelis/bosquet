@@ -7,8 +7,8 @@
   "Convert general LLM model properties to Cohere specific ones."
   [{:keys [n stop] :as props}]
   (-> props
-      (assoc :num-generations n) (dissoc :n)
-      (assoc :stop-sequences stop) (dissoc :stop)))
+      (assoc :num_generations n) (dissoc :n)
+      (assoc :stop_sequences stop) (dissoc :stop)))
 
 (defn ->completion
   [text]
