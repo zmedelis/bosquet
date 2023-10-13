@@ -1,6 +1,7 @@
 (ns bosquet.converter
   (:require
-   [clojure.string :as s]))
+   [clojure.string :as s]
+   [jsonista.core :as j]))
 
 ;; WIP - a place to start building output conversion functions
 
@@ -30,3 +31,10 @@
     "yes" true
     "no"  false
     nil))
+
+(defn coerce
+  [completion {:bosquet.llm/keys [output-format]}]
+  (condp =  output-format
+    :json (j/read-value completion)
+    :text completion
+    completion))
