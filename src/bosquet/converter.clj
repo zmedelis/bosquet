@@ -33,8 +33,7 @@
     nil))
 
 (defn coerce
-  [completion {:bosquet.llm/keys [output-format]}]
-  (condp =  output-format
+  [completion format]
+  (condp =  format
     :json (j/read-value completion)
-    :text completion
     completion))

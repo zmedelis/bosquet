@@ -4,7 +4,6 @@
    [bosquet.llm.chat :as chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
-   [clojure.string :as string]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
    [com.wsscode.pathom3.interface.smart-map :as psm]
@@ -183,6 +182,29 @@
     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"})
+
+  (generate
+   "As a brilliant {{you-are}} list distances between planets and the Sun
+in the Solar System. Provide the answer in JSON map where the key is the
+planet name and the value is the string distance in millions of kilometers. Generate only JSON
+omit any other prose and explanations."
+   {:you-are  "astronomer"}
+   {:gen {:bosquet.llm.output/format :json}})
+  ;; TODO JSON output gives issues.
+  ;; - JSON prompt description should be injected to the prompt by Bosquet (maybe a lib
+  ;; to convert Malli to descriptions)?
+  ;; - Withougt detailed descriptions maps are generated badly like
+  ;; {
+  ;;   "Mercury": 57.9,
+  ;;   "Venus": 108.2,
+  ;;   "Earth": 149.6,
+  ;;   "Mars": 227.9,
+  ;;   "Jupiter": 778.3,
+  ;;   "Saturn": 1,429, <------ not valid number
+  ;;   "Uranus": 2,870.6,
+  ;;   "Neptune": 4,498.3,
+  ;;   "Pluto": 5,874
+  ;; }
 
   (generate
    {:role            "As a brilliant {{you-are}} answer the following question."

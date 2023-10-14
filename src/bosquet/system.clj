@@ -34,6 +34,10 @@
   "Key to reference LLM model parameters in gen call parameters"
   :bosquet.llm/model-parameters)
 
+(def generation-format
+  "Type of generation output format: json, xml, text, etc"
+  :bosquet.llm.output/format)
+
 (def ^:private config
   (aero/read-config
    (io/resource "system.edn")

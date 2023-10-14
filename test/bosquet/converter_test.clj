@@ -1,7 +1,8 @@
 (ns bosquet.converter-test
   (:require
    [clojure.test :refer [deftest is]]
-   [bosquet.converter :as c]))
+   [bosquet.converter :as c]
+   [bosquet.system :as s]))
 
 (deftest converting-numbered-lists
   (is (= ["foo" "bar" "baz"]
@@ -17,5 +18,6 @@
   (is (nil? (c/yes-no->bool "X"))))
 
 (deftest coerce-test
-  (is (= [{"x" 1.2 "y" 0.8}]
-        (c/coerce "[{\"x\" : 1.2, \"y\" : 0.8}]" {:bosquet.llm/output-format :json}))))
+  (is (= "Dogs are great!" (c/coerce "Dogs are great!" nil)))
+  (is (= "Dogs are great!" (c/coerce "Dogs are great!" :pdf)))
+  (is (= [{"x" 1.2 "y" 0.8}] (c/coerce "[{\"x\" : 1.2, \"y\" : 0.8}]" :json))))

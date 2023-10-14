@@ -32,14 +32,14 @@
   ([title {:keys [n-sentences format]
            :or   {n-sentences 5 format "json"}}]
    (-> (call-wiki
-         {:action      "query"
-          :titles      title
-          :prop        "extracts"
-          :exsentences n-sentences
-          :explaintext "yes"
-          :exintro     "yes"
-          :format      format})
-     :query :pages vec first second :extract)))
+        {:action      "query"
+         :titles      title
+         :prop        "extracts"
+         :exsentences n-sentences
+         :explaintext "yes"
+         :exintro     "yes"
+         :format      format})
+       :query :pages vec first second :extract)))
 
 (defn best-match
   "`query` is a string used to search Wikipedia in `search-wiki` call

@@ -1,8 +1,9 @@
 (ns bosquet.complete
   (:require
+   [bosquet.converter :as converter]
    [bosquet.llm.chat :as llm.chat]
    [bosquet.llm.llm :as llm]
-   [bosquet.system :as system]
+   [bosquet.system :as sys]
    [clojure.core.cache.wrapped :as w]))
 
 ;; TODO Cache is basic and experimantal, needs to be improved
@@ -22,25 +23,36 @@
    (fn [_item]
      (.generate llm prompt model-parameters))))
 
-(defn complete [prompt {gen-key :the-key :as opts}]
-  (let [{:bosquet.llm/keys [service model-parameters cache]} (get-in opts [system/llm-config gen-key])
-        llm (system/get-service service)]
-    (if cache
-      (complete-with-cache llm prompt model-parameters)
-      (.generate llm prompt model-parameters))))
+(defn complete
+  [prompt {gen-key :the-key :as opts
+           ;; when `gen` tag is not defined, use `gen` as default
+           :or     {gen-key :gen}}]
+  (let [{:bosquet.llm/keys [service model-parameters cache]
+         output-format     sys/generation-format}
+        (get-in opts [sys/llm-config (or gen-key :gen)])
+
+        service (sys/get-service service)
+
+        {{completion :completion} llm/content :as generation}
+        (if cache
+          (complete-with-cache service prompt model-parameters)
+          (.generate service prompt model-parameters))]
+
+    (assoc-in generation [llm/content :completion]
+              (converter/coerce completion output-format))))
 
 (defn available-memories
   [_messages opts]
   (let [{:bosquet.memory/keys [type parameters]}
         (get-in opts [llm.chat/conversation])]
-    (.sequential-recall (system/get-memory type) parameters)))
+    (.sequential-recall (sys/get-memory type) parameters)))
 
 (defn chat-completion [messages opts]
   (let [{:bosquet.llm/keys    [service model-parameters]
          :bosquet.memory/keys [type]}
         (get-in opts [llm.chat/conversation])
-        llm        (system/get-service service)
-        memory     (system/get-memory type)
+        llm        (sys/get-service service)
+        memory     (sys/get-memory type)
         memories   (available-memories messages opts)
         completion (.chat llm (concat memories messages) model-parameters)]
     (.remember memory messages)
