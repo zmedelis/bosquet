@@ -1,9 +1,44 @@
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns papers.chain-of-density
   (:require
-    [bosquet.llm.generator :as g]))
+   [bosquet.llm.generator :as g]
+   [bosquet.wkk :as wkk]
+   [nextjournal.clerk :as clerk]))
+
+;; ## Chain of Density prompting
+
+;; Chain of Density (CoD) technique is introduced in [GPT-4 Summarization with Chain of Density Prompting](https://arxiv.org/pdf/2309.04269.pdf) paper.
+;; It aims to produce high-quality and dense information text summaries.
+
+;; > Selecting the “right” amount of information to include in a summary is a difficult task. A good summary should be detailed
+;; > and entity-centric without being overly dense and hard to follow.
+
+;; CoD constructs a prompt that iteratively adds not yet summarized entities to the summary while keeping the overall summary length constant.
+;; As it goes through the iterations, it produces increasingly dense summaries. Initial summaries are too sparse, while the final ones are
+;; usually dense.
+
+;; Another nice feature of the CoD prompt is that it keeps all the summary iteration prompts alongside key entities added to the summary in
+;; a generated JSON output. This allows us to inspect the intermediate steps of the summary generation, see how the summary is evolving,
+;; and choose the best one.
+;;
+;; **For the impatient** - to see the Cot summarization output, jump to the end of this notebook to see the generated summaries.
+;;
+;; ## Implementation
+;;
+;; Let's take a Wikipedia article on [2023 Herat earthquakes](https://en.wikipedia.org/wiki/2023_Herat_earthquakes) and generate a summary of it using the CoD technique.
+
+(def article (slurp "notebook/papers/2023_Herat_earthquakes.txt"))
 
 
-(def review (slurp "notebook/papers/2023_Herat_earthquakes.txt"))
+;; Prompt taken from the paper. Note its structure:
+;; - Instructing to proceed in iterations
+;; - Each iteration asks to produce a denier summary based on missing entities
+;; - Guidelines instructing to proceed with summary generation preserving the length and already conveyed information
+;; - Output shape to include missing entities and summary
+;;
+;; *Bosquet* allows adding some extra configuration to the prompt.
+;; - `LENGTH-IN-SENTENCES` and `LENGTH-IN-WORDS` allows to control the lenght of the summary, *Selmer* templating allows to add the defaults for those values.
+;; - `FORMAT` to control the output format, defaults to `JSON` (more on that later)
 
 (def cod-prompt
   "Article: {{ ARTICLE }}
@@ -33,9 +68,44 @@ Guidelines:
 - Missing entities can appear anywhere in the new summary.
 - Never drop entities from the previous summary. If space cannot be made, add fewer new entities.
 
-Remember, use the exact same number of words for each summary. Answer in JSON. The JSON should be a list (length 5) of dictionaries whose keys are \"Missing_Entities\" and \"Denser_Summary\". ")
+Remember, use the exact same number of words for each summary. Answer in {{FORMAT|default:JSON}}. The {{FORMAT|default:JSON}} should be a list (length 5) of dictionaries whose keys
+are \"Missing-Entities\" and \"Denser-Summary\".")
 
-(g/generate
-  cod-prompt
-  {:ARTICLE review}
-  {:gen {:bosquet.llm/output-format :json}})
+;;
+;; With that set a call to generation (see *Getting Started* and *Configuration* notebooks for more details on how generation works) can be made.
+;; Note the `output-format` and `FORMAT` parameters:
+;; - the `FORMAT` will be used to fill in the string value in the template;
+;; - the `output-format` is a *Bosquet* parameter that will initiate result postprocessing and coerce the result into the specified format. Currently supported formats: EDN, JSON, and plain text.
+;;
+
+(def result (g/generate
+              cod-prompt
+              {:ARTICLE article
+               :FORMAT  "JSON"}
+              {:gen {wkk/output-format    :json
+                     wkk/model-parameters {:model "gpt-4"}}}))
+
+;;
+;; CoT - as instructed - produces a list of 5 summaries, each summary is a map with `Missing-Entities` and `Denser-Summary` keys. Authors of the paper did human evaluation
+;; of the produced summaries and found that humans usualy prefer 2-3rd summaries.
+;;
+
+
+^{:nextjournal.clerk/visibility {:code :hide}}
+(clerk/html
+  (vec
+    (cons
+      :div.font-mono
+      (map-indexed
+        (fn [idx {:strs [Missing-Entities Denser-Summary]}]
+          [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.hover:bg-gray-100.dark:bg-gray-800.dark:border-gray-700.dark:hover:bg-gray-700.grid.grid-cols-1.gap-3
+           [:div.flex
+            [:div.flex-none.w-32.mr-4 [:em "Step:"]]
+            [:div (inc idx)]]
+           [:div.flex
+            [:div.flex-none.w-32.mr-4 [:em "Missing Entities:"]]
+            [:div Missing-Entities]]
+           [:div.flex
+            [:div.flex-none.w-32.mr-4 [:em "Denser Summary:"]]
+            [:div Denser-Summary]]])
+        (:gen result)))))

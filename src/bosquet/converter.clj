@@ -34,6 +34,7 @@
 
 (defn coerce
   [completion format]
-  (condp =  format
+  (condp = format
     :json (j/read-value completion)
+    :edn  (read-string completion)
     completion))
