@@ -1,5 +1,6 @@
 (ns configuration
   (:require
+    [bosquet.wkk :as wkk]
     [bosquet.llm.generator :as g]
     [bosquet.system :as system]))
 
@@ -73,14 +74,14 @@
 ;; - the `stop` parameter, Cohere uses `stop_sequences`, `stop` is used for all *Bosquet* based requests, renaming is done automaticaly.
 
 (def parameters
-  {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
-                     :bosquet.llm/cache            true
-                     :bosquet.llm/model-parameters {:temperature 0.4
-                                                    :model       "gpt-3.5-turbo"}}
-   :self-eval       {:bosquet.llm/service          :llm/cohere
-                     :bosquet.llm/model-parameters {:model "gpt-4"
-                                                    :stop  ["."]
-                                                    :temperature 0.0}}})
+  {:question-answer {wkk/service          [:llm/openai :provider/openai]
+                     wkk/cache            true
+                     wkk/model-parameters {:temperature 0.4
+                                           :model       "gpt-3.5-turbo"}}
+   :self-eval       {wkk/service          :llm/cohere
+                     wkk/model-parameters {:model       "gpt-4"
+                                           :stop        ["."]
+                                           :temperature 0.0}}})
 ;;
 ;; Available configuration parameters are:
 ;; * `:bosquet.llm/service` - LLM service to use for generation

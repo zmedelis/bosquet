@@ -4,6 +4,7 @@
    [bosquet.llm.chat :as chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
+   [bosquet.wkk :as wkk]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
    [com.wsscode.pathom3.interface.smart-map :as psm]
@@ -171,9 +172,9 @@
     (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
    {:role "cook" :meal "cake"}
    {chat/conversation
-    {:bosquet.llm/service          [:llm/openai :provider/openai]
-     :bosquet.llm/model-parameters {:temperature 0
-                                    :model       "gpt-3.5-turbo"}}})
+    {wkk/service          [:llm/openai :provider/openai]
+     wkk/model-parameters {:temperature 0
+                           :model       "gpt-3.5-turbo"}}})
 
   (generate
    {:role            "As a brilliant {{you-are}} answer the following question."
@@ -214,12 +215,11 @@ omit any other prose and explanations."
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
 
-   {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
-                      :bosquet.llm/cache            true
-                      :bosquet.llm/model-parameters {:temperature 0.4
-                                                     :model "gpt-3.5-turbo"}}
-    :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
-                      :bosquet.llm/model-parameters {:temperature 0}}})
+   {:question-answer {wkk/service          [:llm/openai :provider/openai]
+                      wkk/cache            true
+                      wkk/model-parameters {:temperature 0.4 :model "gpt-3.5-turbo"}}
+    :self-eval       {wkk/service          [:llm/openai :provider/openai]
+                      wkk/model-parameters {:temperature 0}}})
 
   (complete-template
    "You are a playwright. Given the play's title and it's genre write synopsis for that play.
@@ -227,8 +227,7 @@ omit any other prose and explanations."
      Genre: {{genre}}
      Playwright: This is a synopsis for the above play: {% gen var-name=text %}"
    {:title "Mr. X" :genre "crime"}
-   {:text {:bosquet.llm/service [:llm/openai :provider/openai]
-           :bosquet.llm/cache            true
-           :bosquet.llm/model-parameters
-           {:temperature 0 :max-tokens 100 :model "gpt-3.5-turbo"}}})
+   {:text {wkk/service          [:llm/openai :provider/openai]
+           wkk/cache            true
+           wkk/model-parameters {:temperature 0 :max-tokens 100 :model "gpt-3.5-turbo"}}})
   #__)

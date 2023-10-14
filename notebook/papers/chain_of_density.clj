@@ -1,8 +1,9 @@
 (ns papers.chain-of-density
-  (:require [bosquet.llm.generator :as g]))
+  (:require
+    [bosquet.llm.generator :as g]))
 
 
-(def review (slurp "notebook/papers/review_a_man_of_two_faces.txt"))
+(def review (slurp "notebook/papers/2023_Herat_earthquakes.txt"))
 
 (def cod-prompt
   "Article: {{ ARTICLE }}
@@ -24,7 +25,7 @@ A missing entity is:
 
 Guidelines:
 
-- The first summary should be long ({{LENGTH-IN-SENTENCES|default:4-4}} sentences, ~{{LENGTH-IN-WORDS|default:80}} words) yet highly non-specific, containing little information beyond the entities marked as missing.
+- The first summary should be long ({{LENGTH-IN-SENTENCES|default:3-4}} sentences, ~{{LENGTH-IN-WORDS|default:80}} words) yet highly non-specific, containing little information beyond the entities marked as missing.
   Use overly verbose language and fillers (e.g., \"this article discusses\") to reach ~{{LENGTH-IN-WORDS|default:80}} words.
 - Make every word count: rewrite the previous summary to improve flow and make space for additional entities.
 - Make space with fusion, compression, and removal of uninformative phrases like \"the article discusses\".
@@ -32,10 +33,9 @@ Guidelines:
 - Missing entities can appear anywhere in the new summary.
 - Never drop entities from the previous summary. If space cannot be made, add fewer new entities.
 
-Remember, use the exact same number of words for each summary. Answer in JSON. The JSON should be a list (length 5) of dictionaries whose keys are \"Missing_Entities\" and \"Denser_Summary\". "
-
-  )
+Remember, use the exact same number of words for each summary. Answer in JSON. The JSON should be a list (length 5) of dictionaries whose keys are \"Missing_Entities\" and \"Denser_Summary\". ")
 
 (g/generate
   cod-prompt
-  {:ARTICLE review})
+  {:ARTICLE review}
+  {:gen {:bosquet.llm/output-format :json}})

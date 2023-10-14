@@ -1,8 +1,7 @@
 (ns bosquet.converter-test
   (:require
    [clojure.test :refer [deftest is]]
-   [bosquet.converter :as c]
-   [bosquet.system :as s]))
+   [bosquet.converter :as c]))
 
 (deftest converting-numbered-lists
   (is (= ["foo" "bar" "baz"]

@@ -40,5 +40,5 @@
                             llm/service openai/openai}
                            params)))
 
-  (volume [_this {service        :bosquet.llm/service
+  (volume [_this {service :bosquet.llm/service
                   {model :model} :bosquet.llm/model-parameters}]))

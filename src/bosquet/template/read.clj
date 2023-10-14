@@ -1,6 +1,6 @@
 (ns bosquet.template.read
   (:require
-   [bosquet.system :as system]
+   [bosquet.wkk :as wkk]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as string]
@@ -66,4 +66,4 @@
   (without-escaping
    (selmer/render-with-values
     text
-    (assoc ctx system/llm-config config))))
+    (assoc ctx wkk/llm-config config))))

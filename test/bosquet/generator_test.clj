@@ -5,7 +5,7 @@
    [bosquet.llm.generator :refer [all-keys chat generate]]
    [bosquet.llm.llm :as llm]
    [bosquet.llm.openai :as openai]
-   [bosquet.system :as b]
+   [bosquet.wkk :as wkk]
    [clojure.test :refer [deftest is]]
    [matcher-combinators.matchers :as m]
    [matcher-combinators.test :refer [match?]]))
@@ -40,10 +40,10 @@
       (generate astronomy-prompt
                 {:you-are  "astronomer"
                  :question "What is the distance from Moon to Io?"}
-                {:self-eval       {b/llm-service          [:llm/openai :provider/openai]
-                                   b/model-parameters {:model "hubble"}}
-                 :question-answer {b/llm-service          [:llm/openai :provider/openai]
-                                   b/model-parameters {:model "galileo"}}})))))
+                {:self-eval       {wkk/service          [:llm/openai :provider/openai]
+                                   wkk/model-parameters {:model "hubble"}}
+                 :question-answer {wkk/service          [:llm/openai :provider/openai]
+                                   wkk/model-parameters {:model "galileo"}}})))))
 
 (deftest fail-generation
   (is (match?
@@ -58,10 +58,10 @@
           astronomy-prompt
           {:you-are  "astronomer"
            :question "What is the distance from Moon to Io?"}
-          {:question-answer {b/llm-service      [:llm/openai :provider/openai]
-                             b/model-parameters {:model "galileo"}}
-           :self-eval       {b/llm-service      [:llm/openai :provider/openai]
-                             b/model-parameters {:model "AGI"}}})))))
+          {:question-answer {wkk/service          [:llm/openai :provider/openai]
+                             wkk/model-parameters {:model "galileo"}}
+           :self-eval       {wkk/service          [:llm/openai :provider/openai]
+                             wkk/model-parameters {:model "AGI"}}})))))
 
 (deftest conversation-slot-filling
   (is (match?

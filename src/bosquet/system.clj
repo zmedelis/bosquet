@@ -6,37 +6,15 @@
    [bosquet.memory.encoding :as encoding]
    [bosquet.memory.memory :as mem]
    [bosquet.memory.simple-memory :as simple-memory]
+   [bosquet.wkk :as wkk]
    [clojure.java.io :as io]
    [integrant.core :as ig]
    [taoensso.timbre :as timbre])
   (:import
    [bosquet.llm.cohere Cohere]
    [bosquet.llm.openai OpenAI]
-   [bosquet.memory.simple_memory SimpleMemory]
-   [bosquet.memory.memory Amnesiac]))
-
-;;
-;; Keys to reference sytem components in option maps
-;;
-(def llm-config
-  "Key to reference LLM service components in props when making `generate` calls."
-  :bosquet.llm/llm-config)
-
-(def default-llm
-  "Key referencing default LLM service in a `system.edn` system config."
-  :llm/default-llm)
-
-(def llm-service
-  "Key to reference LLM service name in gen call parameters"
-  :bosquet.llm/service)
-
-(def model-parameters
-  "Key to reference LLM model parameters in gen call parameters"
-  :bosquet.llm/model-parameters)
-
-(def generation-format
-  "Type of generation output format: json, xml, text, etc"
-  :bosquet.llm.output/format)
+   [bosquet.memory.memory Amnesiac]
+   [bosquet.memory.simple_memory SimpleMemory]))
 
 (def ^:private config
   (aero/read-config
@@ -44,7 +22,7 @@
    {:resolver root-resolver}))
 
 (def ^:private sys-config
-  (dissoc config :config default-llm))
+  (dissoc config :config wkk/default-llm))
 
 ;;
 ;; LLM Services
@@ -95,7 +73,7 @@
   `:llm/default` key."
   [key]
   (or (get system key)
-      (get system (config default-llm))))
+      (get system (config wkk/default-llm))))
 
 (defn get-memory
   [key]

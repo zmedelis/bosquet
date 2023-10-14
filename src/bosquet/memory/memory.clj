@@ -1,4 +1,6 @@
-(ns bosquet.memory.memory)
+(ns bosquet.memory.memory
+  (:require
+   [bosquet.wkk :as wkk]))
 
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
 ;; Memory component is used for one of the following purposes:
@@ -59,10 +61,10 @@
   (require '[bosquet.llm.chat :as chat])
 
   (def params {chat/conversation
-               {:bosquet.memory/type          :memory/simple-short-term
-                :bosquet.llm/service          [:llm/openai :provider/openai]
-                :bosquet.llm/model-parameters {:temperature 0
-                                               :model       "gpt-3.5-turbo"}}})
+               {:bosquet.memory/type :memory/simple-short-term
+                wkk/service          [:llm/openai :provider/openai]
+                wkk/model-parameters {:temperature 0
+                                      :model       "gpt-3.5-turbo"}}})
   (def inputs {:role "cook" :meal "cake"})
 
   (gen/chat
@@ -84,10 +86,9 @@
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
 
-   {:question-answer {:bosquet.llm/service          [:llm/openai :provider/openai]
-                      :bosquet.llm/model-parameters {:temperature 0.4
-                                                     :model "gpt-4"}
-                       ;; ?
-                      :bosquet.memory/type          :bosquet.memory/short-term}
-    :self-eval       {:bosquet.llm/service          [:llm/openai :provider/openai]
-                      :bosquet.llm/model-parameters {:temperature 0}}}))
+   {:question-answer {wkk/service          [:llm/openai :provider/openai]
+                      wkk/model-parameters {:temperature 0.4
+                                            :model "gpt-4"}
+                      :bosquet.memory/type :bosquet.memory/short-term}
+    :self-eval       {wkk/service          [:llm/openai :provider/openai]
+                      wkk/model-parameters {:temperature 0}}}))
