@@ -43,9 +43,9 @@
   [args {prompt preceding-text
          :as    opts}]
   (-> prompt
-    (complete/complete (generation-params args opts))
-    llm/content
-    :completion))
+      (complete/complete (generation-params args opts))
+      llm/content
+      :completion))
 
 (defn add-tags []
   (parser/add-tag! :gen gen-tag)
