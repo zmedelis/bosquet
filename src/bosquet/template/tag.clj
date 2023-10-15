@@ -30,27 +30,22 @@
         gen-var-name  (or (var-name tag-args) wkk/default-gen-var-name)
         config-params (gen-var-name config-params)
         params        (-> params
-                        (assoc wkk/gen-var-name gen-var-name)
-                        (assoc-in
-                          [wkk/llm-config gen-var-name]
-                          (merge (dissoc tag-args :var :var-name) config-params)))]
+                          (assoc wkk/gen-var-name gen-var-name)
+                          (assoc-in
+                           [wkk/llm-config gen-var-name]
+                           (merge (dissoc tag-args :var :var-name) config-params)))]
     ;; If there were no params after merge return blank
     (when-not (= (wkk/llm-config params) {wkk/default-gen-var-name {}})
       params)))
-
 
 (defn gen-tag
   "Selmer custom tag to invoke AI generation"
   [args {prompt preceding-text
          :as    opts}]
-  (let [result   (complete/complete
-                   prompt
-                   (generation-params args opts)
-                   ;; whatever props are specified in the props will take priority
-                   ;; over the ones specified in the tag
-                   ;; FIXME the merge does not merge at the `llm-config` level
-                   #_opts #_(merge (args->map args) opts))]
-    (-> result llm/content :completion)))
+  (-> prompt
+    (complete/complete (generation-params args opts))
+    llm/content
+    :completion))
 
 (defn add-tags []
   (parser/add-tag! :gen gen-tag)
