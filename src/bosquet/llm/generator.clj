@@ -214,12 +214,11 @@ omit any other prose and explanations."
     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
-
-   {:question-answer {wkk/service          [:llm/openai :provider/openai]
-                      wkk/cache            true
-                      wkk/model-parameters {:temperature 0.4 :model "gpt-3.5-turbo"}}
-    :self-eval       {wkk/service          [:llm/openai :provider/openai]
-                      wkk/model-parameters {:temperature 0}}})
+   {:answer {wkk/service          [:llm/openai :provider/openai]
+             wkk/cache            true
+             wkk/model-parameters {:temperature 0.4 :model "gpt-4"}}
+    :test   {wkk/service          [:llm/openai :provider/openai]
+             wkk/model-parameters {:temperature 0}}})
 
   (complete-template
    "You are a playwright. Given the play's title and it's genre write synopsis for that play.

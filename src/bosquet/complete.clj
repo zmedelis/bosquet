@@ -25,14 +25,12 @@
      (.generate llm prompt model-parameters))))
 
 (defn complete
-  [prompt {gen-key :the-key :as opts
-           ;; when `gen` tag is not defined, use `gen` as default
-           :or     {gen-key :gen}}]
+  [prompt {gen-var wkk/gen-var-name :as opts}]
   (let [{service       wkk/service
          params        wkk/model-parameters
          cache         wkk/cache
          output-format wkk/output-format}
-        (get-in opts [wkk/llm-config (or gen-key :gen)])
+        (get-in opts [wkk/llm-config (or gen-var wkk/default-gen-var-name)])
 
         service (sys/get-service service)
 

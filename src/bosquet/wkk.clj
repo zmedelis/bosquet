@@ -27,3 +27,12 @@
 
 (def cache
   :bosquet.llm/cache)
+
+(def default-gen-var-name
+  "`gen` template tag is allowed to not specify `var` name parameter.
+   In this case this name will be used"
+  :gen)
+
+(def gen-var-name
+  "Key to reference LLM generation var name in gen call parameters"
+  :bosquet.llm/gen-var-name)

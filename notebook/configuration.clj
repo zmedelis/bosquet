@@ -66,22 +66,22 @@
 
 
 ;; The `parameters` for generation can be defined in a map with configuration for each `gen` call in the template.
-;; So the `question-answer` generation is done with the *OpenAI* `gpt-3.5-turbo` model. With the cache enabled.
+;; So the `question-answer > answer` generation is done with the *OpenAI* `gpt-3.5-turbo` model. With the cache enabled.
 ;;
-;; While `self-eval` generation is done with *Cohere* and a low `temperature` setting.
+;; While `self-eval > test` generation is done with *Cohere* and a low `temperature` setting.
 ;; Note:
 ;; - the `gpt-4` model name in use, it gets mapped to Cohere's `command`
 ;; - the `stop` parameter, Cohere uses `stop_sequences`, `stop` is used for all *Bosquet* based requests, renaming is done automaticaly.
 
 (def parameters
-  {:question-answer {wkk/service          [:llm/openai :provider/openai]
-                     wkk/cache            true
-                     wkk/model-parameters {:temperature 0.4
-                                           :model       "gpt-3.5-turbo"}}
-   :self-eval       {wkk/service          :llm/cohere
-                     wkk/model-parameters {:model       "gpt-4"
-                                           :stop        ["."]
-                                           :temperature 0.0}}})
+  {:answer {wkk/service          [:llm/openai :provider/openai]
+            wkk/cache            true
+            wkk/model-parameters {:temperature 0.4
+                                  :model       "gpt-3.5-turbo"}}
+   :test   {wkk/service          :llm/cohere
+            wkk/model-parameters {:model       "gpt-4"
+                                  :stop        ["."]
+                                  :temperature 0.0}}})
 ;;
 ;; Available configuration parameters are:
 ;; * `:bosquet.llm/service` - LLM service to use for generation

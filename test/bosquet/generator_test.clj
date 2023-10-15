@@ -27,7 +27,7 @@
   (is (match? (m/in-any-order [:role :question :question-answer :self-eval :you-are :answer :test])
               (all-keys astronomy-prompt {:you-are "astronomer" :question "How far to X?"}))))
 
-(deftest generation-with-different-models
+(deftest generltion-with-different-models
   (is
    (match?
     {:role            "As a brilliant astronomer answer the following question."
@@ -40,10 +40,10 @@
       (generate astronomy-prompt
                 {:you-are  "astronomer"
                  :question "What is the distance from Moon to Io?"}
-                {:self-eval       {wkk/service          [:llm/openai :provider/openai]
-                                   wkk/model-parameters {:model "hubble"}}
-                 :question-answer {wkk/service          [:llm/openai :provider/openai]
-                                   wkk/model-parameters {:model "galileo"}}})))))
+                {:test   {wkk/service          [:llm/openai :provider/openai]
+                          wkk/model-parameters {:model "hubble"}}
+                 :answer {wkk/service          [:llm/openai :provider/openai]
+                          wkk/model-parameters {:model "galileo"}}})))))
 
 (deftest fail-generation
   (is (match?
@@ -58,10 +58,10 @@
           astronomy-prompt
           {:you-are  "astronomer"
            :question "What is the distance from Moon to Io?"}
-          {:question-answer {wkk/service          [:llm/openai :provider/openai]
-                             wkk/model-parameters {:model "galileo"}}
-           :self-eval       {wkk/service          [:llm/openai :provider/openai]
-                             wkk/model-parameters {:model "AGI"}}})))))
+          {:answer {wkk/service          [:llm/openai :provider/openai]
+                    wkk/model-parameters {:model "galileo"}}
+           :test   {wkk/service          [:llm/openai :provider/openai]
+                    wkk/model-parameters {:model "AGI"}}})))))
 
 (deftest conversation-slot-filling
   (is (match?
