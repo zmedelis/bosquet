@@ -7,7 +7,9 @@
   [_]
   (clerk/build! {:paths    ["notebook/getting_started.clj"
                             "notebook/configuration.clj"
-                            "notebook/math_generate_code.clj"]
+                            "notebook/math_generate_code.clj"
+                            "notebook/papers/chain_of_density.clj"
+                            "notebook/papers/chain_of_verification.clj"]
                  :index    "notebook/index.clj"
                  :out-path "docs"}))
 
@@ -20,6 +22,7 @@
   (clerk/serve! {:browse? false})
 
   (clerk/show! "notebook/getting_started.clj")
+  (clerk/show! "notebook/papers/chain_of_verification.clj")
   (clerk/show! "notebook/configuration.clj")
   (clerk/show! "notebook/user_guide.clj")
   (clerk/show! "notebook/chat_with_memory.clj")
