@@ -131,7 +131,7 @@
 ;;
 ;; Bellow is the data showing CoVe thinking steps and verification results
 ;;
-^{:nextjournal.clerk/visibility {:result :hide}}
+^{:nextjournal.clerk/visibility {:code :hide}}
 (clerk/html
   [:div.font-mono
    [:div.flex.mb-4
@@ -164,7 +164,7 @@
           (:verification-questions result))))]])
 
 ;; And the revised answer based on the work done above
-^{:nextjournal.clerk/visibility {:result :hide}}
+^{:nextjournal.clerk/visibility {:code :hide}}
 (clerk/html
   [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.hover:bg-gray-100.dark:bg-gray-800.dark:border-gray-700.dark:hover:bg-gray-700.grid.grid-cols-1.gap-3
    [:div.flex
