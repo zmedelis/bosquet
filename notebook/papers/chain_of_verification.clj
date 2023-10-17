@@ -105,7 +105,7 @@
 
      :revision
      (h/join
-       "Given the corrected facts in REVSION reformulate original ANSWER using in a more truthful way."
+       "Given the corrected facts in REVISION reformulate original ANSWER using in a more truthful way."
        "QUESTION: {{question}}"
        "ANSWER: {{baseline-answer}}"
        ""
