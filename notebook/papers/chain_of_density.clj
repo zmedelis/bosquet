@@ -15,7 +15,7 @@
 
 ;; CoD constructs a prompt that iteratively adds not yet summarized entities to the summary while keeping the overall summary length constant.
 ;; As it goes through the iterations, it produces increasingly dense summaries. Initial summaries are too sparse, while the final ones are
-;; usually dense.
+;; usually too dense. Second and third versions being the best ones.
 
 ;; Another nice feature of the CoD prompt is that it keeps all the summary iteration prompts alongside key entities added to the summary in
 ;; a generated JSON output. This allows us to inspect the intermediate steps of the summary generation, see how the summary is evolving,
