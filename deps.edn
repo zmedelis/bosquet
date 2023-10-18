@@ -15,7 +15,8 @@
            aero/aero                       {:mvn/version "1.1.6"}
            org.clojure/core.cache          {:mvn/version "1.0.225"}
            metosin/malli                   {:mvn/version "0.13.0"}
-           org.apache.commons/commons-text {:mvn/version "1.10.0"}}
+           org.apache.commons/commons-text {:mvn/version "1.10.0"}
+           org.deeplearning4j/deeplearning4j-nlp {:mvn/version "1.0.0-M2.1"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
                                       djblue/portal               {:mvn/version "0.48.0"}}}
