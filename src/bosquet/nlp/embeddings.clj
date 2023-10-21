@@ -32,10 +32,12 @@
                       {:data {:text text}
                        :embedding
                        (-> sys (create text) :data first :embedding)})
-                    texts))
+                texts))
+
+  (def query (-> sys (create "Cars in town") :data first :embedding))
 
   (qd/add-docs qd-coll-name embeds)
 
-  (qd/search qd-coll-name (:embedding (first embeds)) 2)
+  (qd/search qd-coll-name query 2)
 
   #__)

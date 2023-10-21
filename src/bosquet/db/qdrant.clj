@@ -43,6 +43,7 @@
         {:content-type :json
          :body         (j/write-value-as-string
                         {:vector embeds-vector
-                         :top    top-n})})
+                         :top    top-n
+                         :with_payload true})})
        :body
        j/read-value)))
