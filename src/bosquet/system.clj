@@ -1,6 +1,5 @@
 (ns bosquet.system
   (:require
-   [aero.core :as aero :refer [root-resolver]]
    [bosquet.llm.cohere :as cohere]
    [bosquet.llm.openai :as oai]
    [bosquet.memory.encoding :as encoding]
@@ -12,16 +11,47 @@
    [integrant.core :as ig]
    [taoensso.timbre :as timbre])
   (:import
+   [java.io StringReader]
    [bosquet.llm.cohere Cohere]
    [bosquet.llm.openai OpenAI]
    [bosquet.nlp.embeddings OpenAIEmbeddings]
    [bosquet.memory.memory Amnesiac]
    [bosquet.memory.simple_memory SimpleMemory]))
 
+(def ^:private config-keys
+  "Keys that are to be found in the `config.edn` file."
+  [:azure-openai-api-key
+   :azure-openai-api-endpoint
+   :openai-api-key
+   :openai-api-endpoint
+   :cohere-api-key
+   :openai-api-embeddings-endpoint])
+
+(defn aero-resolver-with-missing-keys
+  "Aero #ref will complain if config is not created and #include fails to add
+  keys to the config. This resolver will return nil valued map for missing keys
+  when `config.edn` is not created by the user.
+
+  Copy paste from
+  https://github.com/juxt/aero/blob/814b0006a1699e8149045e55c4e112e61b983fe9/src/aero/core.cljc#L105"
+  [source include]
+  (let [fl
+        (if (.isAbsolute (io/file include))
+          (io/file include)
+          (when-let [source-file
+                     (try (io/file source)
+                          (catch java.lang.IllegalArgumentException _ nil))]
+            (io/file (.getParent ^java.io.File source-file) include)))]
+
+    (if (and fl (.exists fl))
+      fl
+      (StringReader.
+       (pr-str
+          ;; config map with nil values for missing keys
+        (zipmap config-keys (repeat nil)))))))
+
 (def ^:private config
-  (aero/read-config
-   (io/resource "system.edn")
-   {:resolver root-resolver}))
+  (aero/read-config "system.edn" {:resolver aero-resolver-with-missing-keys}))
 
 (def ^:private sys-config
   (dissoc config :config wkk/default-llm))
@@ -50,6 +80,15 @@
   (SimpleMemory.
    (atom [])
    (encoding/handler encoder)))
+
+;;
+;; Embedding Services
+;;
+
+(defmethod ig/init-key :embedding/openai [_ {:keys [api-key impl] :as opts}]
+  (when api-key
+    (timbre/infof " * OpenAI Embeddings API service (%s)" (name impl))
+    (OpenAIEmbeddings. opts)))
 
 ;;
 ;; Embedding Services

@@ -1,11 +1,5 @@
-{:config #merge
- ;; The merge is needed to avoid Aero #ref complaining
- ;; that the key is not found when those keys are not defined
- ;; in the config.edn file.
- [{:cohere-api-key       nil
-   :azure-openai-api-key nil
-   :openai-api-key       nil}
-  #include "config.edn"]
+{:config
+  #include "config.edn"
 
  ;; config.edn is a file that contains settings for the LLM services,
  ;; Tools, and other components. Those include config options as well as
@@ -55,11 +49,22 @@
                      "https://api.openai.com/v1"]
   :impl         :openai}
 
+ ;; ######################################################################
+ ;; DB
+ ;; ######################################################################
+ #_ #_:db/qdrant-in-memory
+ {:host            #or [#ref [:qdrant-config :host]
+                        "localhost"]
+  :port            #or [#ref [:qdrant-port :port]
+                        6333]
+  :vectors-on-disk #or [#ref [:qdrant-config :on-disk]
+                        false]}
+ #_{:vectors {:size     1536
+              :distance :Dot}}
 
  ;; ######################################################################
  ;; Memory components
  ;; ######################################################################
 
- ;; Memory components
  :memory/simple-short-term
- {:encoder   :memory.encoding/as-is}}
+ {:encoder :memory.encoding/as-is}}
