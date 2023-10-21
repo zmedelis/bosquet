@@ -1,5 +1,6 @@
 (ns bosquet.db.qdrant
   (:require
+   [bosquet.db.vector-db :as vdb]
    [bosquet.utils :as utils]
    [hato.client :as hc]
    [jsonista.core :as j]))
@@ -47,3 +48,14 @@
                          :with_payload true})})
        :body
        j/read-value)))
+
+(deftype Qdrant
+         [opts]
+  vdb/VectorDB
+  (create [_this collection-name]
+    (create-collection collection-name
+
+                       (merge)))
+  (delete [_this _collection-name])
+  (add [_this _collection-name _docs])
+  (search [_this _query _limit]))

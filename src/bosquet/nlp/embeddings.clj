@@ -32,7 +32,7 @@
                       {:data {:text text}
                        :embedding
                        (-> sys (create text) :data first :embedding)})
-                texts))
+                    texts))
 
   (def query (-> sys (create "Cars in town") :data first :embedding))
 

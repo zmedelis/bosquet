@@ -1,22 +1,25 @@
 (ns bosquet.system
   (:require
+   [aero.core :as aero]
    [bosquet.llm.cohere :as cohere]
    [bosquet.llm.openai :as oai]
    [bosquet.memory.encoding :as encoding]
    [bosquet.memory.memory :as mem]
-   [bosquet.memory.simple-memory :as simple-memory]
    [bosquet.nlp.embeddings :as embeddings]
+   [bosquet.memory.simple-memory :as simple-memory]
+   [bosquet.db.qdrant :as qdrant]
    [bosquet.wkk :as wkk]
    [clojure.java.io :as io]
    [integrant.core :as ig]
    [taoensso.timbre :as timbre])
   (:import
-   [java.io StringReader]
+   [bosquet.db.qdrant Qdrant]
    [bosquet.llm.cohere Cohere]
    [bosquet.llm.openai OpenAI]
-   [bosquet.nlp.embeddings OpenAIEmbeddings]
    [bosquet.memory.memory Amnesiac]
-   [bosquet.memory.simple_memory SimpleMemory]))
+   [bosquet.memory.simple_memory SimpleMemory]
+   [bosquet.nlp.embeddings OpenAIEmbeddings]
+   [java.io StringReader]))
 
 (def ^:private config-keys
   "Keys that are to be found in the `config.edn` file."
@@ -24,8 +27,13 @@
    :azure-openai-api-endpoint
    :openai-api-key
    :openai-api-endpoint
+   :openai-api-embeddings-endpoint
    :cohere-api-key
-   :openai-api-embeddings-endpoint])
+   :qdrant-host
+   :qdrant-port
+   :qdrant-vectors-on-disk
+   :qdrant-vectors-size
+   :qdrant-vectors-distance])
 
 (defn aero-resolver-with-missing-keys
   "Aero #ref will complain if config is not created and #include fails to add
@@ -35,13 +43,12 @@
   Copy paste from
   https://github.com/juxt/aero/blob/814b0006a1699e8149045e55c4e112e61b983fe9/src/aero/core.cljc#L105"
   [source include]
-  (let [fl
-        (if (.isAbsolute (io/file include))
-          (io/file include)
-          (when-let [source-file
-                     (try (io/file source)
-                          (catch java.lang.IllegalArgumentException _ nil))]
-            (io/file (.getParent ^java.io.File source-file) include)))]
+  (let [fl (if (.isAbsolute (io/file include))
+             (io/file include)
+             (when-let [source-file
+                        (try (io/file source)
+                             (catch java.lang.IllegalArgumentException _ nil))]
+               (io/file (.getParent ^java.io.File source-file) include)))]
 
     (if (and fl (.exists fl))
       fl
@@ -51,7 +58,8 @@
         (zipmap config-keys (repeat nil)))))))
 
 (def ^:private config
-  (aero/read-config "system.edn" {:resolver aero-resolver-with-missing-keys}))
+  (aero/read-config "system.edn"
+                    {:resolver aero-resolver-with-missing-keys}))
 
 (def ^:private sys-config
   (dissoc config :config wkk/default-llm))
@@ -91,12 +99,11 @@
     (OpenAIEmbeddings. opts)))
 
 ;;
-;; Embedding Services
+;; DB
 ;;
-(defmethod ig/init-key :embedding/openai [_ {:keys [api-key impl] :as opts}]
-  (when api-key
-    (timbre/infof " * OpenAI Embeddings API service (%s)" (name impl))
-    (OpenAIEmbeddings. opts)))
+(defmethod ig/init-key :db/qdrant [_ {:keys [host] :as opts}]
+  (timbre/infof " * Qdrant vector DB on '%s'" host)
+  (Qdrant. opts))
 
 (def system
   (do

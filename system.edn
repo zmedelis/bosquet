@@ -1,5 +1,16 @@
 {:config
-  #include "config.edn"
+ #merge [{:azure-openai-api-key           nil
+          :azure-openai-api-endpoint      nil
+          :openai-api-key                 nil
+          :openai-api-endpoint            nil
+          :openai-api-embeddings-endpoint nil
+          :cohere-api-key                 nil
+          :qdrant-host                    nil
+          :qdrant-port                    nil
+          :qdrant-vectors-on-disk         nil
+          :qdrant-vectors-size            nil
+          :qdrant-vectors-distance        nil}
+         #include "config.edn"]
 
  ;; config.edn is a file that contains settings for the LLM services,
  ;; Tools, and other components. Those include config options as well as
@@ -52,15 +63,12 @@
  ;; ######################################################################
  ;; DB
  ;; ######################################################################
- #_ #_:db/qdrant-in-memory
- {:host            #or [#ref [:qdrant-config :host]
-                        "localhost"]
-  :port            #or [#ref [:qdrant-port :port]
-                        6333]
-  :vectors-on-disk #or [#ref [:qdrant-config :on-disk]
-                        false]}
- #_{:vectors {:size     1536
-              :distance :Dot}}
+ :db/qdrant
+ {:host             #or [#ref [:config :qdrant-host] "localhost"]
+  :port             #or [#ref [:config :qdrant-port] 6333]
+  :vectors-on-disk  #or [#ref [:config :qdrant-vectors-on-disk] false]
+  :vectors-size     #or [#ref [:config :qdrant-vectors-size] 1536]
+  :vectors-distance #or [#ref [:config :qdrant-vectors-distance] :Dot]}
 
  ;; ######################################################################
  ;; Memory components
