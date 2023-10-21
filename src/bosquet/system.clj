@@ -6,6 +6,7 @@
    [bosquet.memory.encoding :as encoding]
    [bosquet.memory.memory :as mem]
    [bosquet.memory.simple-memory :as simple-memory]
+   [bosquet.nlp.embeddings :as embeddings]
    [bosquet.wkk :as wkk]
    [clojure.java.io :as io]
    [integrant.core :as ig]
@@ -13,6 +14,7 @@
   (:import
    [bosquet.llm.cohere Cohere]
    [bosquet.llm.openai OpenAI]
+   [bosquet.nlp.embeddings OpenAIEmbeddings]
    [bosquet.memory.memory Amnesiac]
    [bosquet.memory.simple_memory SimpleMemory]))
 
@@ -49,6 +51,14 @@
    (atom [])
    (encoding/handler encoder)))
 
+;;
+;; Embedding Services
+;;
+(defmethod ig/init-key :embedding/openai [_ {:keys [api-key impl] :as opts}]
+  (when api-key
+    (timbre/infof " * OpenAI Embeddings API service (%s)" (name impl))
+    (OpenAIEmbeddings. opts)))
+
 (def system
   (do
     (timbre/info "Initializing Bosquet resources:")
@@ -60,12 +70,6 @@
 
 (defn openai []
   (get system [:llm/openai :provider/openai]))
-
-(defn azure []
-  (get system [:llm/openai :provider/azure]))
-
-(defn cohere []
-  (get system :llm/cohere))
 
 (defn get-service
   "Get LLM service by Integrant confg key. If there is none
