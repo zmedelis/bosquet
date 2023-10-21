@@ -25,7 +25,7 @@ or other providers.
 
 
 ```clojure
-(require '[bosquet.generator :as bg])
+(require '[bosquet.llm.generator :as bg])
 
 (bg/generate
    {:role            "As a brilliant {{you-are}} answer the following question."
