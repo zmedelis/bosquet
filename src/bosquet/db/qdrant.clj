@@ -14,10 +14,13 @@
 
 (defn create-collection
   "Create a collection with `name` and `config`"
-  [collection-name config]
+  [collection-name {:keys [vectors-on-disk vectors-size vectors-distance]}]
   (hc/put (str  qdrant-endpoint "/collections/" collection-name)
           {:content-type :json
-           :body         (j/write-value-as-string config)}))
+           :body         (j/write-value-as-string
+                          {:vectors {:size     vectors-size
+                                     :distance vectors-distance
+                                     :on_disk  vectors-on-disk}})}))
 
 (defn delete-collection
   [collection-name]
@@ -53,9 +56,10 @@
          [opts]
   vdb/VectorDB
   (create [_this collection-name]
-    (create-collection collection-name
-
-                       (merge)))
-  (delete [_this _collection-name])
-  (add [_this _collection-name _docs])
-  (search [_this _query _limit]))
+    (create-collection collection-name opts))
+  (delete [_this collection-name]
+    (delete-collection collection-name))
+  (add [_this collection-name docs]
+    (add-docs collection-name docs))
+  (search [_this collection-name embeddings limit]
+    (search collection-name embeddings limit)))
