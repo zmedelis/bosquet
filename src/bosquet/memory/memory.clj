@@ -31,8 +31,8 @@
 ;; - reflection
 
 (defprotocol Memory
-  (remember [this observation])
-  (forget [this])
+  (remember [this observation params])
+  (forget [this params])
   (free-recall [this cueue params])
   (sequential-recall [this params])
   (cue-recall [this cue params])
@@ -45,8 +45,8 @@
 (deftype Amnesiac
          []
   Memory
-  (remember [_this _observation])
-  (forget [_this])
+  (remember [_this _observation _params])
+  (forget [_this _params])
   (free-recall [_this _cueue _params])
   (sequential-recall [_this _params])
   (cue-recall [_this _cue _params]))

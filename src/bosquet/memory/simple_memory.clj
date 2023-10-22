@@ -9,10 +9,10 @@
          [in-memory-memory encoder]
   mem/Memory
 
-  (forget [_this]
+  (forget [_this _params]
     (reset! in-memory-memory []))
 
-  (remember [_this observation]
+  (remember [_this observation _params]
     (doseq [item (if (vector? observation) observation [observation])]
       (swap! in-memory-memory conj item)))
 

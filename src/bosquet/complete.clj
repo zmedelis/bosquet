@@ -57,6 +57,6 @@
         memory     (sys/get-memory type)
         memories   (available-memories messages opts)
         completion (.chat llm (concat memories messages) params)]
-    (.remember memory messages)
-    (.remember memory (-> completion llm/content :completion))
+    (.remember memory messages nil)
+    (.remember memory (-> completion llm/content :completion) nil)
     completion))

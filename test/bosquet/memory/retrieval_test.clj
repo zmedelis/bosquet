@@ -13,11 +13,11 @@
 
 (defn- ->memory []
   (let [mem (SimpleMemory. (atom []) encoding/as-is-handler)]
-    (.remember mem "One monkey")
-    (.remember mem "Two monkeys")
-    (.remember mem "Three monkeys")
-    (.remember mem "Four monkeys")
-    (.remember mem "Five monkeys")
+    (.remember mem "One monkey" nil)
+    (.remember mem "Two monkeys" nil)
+    (.remember mem "Three monkeys" nil)
+    (.remember mem "Four monkeys" nil)
+    (.remember mem "Five monkeys" nil)
     mem))
 
 (deftest sequential-retrieval
@@ -36,7 +36,7 @@
 
 (deftest cue-retrieval
   (let [mem (->memory)]
-    (.remember mem "10 jumping donkeys")
+    (.remember mem "10 jumping donkeys" nil)
     (is (= ["Two monkeys" "Three monkeys" "Four monkeys" "Five monkeys"]
            (.cue-recall mem "Four monkeys"
                         {r/memory-tokens-limit 100
