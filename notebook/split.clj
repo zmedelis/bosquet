@@ -10,11 +10,9 @@
 (def text (slurp "https://raw.githubusercontent.com/scicloj/scicloj.ml.smile/main/LICENSE"))
 
 (def what-template
-  "
-{{text}}
-
-What is the name of the licence ?
-{% llm-generate model=text-davinci-003 % }")
+  "{{text}}
+~~~~~
+What is the name of the licence ?")
 
 ;;  split the text in pieces
 (def splits
@@ -29,14 +27,12 @@ What is the name of the licence ?
 
 ;;  template to summarize the result for all pieces
 (def summarise-all-template
-  "
-{% for t in results %}
+  "{% for t in results %}
   * {{t}}
 {% endfor %}
 
 Please summarize the above.
-{% llm-generate  model=text-davinci-003 % }
-")
+{% gen  model=gpt-4 % }")
 
 ;; apply summarise-all tamplate to get single answer
 (def overall-summary

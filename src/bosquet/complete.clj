@@ -20,7 +20,12 @@
   (w/evict cache {:prompt prompt
                   :params model-params}))
 
-(defn generate-with-cache [cache? generator prompt model-parameters]
+(defn generate-with-cache
+  "Call `generator` function with `prompt` and `model-parameters`.
+  If `cache?` is true then use cache store previously generated result.
+
+  Cache gets a hit if `prompt` and `model-parameters` are the same."
+  [cache? generator prompt model-parameters]
   (if cache?
     (w/lookup-or-miss
      cache
@@ -37,8 +42,8 @@
          output-format wkk/output-format}
         (get-in opts [wkk/llm-config (or gen-var wkk/default-gen-var-name)])
 
-        service   (sys/get-service service)
-        generator (fn [prompt params] (.generate service prompt params))
+        llm       (sys/get-service service)
+        generator (fn [prompt params] (.generate llm prompt params))
 
         {{completion :completion} llm/content :as generation}
         (generate-with-cache cache generator prompt params)]
