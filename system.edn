@@ -79,6 +79,4 @@
 
  :memory/long-term-embeddings
  {:encoder :memory.encoding/as-embddings
-  ;; TODO ref is needs `ig/read-string` and this is not ok with aero
-  :storage :db/qdrant
-  #_ #_:storage #ig/ref :db/qdrant}}
+  :storage (integrant.core/ref :db/qdrant)}}
