@@ -7,6 +7,7 @@
    [bosquet.memory.memory :as mem]
    [bosquet.nlp.embeddings :as embeddings]
    [bosquet.memory.simple-memory :as simple-memory]
+   [bosquet.memory.long-term-memory :as long-term-memory]
    [bosquet.db.qdrant :as qdrant]
    [bosquet.wkk :as wkk]
    [clojure.java.io :as io]
@@ -18,6 +19,7 @@
    [bosquet.llm.openai OpenAI]
    [bosquet.memory.memory Amnesiac]
    [bosquet.memory.simple_memory SimpleMemory]
+   [bosquet.memory.long_term_memory LongTermMemory]
    [bosquet.nlp.embeddings OpenAIEmbeddings]
    [java.io StringReader]))
 
@@ -88,6 +90,10 @@
   (SimpleMemory.
    (atom [])
    (encoding/handler encoder)))
+
+(defmethod ig/init-key :memory/long-term-embeddings [_ opts]
+  (timbre/infof " * Short term memory with (%s)" opts)
+  (LongTermMemory. opts))
 
 ;;
 ;; Embedding Services

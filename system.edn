@@ -75,4 +75,10 @@
  ;; ######################################################################
 
  :memory/simple-short-term
- {:encoder :memory.encoding/as-is}}
+ {:encoder :memory.encoding/as-is}
+
+ :memory/long-term-embeddings
+ {:encoder :memory.encoding/as-embddings
+  ;; TODO ref is needs `ig/read-string` and this is not ok with aero
+  :storage :db/qdrant
+  #_ #_:storage #ig/ref :db/qdrant}}
