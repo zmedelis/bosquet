@@ -9,20 +9,25 @@
 
 ;; TODO Cache is basic and experimantal, needs to be improved
 ;; at last better configuration instead of hardcoding to FIFO
-;; also should by in System
+;; also should be in System
 
 (defn ->cache []
   (w/fifo-cache-factory {}))
 
 (def cache (->cache))
 
-(defn complete-with-cache [llm prompt model-parameters]
-  (w/lookup-or-miss
-   cache
-   {:prompt prompt
-    :params model-parameters}
-   (fn [_item]
-     (.generate llm prompt model-parameters))))
+(defn evict [prompt model-params]
+  (w/evict cache {:prompt prompt
+                  :params model-params}))
+
+(defn generate-with-cache [cache? generator prompt model-parameters]
+  (if cache?
+    (w/lookup-or-miss
+     cache
+     {:prompt prompt
+      :params model-parameters}
+     (fn [_item] (generator prompt model-parameters)))
+    (generator prompt model-parameters)))
 
 (defn complete
   [prompt {gen-var wkk/gen-var-name :as opts}]
@@ -32,12 +37,11 @@
          output-format wkk/output-format}
         (get-in opts [wkk/llm-config (or gen-var wkk/default-gen-var-name)])
 
-        service (sys/get-service service)
+        service   (sys/get-service service)
+        generator (fn [prompt params] (.generate service prompt params))
 
         {{completion :completion} llm/content :as generation}
-        (if cache
-          (complete-with-cache service prompt params)
-          (.generate service prompt params))]
+        (generate-with-cache cache generator prompt params)]
 
     (assoc-in generation [llm/content :completion]
               (converter/coerce completion output-format))))

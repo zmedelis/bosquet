@@ -218,6 +218,7 @@ omit any other prose and explanations."
              wkk/cache            true
              wkk/model-parameters {:temperature 0.4 :model "gpt-4"}}
     :test   {wkk/service          [:llm/openai :provider/openai]
+             wkk/cache            true
              wkk/model-parameters {:temperature 0}}})
 
   (complete-template
