@@ -72,12 +72,12 @@
 
 (defmethod ig/init-key :llm/openai [_ {:keys [api-key impl] :as opts}]
   (when api-key
-    (timbre/infof " * OpenAI API service (%s)" (name impl))
+    (timbre/infof "\t* OpenAI API service (%s)" (name impl))
     (OpenAI. opts)))
 
 (defmethod ig/init-key :llm/cohere [_ {:keys [api-key] :as opts}]
   (when api-key
-    (timbre/info " * Cohere API service")
+    (timbre/info "\t* Cohere API service")
     (System/setProperty "cohere.api.key" api-key)
     (Cohere. opts)))
 
@@ -86,13 +86,13 @@
 ;;
 
 (defmethod ig/init-key :memory/simple-short-term [_ {:keys [encoder] :as opts}]
-  (timbre/infof " * Short term memory with (%s)" opts)
+  (timbre/infof "\t* Short term memory with (%s)" opts)
   (SimpleMemory.
    (atom [])
    (encoding/handler encoder)))
 
 (defmethod ig/init-key :memory/long-term-embeddings [_ opts]
-  (timbre/infof " * Short term memory with (%s)" opts)
+  (timbre/infof "\t* Short term memory with (%s)" opts)
   (LongTermMemory. opts))
 
 ;;
@@ -101,19 +101,19 @@
 
 (defmethod ig/init-key :embedding/openai [_ {:keys [api-key impl] :as opts}]
   (when api-key
-    (timbre/infof " * OpenAI Embeddings API service (%s)" (name impl))
+    (timbre/infof "\t* OpenAI Embeddings API service (%s)" (name impl))
     (OpenAIEmbeddings. opts)))
 
 ;;
 ;; DB
 ;;
 (defmethod ig/init-key :db/qdrant [_ {:keys [host] :as opts}]
-  (timbre/infof " * Qdrant vector DB on '%s'" host)
+  (timbre/infof "\t* Qdrant vector DB on '%s'" host)
   (Qdrant. opts))
 
 (def system
   (do
-    (timbre/info "Initializing Bosquet resources:")
+    (timbre/info "🏗️ Initializing Bosquet resources:")
     (ig/init sys-config)))
 
 ;;
