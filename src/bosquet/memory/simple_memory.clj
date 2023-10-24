@@ -5,40 +5,40 @@
    [bosquet.memory.memory :as mem]
    [bosquet.memory.retrieval :as r]))
 
-(deftype SimpleMemory
-         [in-memory-memory]
-  mem/Memory
+(deftype
+ SimpleMemory
+ [in-memory-memory] mem/Memory
 
-  (forget [_this _params]
-    (reset! in-memory-memory []))
+ (forget [_this _params]
+   (reset! in-memory-memory []))
 
-  (remember [_this observation _params]
-    (doseq [item (if (vector? observation) observation [observation])]
-      (swap! in-memory-memory conj item)))
+ (remember [_this observation _params]
+   (doseq [item (if (vector? observation) observation [observation])]
+     (swap! in-memory-memory conj item)))
 
-  (free-recall [_this _cueue {object-limit r/memory-objects-limit
-                              token-limit  r/memory-tokens-limit
-                              :or          {object-limit 5
-                                            token-limit  3000}}]
-    (->> @in-memory-memory shuffle (take object-limit)))
+ (free-recall [_this _cueue {object-limit r/memory-objects-limit
+                             token-limit  r/memory-tokens-limit
+                             :or          {object-limit 5
+                                           token-limit  3000}}]
+   (->> @in-memory-memory shuffle (take object-limit)))
 
-  (sequential-recall [_this params]
+ (sequential-recall [_this params]
       ;; WIP
-    (r/take-while-tokens
-     @in-memory-memory
-     (merge
-      {r/memory-content-fn :content
-       llm/model "gpt-3.5-turbo"
-       llm/service openai/openai}
-      params)))
+   (r/take-while-tokens
+    @in-memory-memory
+    (merge
+     {r/memory-content-fn :content
+      llm/model "gpt-3.5-turbo"
+      llm/service openai/openai}
+     params)))
 
-  (cue-recall [_this cue params]
-    (r/cue-recall-handler @in-memory-memory cue
-                          (merge
-                           {r/memory-content-fn :content
-                            llm/model "gpt-3.5-turbo"
-                            llm/service openai/openai}
-                           params)))
+ (cue-recall [_this cue params]
+   (r/cue-recall-handler @in-memory-memory cue
+                         (merge
+                          {r/memory-content-fn :content
+                           llm/model "gpt-3.5-turbo"
+                           llm/service openai/openai}
+                          params)))
 
-  (volume [_this {service :bosquet.llm/service
-                  {model :model} :bosquet.llm/model-parameters}]))
+ (volume [_this {service :bosquet.llm/service
+                 {model :model} :bosquet.llm/model-parameters}]))

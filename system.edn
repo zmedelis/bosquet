@@ -53,6 +53,7 @@
  ;; ######################################################################
  ;; Embedding services
  ;; ######################################################################
+
  :embedding/openai
  {:api-key      #ref [:config :openai-api-key]
   :api-endpoint #or [#env "OPENAI_API_EMBEDDINGS_ENDPOINT"
@@ -63,6 +64,7 @@
  ;; ######################################################################
  ;; DB
  ;; ######################################################################
+
  :db/qdrant
  {:host             #or [#ref [:config :qdrant-host] "localhost"]
   :port             #or [#ref [:config :qdrant-port] 6333]
@@ -74,9 +76,11 @@
  ;; Memory components
  ;; ######################################################################
 
- :memory/simple-short-term
- {:encoder :memory.encoding/as-is}
+ ;; Simple memory stores everyting in atom. For dev/demo purposes only.
+ :memory/simple-short-term {}
 
+ ;; Long term memory that converts data going through AI generations to
+ ;; embeddings and stores them in DB.
  :memory/long-term-embeddings
  {:encoder (integrat.core/ref :embedding/openai)
   :storage (integrant.core/ref :db/qdrant)}}

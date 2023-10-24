@@ -85,12 +85,12 @@
 ;; Memory Components
 ;;
 
-(defmethod ig/init-key :memory/simple-short-term [_ opts]
-  (timbre/infof "\t* Short term memory with (%s)" opts)
+(defmethod ig/init-key :memory/simple-short-term [_ _opts]
+  (timbre/infof "\t* Short term memory")
   (SimpleMemory. (atom [])))
 
-(defmethod ig/init-key :memory/long-term-embeddings [_ opts]
-  (timbre/infof "\t* Short term memory with (%s)" opts)
+(defmethod ig/init-key :memory/long-term-embeddings [_ {:keys [storage encoder] :as opts}]
+  (timbre/infof "\t* Long term memory with (%s; %s)" (second storage) (second encoder))
   (LongTermMemory. opts))
 
 ;;

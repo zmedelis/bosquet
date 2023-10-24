@@ -47,7 +47,7 @@
 ;; stored in the memory.
 
 (def mem (system/get-memory :memory/simple-short-term))
-(.forget mem)
+(.forget mem {})
 
 (defn chat-demo [queries]
   (gen/chat [(chat/speak chat/system "You are a brilliant assistant")] {} params)
