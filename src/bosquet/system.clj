@@ -85,11 +85,9 @@
 ;; Memory Components
 ;;
 
-(defmethod ig/init-key :memory/simple-short-term [_ {:keys [encoder] :as opts}]
+(defmethod ig/init-key :memory/simple-short-term [_ opts]
   (timbre/infof "\t* Short term memory with (%s)" opts)
-  (SimpleMemory.
-   (atom [])
-   (encoding/handler encoder)))
+  (SimpleMemory. (atom [])))
 
 (defmethod ig/init-key :memory/long-term-embeddings [_ opts]
   (timbre/infof "\t* Short term memory with (%s)" opts)

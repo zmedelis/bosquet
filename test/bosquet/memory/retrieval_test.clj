@@ -1,7 +1,6 @@
 (ns bosquet.memory.retrieval-test
   (:require
    [bosquet.llm.openai :as openai]
-   [bosquet.memory.encoding :as encoding]
    [bosquet.memory.retrieval :as r]
    [clojure.test :refer [deftest is]])
   (:import
@@ -12,7 +11,7 @@
   (is (= 6 (r/memory-object-size "Call me Ishmael." "gpt-3.5-turbo" openai/openai))))
 
 (defn- ->memory []
-  (let [mem (SimpleMemory. (atom []) encoding/as-is-handler)]
+  (let [mem (SimpleMemory. (atom []))]
     (.remember mem "One monkey" nil)
     (.remember mem "Two monkeys" nil)
     (.remember mem "Three monkeys" nil)

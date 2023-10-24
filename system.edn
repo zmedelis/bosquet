@@ -78,5 +78,5 @@
  {:encoder :memory.encoding/as-is}
 
  :memory/long-term-embeddings
- {:encoder :memory.encoding/as-embddings
+ {:encoder (integrat.core/ref :embedding/openai)
   :storage (integrant.core/ref :db/qdrant)}}

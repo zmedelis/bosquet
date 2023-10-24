@@ -6,7 +6,7 @@
    [bosquet.memory.retrieval :as r]))
 
 (deftype SimpleMemory
-         [in-memory-memory encoder]
+         [in-memory-memory]
   mem/Memory
 
   (forget [_this _params]

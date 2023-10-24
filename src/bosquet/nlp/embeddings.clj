@@ -1,19 +1,19 @@
 (ns bosquet.nlp.embeddings
   (:require
+   [bosquet.memory.encoding :as encoding]
    [wkok.openai-clojure.api :as api]))
-
-(defprotocol Embeddings
-  (create [_this _text]))
 
 (def ^:private openai-embedding-model "text-embedding-ada-002")
 
-(deftype OpenAIEmbeddings
-         [opts]
-  Embeddings
-  (create [_this text]
-    (api/create-embedding {:model openai-embedding-model
-                           :input text}
-                          opts)))
+(defn oai-embeddings [text opts]
+  (api/create-embedding {:model openai-embedding-model
+                         :input text}
+                        opts))
+
+(deftype
+ OpenAIEmbeddings
+ [opts] encoding/Encoder
+ (encode [_this text] (oai-embeddings text opts)))
 
 (comment
   (require '[bosquet.system :as system])
