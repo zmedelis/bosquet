@@ -10,7 +10,7 @@
            hato/hato                       {:mvn/version "0.9.0"}
            metosin/jsonista                {:mvn/version "0.3.8"}
            org.clojars.danielsz/cohere     {:mvn/version "1.0.0"}
-           com.taoensso/encore             {:mvn/version "3.71.0"}
+           com.taoensso/encore             {:mvn/version "3.72.0"}
            io.aviso/pretty                 {:mvn/version "1.4.4"}
            integrant/integrant             {:mvn/version "0.8.1"}
            aero/aero                       {:mvn/version "1.1.6"}
