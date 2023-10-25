@@ -37,7 +37,7 @@
 
 (def params {chat/conversation
              {wkk/memory-type       :memory/simple-short-term
-              wkk/recall-function   (fn [memory-system params]
+              wkk/recall-function   (fn [memory-system _messages params]
                                       (.sequential-recall memory-system params))
               wkk/memory-parameters {r/memory-tokens-limit 3000}
               wkk/service           [:llm/openai :provider/openai]
@@ -51,7 +51,7 @@
 (def mem (system/get-memory (wkk/memory-type params)))
 (.forget mem {})
 
-(defn chat-demo [queries]
+(defn chat-demo [queries params]
   (gen/chat [(chat/speak chat/system "You are a brilliant assistant")] {} params)
   (map
     (fn [q]
@@ -61,7 +61,17 @@
          :response (gen/chat message {} params)}))
     queries))
 
-(def resp (chat-demo (doall (take 5 queries))))
+(def resp (chat-demo (take 5 queries) params))
+
+(.forget mem {})
+
+(def resp-long-term-mem
+  (chat-demo (take 5 queries)
+    (assoc
+      params
+      wkk/memory-type :memory/simple-short-term
+      wkk/recall-function   (fn [memory-system messages params]
+                              (.cue-recall memory-system (last messages) params)))))
 
 ^{:nextjournal.clerk/visibility {:code :fold}}
 (clerk/table

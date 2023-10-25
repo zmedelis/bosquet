@@ -59,7 +59,7 @@
     (if type
       (do
         (timbre/info "Retrieving memories using " type " memory")
-        (recall-function (sys/get-memory type) parameters))
+        (recall-function (sys/get-memory type) messages parameters))
       (do
         (timbre/info "No memory specified, using available context as memories")
         messages))))
