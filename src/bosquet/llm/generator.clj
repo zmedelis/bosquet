@@ -154,8 +154,8 @@
 
 ;; WIP
 
-(defn available-memories [messages opts]
-  (complete/available-memories messages opts))
+(defn available-memories [messages generation-target opts]
+  (complete/available-memories messages generation-target opts))
 
 (defn chat
   ([messages] (chat messages nil))
@@ -190,7 +190,7 @@ in the Solar System. Provide the answer in JSON map where the key is the
 planet name and the value is the string distance in millions of kilometers. Generate only JSON
 omit any other prose and explanations."
    {:you-are  "astronomer"}
-   {:gen {:bosquet.llm.output/format :json}})
+   {:gen {wkk/output-format :json}})
   ;; TODO JSON output gives issues.
   ;; - JSON prompt description should be injected to the prompt by Bosquet (maybe a lib
   ;; to convert Malli to descriptions)?
@@ -214,6 +214,7 @@ omit any other prose and explanations."
     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
+    ;; TODO rename `model-parameters` -> `parameters`
    {:answer {wkk/service          [:llm/openai :provider/openai]
              wkk/cache            true
              wkk/model-parameters {:temperature 0.4 :model "gpt-4"}}

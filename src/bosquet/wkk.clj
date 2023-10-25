@@ -36,3 +36,14 @@
 (def gen-var-name
   "Key to reference LLM generation var name in gen call parameters"
   :bosquet.llm/gen-var-name)
+
+(def recall-function
+  "Function to retrieve memory using passed in memory type"
+  :bosquet.memory/recall-function)
+
+(def memory-parameters
+  "Memory parameters to be used when creating and retrieving a memory"
+  :bosquet.memory/parameters)
+
+(def memory-type
+  :bosquet.memory/type)

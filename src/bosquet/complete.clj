@@ -5,7 +5,8 @@
    [bosquet.llm.llm :as llm]
    [bosquet.system :as sys]
    [bosquet.wkk :as wkk]
-   [clojure.core.cache.wrapped :as w]))
+   [clojure.core.cache.wrapped :as w]
+   [taoensso.timbre :as timbre]))
 
 ;; TODO Cache is basic and experimantal, needs to be improved
 ;; at last better configuration instead of hardcoding to FIFO
@@ -52,19 +53,26 @@
               (converter/coerce completion output-format))))
 
 (defn available-memories
-  [_messages opts]
-  (let [{:bosquet.memory/keys [type parameters]}
-        (get-in opts [llm.chat/conversation])]
-    (.sequential-recall (sys/get-memory type) parameters)))
+  [messages generation-target opts]
+  (let [{:bosquet.memory/keys [type parameters recall-function]}
+        (get-in opts generation-target)]
+    (if type
+      (do
+        (timbre/info "Retrieving memories using " type " memory")
+        (recall-function (sys/get-memory type) parameters))
+      (do
+        (timbre/info "No memory specified, using available context as memories")
+        messages))))
 
 (defn chat-completion [messages opts]
-  (let [{service       wkk/service
-         params        wkk/model-parameters
-         type         :bosquet.memory/type}
-        (get-in opts [llm.chat/conversation])
+  (let [gen-target [llm.chat/conversation]
+        {service wkk/service
+         params  wkk/model-parameters
+         type    wkk/memory-type}
+        (get-in opts gen-target)
         llm        (sys/get-service service)
         memory     (sys/get-memory type)
-        memories   (available-memories messages opts)
+        memories   (available-memories messages gen-target opts)
         completion (.chat llm (concat memories messages) params)]
     (.remember memory messages nil)
     (.remember memory (-> completion llm/content :completion) nil)

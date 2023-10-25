@@ -5,6 +5,7 @@
     [bosquet.llm.llm :as llm]
     [bosquet.memory.retrieval :as r]
     [bosquet.system :as system]
+    [bosquet.wkk :as wkk]
     helpers
     [nextjournal.clerk :as clerk]))
 
@@ -35,18 +36,19 @@
 
 
 (def params {chat/conversation
-             {:bosquet.memory/type          :memory/simple-short-term
-              :bosquet.memory/parameters    {r/memory-tokens-limit 3000}
-              :bosquet.llm/service          [:llm/openai :provider/openai]
-              ;; TODO rename `model-parameters` -> `parameters`
-              :bosquet.llm/model-parameters {:temperature 0
-                                             :max-tokens  100
-                                             :model       "gpt-3.5-turbo"}}})
+             {wkk/memory-type       :memory/simple-short-term
+              wkk/recall-function   (fn [memory-system params]
+                                      (.sequential-recall memory-system params))
+              wkk/memory-parameters {r/memory-tokens-limit 3000}
+              wkk/service           [:llm/openai :provider/openai]
+              wkk/model-parameters  {:temperature 0
+                                     :max-tokens  100
+                                     :model       "gpt-3.5-turbo"}}})
 
 ;; Before running the chat session we need to forget whatever might have been
 ;; stored in the memory.
 
-(def mem (system/get-memory :memory/simple-short-term))
+(def mem (system/get-memory (wkk/memory-type params)))
 (.forget mem {})
 
 (defn chat-demo [queries]
@@ -55,11 +57,11 @@
     (fn [q]
       (let [message  [(chat/speak chat/user q)]]
         {:question q
-         :memories (gen/available-memories message params)
+         :memories (gen/available-memories message [chat/conversation] params)
          :response (gen/chat message {} params)}))
     queries))
 
-(def resp (chat-demo (take 5 queries)))
+(def resp (chat-demo (doall (take 5 queries))))
 
 ^{:nextjournal.clerk/visibility {:code :fold}}
 (clerk/table
