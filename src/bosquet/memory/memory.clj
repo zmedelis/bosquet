@@ -51,6 +51,14 @@
   (sequential-recall [_this _params])
   (cue-recall [_this _cue _params]))
 
+(defn handle-recall
+  [memory-system recall-function context params]
+  (condp = recall-function
+    :memory.recall/free       (.free-recall memory-system params)
+    :memory.recall/sequential (.sequential-recall memory-system params)
+    :memory.recall/cue        (.cue-recall memory-system context params)
+    (throw (Exception. (str "Unknown recall function: " recall-function)))))
+
 ;; Encode: Chunking, Semantic, Metadata
 ;; Store: Atom, VectorDB
 ;; Retrieve: Sequential, Cueue, Query

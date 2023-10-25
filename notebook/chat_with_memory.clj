@@ -70,8 +70,9 @@
     (assoc
       params
       wkk/memory-type :memory/simple-short-term
-      wkk/recall-function   (fn [memory-system messages params]
-                              (.cue-recall memory-system (last messages) params)))))
+      wkk/recall-function :memory.racall/by-cue
+      #_(fn [memory-system messages params]
+        (.cue-recall memory-system (last messages) params)))))
 
 ^{:nextjournal.clerk/visibility {:code :fold}}
 (clerk/table

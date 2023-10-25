@@ -3,6 +3,7 @@
    [bosquet.converter :as converter]
    [bosquet.llm.chat :as llm.chat]
    [bosquet.llm.llm :as llm]
+   [bosquet.memory.memory :as memory]
    [bosquet.system :as sys]
    [bosquet.wkk :as wkk]
    [clojure.core.cache.wrapped :as w]
@@ -59,21 +60,21 @@
     (if type
       (do
         (timbre/info "Retrieving memories using " type " memory")
-        (recall-function (sys/get-memory type) messages parameters))
+        (memory/handle-recall
+         (sys/get-memory type) recall-function
+         messages opts))
       (do
         (timbre/info "No memory specified, using available context as memories")
         messages))))
 
 (defn chat-completion [messages opts]
   (let [gen-target [llm.chat/conversation]
-        {service wkk/service
-         params  wkk/model-parameters
-         type    wkk/memory-type}
+        {:bosquet.wkk/keys [service model-parameters memory-type]}
         (get-in opts gen-target)
         llm        (sys/get-service service)
-        memory     (sys/get-memory type)
+        memory     (sys/get-memory memory-type)
         memories   (available-memories messages gen-target opts)
-        completion (.chat llm (concat memories messages) params)]
+        completion (.chat llm (concat memories messages) model-parameters)]
     (.remember memory messages nil)
     (.remember memory (-> completion llm/content :completion) nil)
     completion))
