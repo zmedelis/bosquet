@@ -59,10 +59,11 @@
         (get-in opts generation-target)]
     (if type
       (do
-        (timbre/info "Retrieving memories using " type " memory")
-        (memory/handle-recall
-         (sys/get-memory type) recall-function
-         messages opts))
+        (timbre/infof "🧠 Retrieving memories.")
+        (timbre/info "\t* Memory:" type)
+        (timbre/info "\t* Recall:" recall-function)
+        (timbre/info "\t* Params:" parameters)
+        (memory/handle-recall (sys/get-memory type) recall-function messages parameters))
       (do
         (timbre/info "No memory specified, using available context as memories")
         messages))))

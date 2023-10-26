@@ -4,6 +4,7 @@
     [bosquet.llm.generator :as gen]
     [bosquet.llm.llm :as llm]
     [bosquet.memory.retrieval :as r]
+    [bosquet.memory.memory :as m]
     [bosquet.system :as system]
     [bosquet.wkk :as wkk]
     helpers
@@ -36,9 +37,8 @@
 
 
 (def params {chat/conversation
-             {wkk/memory-type       :memory/simple-short-term
-              wkk/recall-function   (fn [memory-system _messages params]
-                                      (.sequential-recall memory-system params))
+             {wkk/memory-type       m/simple-short-term-memory
+              wkk/recall-function   m/recall-sequential
               wkk/memory-parameters {r/memory-tokens-limit 3000}
               wkk/service           [:llm/openai :provider/openai]
               wkk/model-parameters  {:temperature 0
@@ -65,14 +65,6 @@
 
 (.forget mem {})
 
-(def resp-long-term-mem
-  (chat-demo (take 5 queries)
-    (assoc
-      params
-      wkk/memory-type :memory/simple-short-term
-      wkk/recall-function :memory.racall/by-cue
-      #_(fn [memory-system messages params]
-        (.cue-recall memory-system (last messages) params)))))
 
 ^{:nextjournal.clerk/visibility {:code :fold}}
 (clerk/table

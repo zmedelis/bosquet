@@ -2,6 +2,12 @@
   (:require
    [bosquet.wkk :as wkk]))
 
+(def recall-free :memory.recall/free)
+(def recall-sequential :memory.recall/sequential)
+(def recall-cue :memory.recall/cue)
+
+(def simple-short-term-memory :memory/simple-short-term)
+
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
 ;; Memory component is used for one of the following purposes:
 
@@ -54,9 +60,9 @@
 (defn handle-recall
   [memory-system recall-function context params]
   (condp = recall-function
-    :memory.recall/free       (.free-recall memory-system params)
-    :memory.recall/sequential (.sequential-recall memory-system params)
-    :memory.recall/cue        (.cue-recall memory-system context params)
+    recall-free       (.free-recall memory-system params)
+    recall-sequential (.sequential-recall memory-system params)
+    recall-cue        (.cue-recall memory-system context params)
     (throw (Exception. (str "Unknown recall function: " recall-function)))))
 
 ;; Encode: Chunking, Semantic, Metadata
