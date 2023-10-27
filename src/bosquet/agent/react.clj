@@ -9,8 +9,8 @@
    [taoensso.timbre.appenders.core :as appenders]))
 
 #_(timbre/merge-config!
- {:appenders {:println {:enabled? false}
-              :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
+   {:appenders {:println {:enabled? false}
+                :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
 
 (defn generate-thoughts
   "Generate ReAct thoughts.
