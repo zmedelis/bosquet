@@ -1,7 +1,22 @@
 (ns user
   #_{:clj-kondo/ignore [:unused-namespace]}
-  (:require [nextjournal.clerk :as clerk]
-            [portal.api :as p]))
+  (:require
+   [bosquet.system :as system]
+   [integrant.core :as ig]
+   [integrant.repl :as ir]
+   [nextjournal.clerk :as clerk]
+   [portal.api :as p]
+   [taoensso.timbre :as timbre]))
+
+(ir/set-prep! #(ig/prep system/sys-config))
+
+#_(timbre/merge-config!
+    {:appenders
+     {:println
+      {:enabled? true
+       :fn (fn [{:keys [level instant output_ ?line ?ns-str] :as data}]
+             (printf "%s | %s | (%s:%s) | %s\n"
+               (name level) instant ?ns-str ?line (force output_)))}}})
 
 (defn build-static-docs
   [_]
@@ -16,6 +31,10 @@
 (comment
   (def p (p/open))
   (add-tap #'p/submit)
+
+  ;; integrant restart
+  (ir/go)
+  (ir/reset)
 
   (clerk/serve! {:watch-paths ["notebook"]})
 

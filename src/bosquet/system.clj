@@ -63,7 +63,7 @@
   (aero/read-config "system.edn"
                     {:resolver aero-resolver-with-missing-keys}))
 
-(def ^:private sys-config
+(def sys-config
   (dissoc config :config wkk/default-llm))
 
 ;;
