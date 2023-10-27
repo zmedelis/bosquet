@@ -13,8 +13,11 @@
    (reset! in-memory-memory []))
 
  (remember [_this observation _params]
+   (tap> {'remember-observation observation})
    (doseq [item (if (vector? observation) observation [observation])]
-     (swap! in-memory-memory conj item)))
+     (tap> {'remember-item item})
+     (swap! in-memory-memory conj item)
+     (tap> {'remember-memory @in-memory-memory})))
 
  (free-recall [_this _cueue {object-limit r/memory-objects-limit
                              token-limit  r/memory-tokens-limit
@@ -23,7 +26,8 @@
    (->> @in-memory-memory shuffle (take object-limit)))
 
  (sequential-recall [_this params]
-      ;; WIP
+   ;; WIP
+   (tap> {'recall-memory @in-memory-memory})
    (r/take-while-tokens
     @in-memory-memory
     (merge

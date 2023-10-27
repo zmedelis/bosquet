@@ -37,6 +37,20 @@
   "Key to reference LLM generation var name in gen call parameters"
   :bosquet.llm/gen-var-name)
 
+;;
+;; Memory
+;;
+
+(def memory-config
+  "Key to reference memory in configuration"
+  :bosquet.memory/config)
+
+(def recall-free :memory.recall/free)
+(def recall-sequential :memory.recall/sequential)
+(def recall-cue :memory.recall/cue)
+
+(def simple-short-term-memory :memory/simple-short-term)
+
 (def recall-function
   "Function to retrieve memory using passed in memory type"
   :bosquet.memory/recall-function)

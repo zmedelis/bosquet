@@ -4,7 +4,6 @@
     [bosquet.llm.generator :as gen]
     [bosquet.llm.llm :as llm]
     [bosquet.memory.retrieval :as r]
-    [bosquet.memory.memory :as m]
     [bosquet.system :as system]
     [bosquet.wkk :as wkk]
     helpers
@@ -35,36 +34,32 @@
    "Okay very interesting, so before returning to earlier in the conversation. I understand now that there are a lot of different transformer (and not transformer) based models for creating the embeddings from vectors. Is that correct?"
    "Perfect, so I understand text can be encoded into these embeddings. But what then? Once I have my embeddings what do I do?"])
 
-
-(def params {chat/conversation
-             {wkk/memory-type       m/simple-short-term-memory
-              wkk/recall-function   m/recall-sequential
-              wkk/memory-parameters {r/memory-tokens-limit 3000}
-              wkk/service           [:llm/openai :provider/openai]
-              wkk/model-parameters  {:temperature 0
-                                     :max-tokens  100
-                                     :model       "gpt-3.5-turbo"}}})
+(def params {wkk/memory-config
+             {wkk/memory-type       wkk/simple-short-term-memory
+              wkk/recall-function   wkk/recall-sequential
+              wkk/memory-parameters {r/memory-tokens-limit 3000}}
+             chat/conversation {wkk/service           [:llm/openai :provider/openai]
+                                wkk/model-parameters  {:temperature 0
+                                                       :max-tokens  100
+                                                       :model       "gpt-3.5-turbo"}}})
 
 ;; Before running the chat session we need to forget whatever might have been
 ;; stored in the memory.
 
-(def mem (system/get-memory (wkk/memory-type params)))
+(def mem (system/get-memory (get-in params [wkk/memory-config wkk/memory-type])))
 (.forget mem {})
 
 (defn chat-demo [queries params]
   (gen/chat [(chat/speak chat/system "You are a brilliant assistant")] {} params)
-  (map
+  (mapv
     (fn [q]
       (let [message  [(chat/speak chat/user q)]]
         {:question q
-         :memories (gen/available-memories message [chat/conversation] params)
+         :memories (gen/available-memories message params)
          :response (gen/chat message {} params)}))
     queries))
 
-(def resp (chat-demo (take 5 queries) params))
-
-(.forget mem {})
-
+(def resp (chat-demo (take 3 queries) params))
 
 ^{:nextjournal.clerk/visibility {:code :fold}}
 (clerk/table

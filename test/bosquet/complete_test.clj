@@ -24,4 +24,4 @@
 (deftest available-memories-test
   (is (= [:message1 :message2]
         ;; memory is not configured, return existing messages as is
-         (sub/available-memories [:message1 :message2] [:test-gen] nil))))
+         (sub/available-memories [:message1 :message2] nil))))
