@@ -102,7 +102,7 @@
             :or   {model cgpt-35}
             :as   params} opts]
    (let [params (if (nil? params) {:model model} (assoc params :model model))]
-     (timbre/infof "Calling OAI completion with:")
+     (timbre/infof "💬 Calling OAI completion with:")
      (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
      (timbre/infof "\tOptions: '%s'" (dissoc opts :api-key))
      (try
@@ -122,7 +122,7 @@
   [messages {:keys [model] :as params} opts]
   (let [params   (if model params (assoc params :model cgpt-35))
         messages (mapv chat/bosquet->chatml messages)]
-    (timbre/infof "Calling OAI chat with:")
+    (timbre/infof "💬 Calling OAI chat with:")
     (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
     (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
     (try
