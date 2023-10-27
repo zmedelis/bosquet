@@ -131,4 +131,8 @@
 
 (defn get-memory
   [key]
-  (get system key (Amnesiac.)))
+  (if (contains? system key)
+    (get system key)
+    (do
+      (timbre/warnf "No memory service configured under '%s' key. Using 'Amnesiac' memory." key)
+      (Amnesiac.))))
