@@ -4,9 +4,9 @@
    [io.aviso.ansi :as ansi]
    [taoensso.timbre.appenders.core :as appenders]))
 
-(timbre/merge-config!
- {:appenders {:println {:enabled? false}
-              :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
+#_(timbre/merge-config!
+   {:appenders {:println {:enabled? false}
+                :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
 
 (defprotocol Tool
   (my-name [this])
