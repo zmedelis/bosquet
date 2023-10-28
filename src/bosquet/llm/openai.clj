@@ -103,8 +103,8 @@
             :as   params} opts]
    (let [params (if (nil? params) {:model model} (assoc params :model model))]
      (timbre/infof "💬 Calling OAI completion with:")
-     (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
-     (timbre/infof "\tOptions: '%s'" (dissoc opts :api-key))
+     (timbre/infof "\t* Params: '%s'" (dissoc params :prompt))
+     (timbre/infof "\t* Options: '%s'" (dissoc opts :api-key))
      (try
        (if (chat-model? model)
          (create-chat-completion prompt params opts)
@@ -125,6 +125,9 @@
     (timbre/infof "💬 Calling OAI chat with:")
     (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
     (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
+    (prn "-----------")
+    (clojure.pprint/pprint
+     (assoc params :messages messages))
     (try
       (-> params
           (assoc :messages messages)

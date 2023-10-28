@@ -37,10 +37,10 @@
 (def params {wkk/memory-config
              {wkk/memory-type       wkk/simple-short-term-memory
               wkk/recall-function   wkk/recall-sequential
-              wkk/memory-parameters {r/memory-tokens-limit 3000}}
+              wkk/memory-parameters {r/memory-tokens-limit 400}}
              chat/conversation {wkk/service           [:llm/openai :provider/openai]
                                 wkk/model-parameters  {:temperature 0
-                                                       :max-tokens  100
+                                                       :max-tokens  200
                                                        :model       "gpt-3.5-turbo"}}})
 
 ;; Before running the chat session we need to forget whatever might have been
@@ -50,7 +50,6 @@
 (.forget mem {})
 
 (defn chat-demo [queries params]
-  (gen/chat [(chat/speak chat/system "You are a brilliant assistant")] {} params)
   (mapv
     (fn [q]
       (let [message  [(chat/speak chat/user q)]]
@@ -59,7 +58,7 @@
          :response (gen/chat message {} params)}))
     queries))
 
-(def resp (chat-demo (take 3 queries) params))
+(def resp (chat-demo (take 5 queries) params))
 
 ^{:nextjournal.clerk/visibility {:code :fold}}
 (clerk/table

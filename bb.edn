@@ -3,7 +3,7 @@
                         (def jar-file "target/antq.jar"))
          rebel      (clojure "-M:dev:rebel")
          outdated   (clojure "-M:outdated")
-         kaocha     (do (clojure "-M:outdated")
+         test:watch (do (clojure "-M:outdated")
                         (clojure "-M:kaocha:test"))
          lint       (do (shell "echo cljstyle") ;; I don't have clj-style
                         (shell "clj-kondo --lint src:test"))

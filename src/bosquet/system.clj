@@ -87,7 +87,7 @@
 
 (defmethod ig/init-key :memory/simple-short-term [_ _opts]
   (timbre/infof "\t* Short term memory")
-  (SimpleMemory. (atom [])))
+  (SimpleMemory. simple-memory/memory-store))
 
 (defmethod ig/init-key :memory/long-term-embeddings [_ {:keys [storage encoder] :as opts}]
   (timbre/infof "\t* Long term memory with (%s; %s)" (second storage) (second encoder))

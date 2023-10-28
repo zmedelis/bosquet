@@ -42,22 +42,23 @@
 (def memory-content-fn
   :memory.retrieval/content-fn)
 
-(defn free-recall-handler [storage _params]
-  (shuffle (.query storage identity)))
+;; (defn free-recall-handler [storage _params]
+;;   (shuffle (.query storage identity)))
 
-(defn sequential-recall-handler [storage {limit memory-objects-limit}]
-  (take-last limit
-             (.query storage identity)))
+;; (defn sequential-recall-handler [storage {limit memory-objects-limit}]
+;;   (take-last limit
+;;              (.query storage identity)))
 
 (defn take-while-tokens
-  [objects {object-limit memory-objects-limit
-            token-limit  memory-tokens-limit
-            content-fn   memory-content-fn
-            model        llm/model
-            llm          llm/service
-            :or          {token-limit  3000
-                          object-limit 5
-                          content-fn   identity}}]
+  [{object-limit memory-objects-limit
+    token-limit memory-tokens-limit
+    content-fn memory-content-fn
+    model llm/model
+    llm llm/service
+    :or {token-limit 3000
+         object-limit 5
+         content-fn identity}}
+   objects]
   (if token-limit
     (loop [[object & objects] (reverse (take-last object-limit objects))
            retrieved-objects  []
@@ -70,22 +71,22 @@
         (reverse retrieved-objects)))
     (take-last object-limit objects)))
 
-(defn cue-recall-handler [objects cue
-                          {content-fn memory-content-fn
-                           :or        {content-fn identity}
-                           :as        params}]
-  (let [threshold 0.6]
-    (take-while-tokens
-     (filter (fn [item]
-               (> threshold (nlp/cosine-distance (content-fn item) cue)))
-             objects)
-     params)))
+;; (defn cue-recall-handler [{content-fn memory-content-fn
+;;                            :or        {content-fn identity}
+;;                            :as        params}
+;;                           objects cue]
+;;   (let [threshold 0.6]
+;;     (take-while-tokens
+;;      (filter (fn [item]
+;;                (> threshold (nlp/cosine-distance (content-fn item) cue)))
+;;              objects)
+;;      params)))
 
-(def handlers
-  {sequential-recall sequential-recall-handler
-   free-recall       free-recall-handler})
+;; (def handlers
+;;   {sequential-recall sequential-recall-handler
+;;    free-recall       free-recall-handler})
 
-(defn handler [retriever-name]
-  (get handlers retriever-name
-    ;; default is `sequential-retriever`
-       sequential-recall-handler))
+;; (defn handler [retriever-name]
+;;   (get handlers retriever-name
+;;     ;; default is `sequential-retriever`
+;;        sequential-recall-handler))
