@@ -3,7 +3,7 @@
    [clojure.test :refer [deftest is]]
    [bosquet.complete :as sub]))
 
-(deftest bosquet.complete-test
+(deftest chache-usage
   (let [call-counter (atom 0)
         generator    (fn [_prompt _params] (swap! call-counter inc))
         prompt       "2 + 2 ="]
