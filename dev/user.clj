@@ -1,24 +1,37 @@
 (ns user
   #_{:clj-kondo/ignore [:unused-namespace]}
   (:require
-    [clojure.tools.namespace.repl :refer [set-refresh-dirs]]
-    [bosquet.system :as system]
-    [integrant.core :as ig]
-    [integrant.repl :as ir]
-    [nextjournal.clerk :as clerk]
-    [portal.api :as p]
-    [taoensso.timbre :as timbre]))
+   [bosquet.system :as system]
+   [clojure.string :as string]
+   [clojure.tools.namespace.repl :refer [set-refresh-dirs]]
+   [integrant.core :as ig]
+   [integrant.repl :as ir]
+   [nextjournal.clerk :as clerk]
+   [portal.api :as p]
+   [taoensso.timbre :as timbre]))
 
 (ir/set-prep! #(ig/prep system/sys-config))
 (set-refresh-dirs "src")
 
-#_(timbre/merge-config!
-    {:appenders
-     {:println
-      {:enabled? true
-       :fn (fn [{:keys [level instant output_ ?line ?ns-str] :as data}]
-             (printf "%s | %s | (%s:%s) | %s\n"
-               (name level) instant ?ns-str ?line (force output_)))}}})
+(defn log-output-fn
+  [data]
+  (let [{:keys [level ?err ?ns-str ?file timestamp_ ?line output-opts]} data
+        context  (format "%s %s [%s:%3s]:"
+                   (force timestamp_)
+                   (-> level name string/upper-case)
+                   (or ?ns-str ?file "?") (or ?line "?"))]
+    (format
+      "%-42s %s%s"
+      context
+      (if-let [msg-fn (get output-opts :msg-fn timbre/default-output-msg-fn)]
+        (msg-fn data) "")
+      (if ?err
+        ((get output-opts :error-fn timbre/default-output-error-fn) data) ""))))
+
+
+(timbre/merge-config! {:output-fn log-output-fn
+                       :timestamp-opts {:pattern "HH:mm:ss"}})
+
 
 (defn build-static-docs
   [_]
@@ -33,6 +46,7 @@
 (comment
   (def p (p/open))
   (add-tap #'p/submit)
+
 
   ;; integrant restart
   (ir/go)
