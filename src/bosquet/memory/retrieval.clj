@@ -42,6 +42,9 @@
 (def memory-content-fn
   :memory.retrieval/content-fn)
 
+(def content-similarity-threshold
+  :memory.retrieval/similarity-threshold)
+
 ;; (defn free-recall-handler [storage _params]
 ;;   (shuffle (.query storage identity)))
 
@@ -54,10 +57,7 @@
     token-limit memory-tokens-limit
     content-fn memory-content-fn
     model llm/model
-    llm llm/service
-    :or {token-limit 3000
-         object-limit 5
-         content-fn identity}}
+    llm llm/service}
    objects]
   (if token-limit
     (loop [[object & objects] (reverse (take-last object-limit objects))

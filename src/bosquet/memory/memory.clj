@@ -33,9 +33,9 @@
 (defprotocol Memory
   (remember [this observation params])
   (forget [this params])
-  (free-recall [this cueue params])
+  (free-recall [this params cue])
   (sequential-recall [this params])
-  (cue-recall [this cue params])
+  (cue-recall [this params cue])
   ;; TODO volume calculation should not be a concern of Memory
   ;; It can store whatever it can constrained by storage mechanism
   ;; what can be used by the memory is defined by generation model
