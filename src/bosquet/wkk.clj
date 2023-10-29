@@ -45,10 +45,6 @@
   "Key to reference memory in configuration"
   :bosquet.memory/config)
 
-(def recall-free :memory.recall/free)
-(def recall-sequential :memory.recall/sequential)
-(def recall-cue :memory.recall/cue)
-
 (def simple-short-term-memory :memory/simple-short-term)
 
 (def recall-function
@@ -59,5 +55,6 @@
   "Memory parameters to be used when creating and retrieving a memory"
   :bosquet.memory/parameters)
 
-(def memory-type
-  :bosquet.memory/type)
+(def memory-system
+  "Memory system implementing memory/Memory protocol to be used in gen AI workflow"
+  :bosquet.memory/system)

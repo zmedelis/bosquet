@@ -20,8 +20,3 @@
     (is (= 1 @call-counter))
     (sub/generate-with-cache true generator prompt {})
     (is (= 1 @call-counter))))
-
-(deftest available-memories-test
-  (is (= [:message1 :message2]
-        ;; memory is not configured, return existing messages as is
-         (sub/available-memories [:message1 :message2] nil))))

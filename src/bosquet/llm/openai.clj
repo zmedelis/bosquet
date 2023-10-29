@@ -125,9 +125,6 @@
     (timbre/infof "💬 Calling OAI chat with:")
     (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
     (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
-    (prn "-----------")
-    (clojure.pprint/pprint
-     (assoc params :messages messages))
     (try
       (-> params
           (assoc :messages messages)

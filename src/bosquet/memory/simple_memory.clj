@@ -33,8 +33,7 @@
    (doseq [item (if (vector? observation) observation [observation])]
      (swap! in-memory-memory conj item)))
 
- (free-recall [_this {object-limit r/memory-objects-limit :or {object-limit 5}}
-               cue]
+ (free-recall [_this {object-limit r/memory-objects-limit :or {object-limit 5}} _cue]
    (->> @in-memory-memory shuffle (take object-limit)))
 
  (sequential-recall [_this params]

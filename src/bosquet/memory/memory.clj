@@ -1,6 +1,7 @@
 (ns bosquet.memory.memory
   (:require
-   [bosquet.wkk :as wkk]))
+   [bosquet.memory.retrieval :as r]
+   [taoensso.timbre :as timbre]))
 
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
 ;; Memory component is used for one of the following purposes:
@@ -29,6 +30,11 @@
 ;; - relevancy
 ;; - importance
 ;; - reflection
+;;
+;; Encode: Chunking, Semantic, Metadata
+;; Store: Atom, VectorDB
+;; Retrieve: Sequential, Cueue, Query
+;;
 
 (defprotocol Memory
   (remember [this observation params])
@@ -52,51 +58,33 @@
   (cue-recall [_this _cue _params]))
 
 (defn handle-recall
+  "Handle memory retrieval. Dispatch to retrieval method based on `recall-function`.
+
+  In case of unspecified retrieval method or not initialized memory system
+  return `context` as memories. `Context` is current conversation message, generation prompt,
+  or anything else AI gen workflow is currently using."
   [memory-system recall-function context params]
-  (condp = recall-function
-    wkk/recall-free       (.free-recall memory-system params)
-    wkk/recall-sequential (.sequential-recall memory-system params)
-    wkk/recall-cue        (.cue-recall memory-system context params)
-    (throw (Exception. (str "Unknown recall function: " recall-function)))))
+  (if memory-system
+    (condp = recall-function
+      r/recall-free       (.free-recall memory-system params)
+      r/recall-sequential (.sequential-recall memory-system params)
+      r/recall-cue        (.cue-recall memory-system context params)
+      (do
+        (timbre/warnf "Unknown recall method - '%s'. Using 'context' as memories." recall-function)
+        context))
+    (do
+      (timbre/warnf "Memory system is not specified. Using 'context' as memories.")
+      context)))
 
-;; Encode: Chunking, Semantic, Metadata
-;; Store: Atom, VectorDB
-;; Retrieve: Sequential, Cueue, Query
-;;
-
-(comment
-  (require '[bosquet.llm.generator :as gen])
-  (require '[bosquet.llm.chat :as chat])
-
-  (def params {chat/conversation
-               {:bosquet.memory/type :memory/simple-short-term
-                wkk/service          [:llm/openai :provider/openai]
-                wkk/model-parameters {:temperature 0
-                                      :model       "gpt-3.5-turbo"}}})
-  (def inputs {:role "cook" :meal "cake"})
-
-  (gen/chat
-   [(chat/speak chat/system "You are a brilliant {{role}}.")
-    (chat/speak chat/user "What is a good {{meal}}?")
-    (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
-    (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
-   inputs params)
-
-  (gen/chat
-   [(chat/speak chat/user "What would be the name of this recipe?")]
-   inputs params)
-
-  (gen/generate
-   {:role            "As a brilliant {{you-are}} answer the following question."
-    :question        "What is the distance between Io and Europa?"
-    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
-   {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"}
-
-   {:question-answer {wkk/service          [:llm/openai :provider/openai]
-                      wkk/model-parameters {:temperature 0.4
-                                            :model "gpt-4"}
-                      :bosquet.memory/type :bosquet.memory/short-term}
-    :self-eval       {wkk/service          [:llm/openai :provider/openai]
-                      wkk/model-parameters {:temperature 0}}}))
+(defn available-memories
+  [{:bosquet.memory/keys [system parameters recall-function]} messages]
+  (if type
+    (do
+      (timbre/infof "🧠 Retrieving memories.")
+      (timbre/info "\t* Memory:" type)
+      (timbre/info "\t* Recall:" recall-function)
+      (timbre/info "\t* Params:" parameters)
+      (handle-recall system recall-function messages parameters))
+    (do
+      (timbre/info "No memory specified, using available context as memories")
+      messages)))

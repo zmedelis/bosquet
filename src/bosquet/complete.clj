@@ -53,30 +53,9 @@
     (assoc-in generation [llm/content :completion]
               (converter/coerce completion output-format))))
 
-(defn available-memories
-  [messages opts]
-  (let [{:bosquet.memory/keys [type parameters recall-function]}
-        (wkk/memory-config opts)]
-    (if type
-      (do
-        (timbre/infof "🧠 Retrieving memories.")
-        (timbre/info "\t* Memory:" type)
-        (timbre/info "\t* Recall:" recall-function)
-        (timbre/info "\t* Params:" parameters)
-        (memory/handle-recall (sys/get-memory type) recall-function messages parameters))
-      (do
-        (timbre/info "No memory specified, using available context as memories")
-        messages))))
-
 (defn chat-completion [messages
                        {{service      wkk/service
-                         model-params wkk/model-parameters} llm.chat/conversation
-                        {memory-type wkk/memory-type}       wkk/memory-config
-                        :as                                 opts}]
+                         model-params wkk/model-parameters} llm.chat/conversation}]
   (let [llm        (sys/get-service service)
-        memory     (sys/get-memory memory-type)
-        memories   (available-memories messages opts)
-        completion (.chat llm (concat memories messages) model-params)]
-    (.remember memory messages nil)
-    (.remember memory (-> completion llm/content :completion) nil)
+        completion (.chat llm messages #_(concat memories messages) model-params)]
     completion))

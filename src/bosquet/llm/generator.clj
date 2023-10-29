@@ -152,11 +152,6 @@
             (first (template/fill-slots content inputs opts))))
    messages))
 
-;; WIP
-
-(defn available-memories [messages opts]
-  (complete/available-memories messages opts))
-
 (defn chat
   ([messages] (chat messages nil))
   ([messages inputs] (chat messages inputs nil))
