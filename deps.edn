@@ -35,6 +35,6 @@
                         :extra-deps  {lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
            :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.9.6"
                                                                     :git/sha "8e78bcc"}
-                                     slipset/deps-deploy           {:mvn/version "0.2.1"}}
+                                     slipset/deps-deploy           {:mvn/version "0.2.2"}}
                         :ns-default build}
            :ns-default build}}
