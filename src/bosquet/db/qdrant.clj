@@ -28,10 +28,10 @@
 
 (defn add-docs
   [collection-name data]
-  (let [points {:points (mapv (fn [{:keys [data embedding]}]
+  (let [points {:points (mapv (fn [{:keys [payload embedding]}]
                                 {:id      (utils/uuid)
                                  :vector  embedding
-                                 :payload data})
+                                 :payload payload})
                               data)}]
     (hc/put (format "%s/collections/%s/points?wait=true"
                     qdrant-endpoint collection-name)

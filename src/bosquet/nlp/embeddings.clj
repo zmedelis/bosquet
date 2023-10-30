@@ -11,9 +11,10 @@
                         opts))
 
 (deftype
- OpenAIEmbeddings
- [opts] encoding/Encoder
- (encode [_this text] (oai-embeddings text opts)))
+    OpenAIEmbeddings
+    [opts]
+    encoding/Encoder
+    (encode [_this text] (oai-embeddings text opts)))
 
 (comment
   (require '[bosquet.system :as system])

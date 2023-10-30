@@ -67,15 +67,18 @@
             (recur (inc page)))
           (timbre/info "Done downloading"))))))
 
-(defn load-ds [ds-dir dataset record-limit]
-  ;; TODO read up to record-limit
-  (let [xf (comp
-            (filter #(.isFile %))
-            (map #(-> % slurp read-string))
-            (mapcat :rows)
-            (map :row))]
-    (into [] xf
-          (file-seq (io/file (ds-dir-name ds-dir dataset))))))
+(defn load-ds
+  ([dataset]
+   (load-ds dataset default-cache-dir nil))
+  ([dataset ds-dir record-limit]
+   ;; TODO read up to record-limit
+   (let [xf (comp
+              (filter #(.isFile %))
+              (map #(-> % slurp read-string))
+              (mapcat :rows)
+              (map :row))]
+     (into [] xf
+       (file-seq (io/file (ds-dir-name ds-dir dataset)))))))
 
 (defn- transform-hfds
   [hfds-raw]

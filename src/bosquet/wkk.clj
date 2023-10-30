@@ -47,6 +47,8 @@
 
 (def simple-short-term-memory :memory/simple-short-term)
 
+(def long-term-embeddings-memory :memory/long-term-embeddings)
+
 (def recall-function
   "Function to retrieve memory using passed in memory type"
   :bosquet.memory/recall-function)
