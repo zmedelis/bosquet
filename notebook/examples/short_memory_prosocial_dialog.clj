@@ -1,5 +1,5 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
-(ns chat-with-memory
+(ns short-memory-prosocial-dialog
   (:require
     [bosquet.dataset.huggingface :as hfds]
     [bosquet.llm.chat :as chat]

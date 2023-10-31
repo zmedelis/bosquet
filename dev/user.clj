@@ -38,6 +38,7 @@
   (clerk/build! {:paths    ["notebook/getting_started.clj"
                             "notebook/configuration.clj"
                             "notebook/math_generate_code.clj"
+                            "notebook/examples/short_memory_prosocial_dialog.clj"
                             "notebook/papers/chain_of_density.clj"
                             "notebook/papers/chain_of_verification.clj"]
                  :index    "notebook/index.clj"

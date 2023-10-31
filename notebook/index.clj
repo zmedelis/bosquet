@@ -10,7 +10,8 @@
    [:li
     [:div "Examples"]
     [:ul
-     [:li [:a.underline {:href (clerk/doc-url "notebook/math_generate_code/index.html")} "Math calc with generated code"]]]]
+     [:li [:a.underline {:href (clerk/doc-url "notebook/math_generate_code/index.html")} "Math calc with generated code"]]
+     [:li [:a.underline {:href (clerk/doc-url "notebook/examples/short_memory_prosocial_dialog/index.html")} "Prosocial Dialog with short-term memory"]]]]
    [:li
     [:div "Paper Implementations"]
     [:ul
