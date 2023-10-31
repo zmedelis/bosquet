@@ -10,7 +10,7 @@
            hato/hato                       {:mvn/version "0.9.0"}
            metosin/jsonista                {:mvn/version "0.3.8"}
            org.clojars.danielsz/cohere     {:mvn/version "1.0.0"}
-           com.taoensso/encore             {:mvn/version "3.72.0"}
+           com.taoensso/encore             {:mvn/version "3.73.0"}
            io.aviso/pretty                 {:mvn/version "1.4.4"}
            integrant/integrant             {:mvn/version "0.8.1"}
            aero/aero                       {:mvn/version "1.1.6"}
@@ -18,11 +18,11 @@
            metosin/malli                   {:mvn/version "0.13.0"}
            org.nd4j/nd4j-api               {:mvn/version "1.0.0-M2.1"}
            org.nd4j/nd4j-native            {:mvn/version "1.0.0-M2.1"}
-           org.apache.commons/commons-text {:mvn/version "1.10.0"}
+           org.apache.commons/commons-text {:mvn/version "1.11.0"}
            me.flowthing/pp                 {:mvn/version "2023-10-05.5"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
-                                      djblue/portal               {:mvn/version "0.48.0"}
+                                      djblue/portal               {:mvn/version "0.49.0"}
                                       integrant/repl              {:mvn/version "0.3.3"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "v2023.10.11"}}
