@@ -1,60 +1,65 @@
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns chat-with-memory
   (:require
-   [bosquet.dataset.huggingface :as hfds]
-   [bosquet.llm.chat :as chat]
-   [bosquet.llm.generator :as gen]
-   [bosquet.llm.llm :as llm]
-   [bosquet.memory.memory :as m]
-   [bosquet.memory.retrieval :as r]
-   [bosquet.system :as system]
-   [bosquet.wkk :as wkk]
-   [clojure.string :as string]
-   helpers
-   [nextjournal.clerk :as clerk]))
+    [bosquet.dataset.huggingface :as hfds]
+    [bosquet.llm.chat :as chat]
+    [bosquet.llm.generator :as gen]
+    [bosquet.llm.llm :as llm]
+    [bosquet.memory.memory :as m]
+    [bosquet.memory.retrieval :as r]
+    [bosquet.system :as system]
+    [bosquet.utils :as utils]
+    [bosquet.wkk :as wkk]
+    [helpers :as h]
+    [nextjournal.clerk :as clerk]))
 
-;; Example taken from
-;; https://github.com/pinecone-io/examples/blob/master/learn/generation/langchain/handbook/03a-token-counter.ipynb
+;; # Prosocial Dialog: Using short-term memory
+;;
+;; This notebook will demonstrate how to use *Short-term memory* and naive *cosine similarity* metrics to detect possibly offensive messages and suggest how to change the message into
+;; a version that would not cause harm.
+;;
+;; **CONTENT WARNING:** The content in the examples might be offensive to some readers.
+;;
+;; ## Prosocial Dialog dataset
+;;
+;; [Hugging Face hosts](https://huggingface.co/datasets/allenai/prosocial-dialog) a dataset with conversations containing harmful content and how to correct it.
+;;
+;; ### Model Card
+;; > ProsocialDialog is the first large-scale multi-turn English dialogue dataset to teach conversational agents to respond to problematic content following social norms.
+;; > Covering diverse unethical, problematic, biased, and toxic situations, ProsocialDialog contains responses that encourage prosocial behavior, grounded in commonsense
+;; social rules (i.e., rules-of-thumb, RoTs). Created via a human-AI collaborative framework, ProsocialDialog consists of 58K dialogues, with 331K utterances, 160K unique RoTs,
+;; > and 497K dialogue safety labels accompanied by free-form rationales.
+;;
+;; ### Getting the dataset
+;; Bosquet has HuggingFace dataset fetching tools (very likely that the HuggingFace datasets handler will become an independent OSS project). The commented-out code is to be
+;; run once to get the data. Subsequent runs will read it from the local cache.
 
-(def queries
-  ["Good morning AI?"
-   "My interest here is to explore the potential of integrating Large Language Models with external knowledge"
-   "I just want to analyze the different possibilities. What can you think of?"
-   "What about the use of retrieval augmentation, can that be used as well?"
-   "That's very interesting, can you tell me more about this? Like what systems would I use to store the information and retrieve relevant info?"
-   "Okay that's cool, I've been hearing about 'vector databases', are they relevant in this context?"
-   "Okay that's useful, but how do I go from my external knowledge to creating these 'vectors'? I have no idea how text can become a vector?"
-   "Well I don't think I'd be using word embeddings right? If I wanted to store my documents in this vector database, I suppose I would need to transform the documents into vectors? Maybe I can use the 'sentence embeddings' for this, what do you think?"
-   "Can sentence embeddings only represent sentences of text? That seems kind of small to capture any meaning from a document? Is there any approach that can encode at least a paragraph of text?"
-   "Huh, interesting. I do remember reading something about 'mpnet' or 'minilm' sentence 'transformer' models that could encode small to medium sized paragraphs. Am I wrong about this?"
-   "Ah that's great to hear, do you happen to know how much text I can feed into these types of models?"
-   "I've never heard of hierarchical embeddings, could you explain those in more detail?"
-   "So is it like you have a transformer model or something else that creates sentence level embeddings, then you feed all of the sentence level embeddings into another separate neural network that knows how to merge multiple sentence embeddings into a single embedding?"
-   "Could you explain this process step by step from start to finish? Explain like I'm very new to this space, assume I don't have much prior knowledge of embeddings, neural nets, etc"
-   "Awesome thanks! Are there any popular 'heirarchical neural network' models that I can look up? Or maybe just the second stage that creates the hierarchical embeddings?"
-   "It seems like these HAN models are quite old, is there anything more recent?"
-   "Can you explain the difference between transformer-XL and longformer?"
-   "How much text can be encoded by each of these models?"
-   "Okay very interesting, so before returning to earlier in the conversation. I understand now that there are a lot of different transformer (and not transformer) based models for creating the embeddings from vectors. Is that correct?"
-   "Perfect, so I understand text can be encoded into these embeddings. But what then? Once I have my embeddings what do I do?"])
-
-
+^{:nextjournal.clerk/visibility {:result :hide}}
 (comment
   (hfds/download-ds
-   {:dataset "allenai/prosocial-dialog"
-    :split   "train"
-    :config  "default"
-    :offset  0
-    :length  100}
-   {:hfds/use-cache true
-    :hfds/record-limit 1000}))
+    {:dataset "allenai/prosocial-dialog"
+     :split   "train"
+     :config  "default"
+     :offset  0
+     :length  100}
+    {:hfds/use-cache true
+     :hfds/record-limit 1000}))
 
+;; The downloaded dataset is loaded from the local cache. The dataset is quite large and contains multi-round conversations.
 
 (def prosocial-dialog-dataset
   (hfds/load-ds "allenai/prosocial-dialog"))
 
+;; To simplify the example, let's only use the first round of the dialog, ignoring the subsequent dialog steps.
+
 (def dialog-ds-subset
   (filter #(zero? (:response_id %))
     prosocial-dialog-dataset))
+
+;; Relevant data from the loaded dataset:
+;; * *Context* - potentially harmful message
+;; * *Response* - an example of how the assistant should respond
+;; *RoTs* - rules of thumb to guide AI in generating the response
 
 ^{::clerk/visibility {:code :hide}}
 (clerk/table
@@ -66,50 +71,87 @@
               (helpers/text-list rots)])
            dialog-ds-subset)})
 
-(def params {chat/conversation {wkk/service          [:llm/openai :provider/openai]
-                                wkk/model-parameters {:temperature 0
-                                                      :max-tokens  200
-                                                      :model       "gpt-3.5-turbo"}}})
+;; ## Generation
+;;
+;; ### Memory setup
+;; Short-term memory will be used for the generation. It is defined in `system.edn`. `simple-short-term-memory` is a simple implementation
+;; using *in-memory atom* and *cosine similarity* for its cue mode remembering.
+
+;; Defined memory can be retrieved from the Integrant system
 
 (def mem-sys (system/get-memory wkk/simple-short-term-memory))
 
+;; Memory configuration defines how memories are stored and how they are retrieved:
+;; * *recall-function* - defines how to retrieve the memories, cue will be used to fetch memory by similarity to the query (user message)
+;; * *content-similarity-threshold* - specify how similar cue and memory entries have to be to get retrieved
+;; * *memory-token-limit* - specifies how many tokens to retrieve from the memory, this way we can make sure that the LLM window does not overflow if lots of memories match the recall function
+
+^{:nextjournal.clerk/visibility {:result :hide}}
 (def mem-config
   {wkk/memory-system     mem-sys
-   wkk/recall-function   r/recall-sequential
-   r/memory-tokens-limit 500
-   r/memory-content-fn   :content})
+   wkk/recall-function   r/recall-cue
+   wkk/recall-parameters {r/memory-tokens-limit          500
+                          r/content-similarity-threshold 0.3
+                          r/memory-content-fn            :context}})
 
-;; Before running the chat session we need to forget whatever might have been
-;; stored in the memory.
+;; **The important part** - commit the Prosocial Dialogues to the memory.
 
-(.forget mem-sys {})
-
+^{:nextjournal.clerk/visibility {:result :hide}}
 (doseq [prosoc-observation dialog-ds-subset]
   (.remember mem-sys prosoc-observation {}))
 
+;;
+;; ### Chat
+;; Let's define generation parameters. See *Configuration* and *Getting Started* documents for details on how to define generation properties.
+;;
+^{:nextjournal.clerk/visibility {:result :hide}}
+(def params {chat/conversation {wkk/service          [:llm/openai :provider/openai]
+                                wkk/model-parameters {:temperature 0.5
+                                                      :max-tokens  300
+                                                      :model       "gpt-4"}}})
 
-(defn chat-demo [queries params]
-  (mapv
-    (fn [q]
-      (let [message  [(chat/speak chat/user q)]
-            memories (m/available-memories mem-config message)
-            response (gen/chat (concat memories message) {} params)]
-        (.remember mem-sys message nil)
-        (.remember mem-sys (-> response llm/content :completion) nil)
-        {:question q
-         :memories memories
-         :response response}))
-    queries))
+;; A not-so-nice message somone in not so nice mood wants to post:
 
-(def resp (chat-demo (take 3 queries) params))
+^{:nextjournal.clerk/visibility {:result :hide}}
+(def user-post "Got a Christmas present from a friend. Should I say something stupid?")
 
-^{:nextjournal.clerk/visibility {:code :fold}}
-(clerk/table
-  {:head ["Request" "Memories"]
-   :rows (mapv (fn [{:keys [question memories response]}]
-                 [(clerk/html [:div
-                               (helpers/kv-cell "Question" question)
-                               (helpers/chatml-cell (llm/gen-content response))])
-                  (clerk/html
-                    (vec (cons :div (mapv helpers/chatml-cell memories))))])
-           resp)})
+;; Let's find out if anything can be remembered in Prosocial Dialog.
+
+^{:nextjournal.clerk/visibility {:result :show}
+  :nextjournal.clerk/auto-expand-results? true}
+(def prosocial-memory (m/available-memories mem-config user-post))
+
+;; Once the relevant memory is retrieved it will be injected into the conversation stream. It's up to the user how to do this. Here, I will define how safety
+;; annotations and rots are to be used to generate an appropriate response.
+^{:nextjournal.clerk/visibility {:result :hide}}
+(def prosocial-check
+  (h/join
+    "The message above is potentialy harmfull."
+    "It likely contains the following violations of socially safe conversation:"
+    "{% for reason in safety_annotation_reasons %}"
+    "* {{reason}}"
+    "{% endfor %}"
+    ""
+    "Please respond with a question or suggestion urgin user to reconsider."
+    "Please use the following rules of thumb when writing a reply in the form of a suggestion or question:"
+    "{% for rot in rots %}"
+    "* {{rot}}"
+    "{% endfor %}"))
+
+;; `prosocial-check` needs to be injected into the conversation stream. Note that Selmer constructions and slot filling works in chat mode as well.
+
+(def chat-msg
+  (utils/concatv
+    [(chat/speak chat/user user-post)]
+    (when-not (empty? prosocial-memory)
+      [(chat/speak chat/user prosocial-check)])))
+
+;; **Finally**, the assistant response should suggest how not to speak.
+
+(def result (gen/chat chat-msg (first prosocial-memory) params))
+
+^{:nextjournal.clerk/visibility {:code :hide}}
+(clerk/html
+  [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.hover:bg-gray-100.dark:bg-gray-800.dark:border-gray-700.dark:hover:bg-gray-700.grid.grid-cols-1.gap-3
+   [:div.font-mono [:em "Assistant:"]]
+   [:div.font-mono (-> result llm/content :completion :content)]])

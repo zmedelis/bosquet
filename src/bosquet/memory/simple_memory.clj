@@ -40,8 +40,8 @@
    (retrieve-in-sequnce params @in-memory-memory))
 
  (cue-recall [_this {mem-content-fn r/memory-content-fn
-                     threshold r/content-similarity-threshold
-                     :as params}
+                     threshold      r/content-similarity-threshold
+                     :as            params}
               cue]
    (retrieve-in-sequnce
     params

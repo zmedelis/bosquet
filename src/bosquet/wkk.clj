@@ -49,14 +49,14 @@
 
 (def long-term-embeddings-memory :memory/long-term-embeddings)
 
-(def recall-function
-  "Function to retrieve memory using passed in memory type"
-  :bosquet.memory/recall-function)
-
-(def memory-parameters
+(def recall-parameters
   "Memory parameters to be used when creating and retrieving a memory"
-  :bosquet.memory/parameters)
+  :bosquet.recall/parameters)
 
 (def memory-system
   "Memory system implementing memory/Memory protocol to be used in gen AI workflow"
   :bosquet.memory/system)
+
+(def recall-function
+  "Function to retrieve memory using passed in memory type"
+  :bosquet.recall/function)

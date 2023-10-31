@@ -1,6 +1,7 @@
 (ns bosquet.memory.memory
   (:require
    [bosquet.memory.retrieval :as r]
+   [bosquet.wkk :as wkk]
    [taoensso.timbre :as timbre]))
 
 ;; https://gentopia.readthedocs.io/en/latest/agent_components.html#long-short-term-memory
@@ -68,7 +69,7 @@
     (condp = recall-function
       r/recall-free       (.free-recall memory-system params)
       r/recall-sequential (.sequential-recall memory-system params)
-      r/recall-cue        (.cue-recall memory-system context params)
+      r/recall-cue        (.cue-recall memory-system params context)
       (do
         (timbre/warnf "Unknown recall method - '%s'. Using 'context' as memories." recall-function)
         context))
@@ -77,14 +78,16 @@
       context)))
 
 (defn available-memories
-  [{:bosquet.memory/keys [system parameters recall-function]} messages]
+  [{system        wkk/memory-system
+    recall-fn     wkk/recall-function
+    recall-params wkk/recall-parameters} messages]
   (if type
     (do
       (timbre/infof "🧠 Retrieving memories.")
       (timbre/info "\t* Memory:" type)
-      (timbre/info "\t* Recall:" recall-function)
-      (timbre/info "\t* Params:" parameters)
-      (handle-recall system recall-function messages parameters))
+      (timbre/info "\t* Recall:" recall-fn)
+      (timbre/info "\t* Params:" recall-params)
+      (handle-recall system recall-fn messages recall-params))
     (do
       (timbre/info "No memory specified, using available context as memories")
       messages)))
