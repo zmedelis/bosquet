@@ -57,5 +57,5 @@
                        {{service      wkk/service
                          model-params wkk/model-parameters} llm.chat/conversation}]
   (let [llm        (sys/get-service service)
-        completion (.chat llm messages #_(concat memories messages) model-params)]
+        completion (.chat llm messages model-params)]
     completion))
