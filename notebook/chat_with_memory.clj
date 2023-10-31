@@ -1,14 +1,15 @@
 (ns chat-with-memory
   (:require
-    [bosquet.llm.chat :as chat]
-    [bosquet.llm.generator :as gen]
-    [bosquet.llm.llm :as llm]
-    [bosquet.memory.retrieval :as r]
-    [bosquet.memory.memory :as m]
-    [bosquet.system :as system]
-    [bosquet.wkk :as wkk]
-    helpers
-    [nextjournal.clerk :as clerk]))
+   [bosquet.llm.chat :as chat]
+   [bosquet.llm.generator :as gen]
+   [bosquet.llm.llm :as llm]
+   [bosquet.memory.memory :as m]
+   [bosquet.memory.retrieval :as r]
+   [bosquet.system :as system]
+   [bosquet.dataset.huggingface :as hfds]
+   [bosquet.wkk :as wkk]
+   helpers
+   [nextjournal.clerk :as clerk]))
 
 ;; Example taken from
 ;; https://github.com/pinecone-io/examples/blob/master/learn/generation/langchain/handbook/03a-token-counter.ipynb
@@ -34,6 +35,25 @@
    "How much text can be encoded by each of these models?"
    "Okay very interesting, so before returning to earlier in the conversation. I understand now that there are a lot of different transformer (and not transformer) based models for creating the embeddings from vectors. Is that correct?"
    "Perfect, so I understand text can be encoded into these embeddings. But what then? Once I have my embeddings what do I do?"])
+
+
+(comment
+  (hfds/download-ds
+   {:dataset "allenai/prosocial-dialog"
+    :split   "train"
+    :config  "default"
+    :offset  0
+    :length  100}
+   {:hfds/use-cache true
+    :hfds/record-limit 1000}))
+
+
+(def prosocial-dialog-dataset
+  (hfds/load-ds "allenai/prosocial-dialog"))
+
+(def first-response-subset
+  (filter #(zero? (:response_id %))
+    prosocial-dialog-dataset))
 
 (def params {chat/conversation {wkk/service          [:llm/openai :provider/openai]
                                 wkk/model-parameters {:temperature 0

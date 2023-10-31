@@ -2,7 +2,7 @@
   (:require
    [bosquet.memory.retrieval :as r]
    [bosquet.system :as system]
-   [bosquet.utils :as hfds]
+   [bosquet.dataset.huggingface :as hfds]
    [bosquet.wkk :as wkk]))
 
 ;; https://huggingface.co/datasets/allenai/prosocial-dialog
