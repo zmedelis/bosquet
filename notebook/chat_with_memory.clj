@@ -1,13 +1,14 @@
 (ns chat-with-memory
   (:require
+   [bosquet.dataset.huggingface :as hfds]
    [bosquet.llm.chat :as chat]
    [bosquet.llm.generator :as gen]
    [bosquet.llm.llm :as llm]
    [bosquet.memory.memory :as m]
    [bosquet.memory.retrieval :as r]
    [bosquet.system :as system]
-   [bosquet.dataset.huggingface :as hfds]
    [bosquet.wkk :as wkk]
+   [clojure.string :as string]
    helpers
    [nextjournal.clerk :as clerk]))
 
@@ -51,9 +52,19 @@
 (def prosocial-dialog-dataset
   (hfds/load-ds "allenai/prosocial-dialog"))
 
-(def first-response-subset
+(def dialog-ds-subset
   (filter #(zero? (:response_id %))
     prosocial-dialog-dataset))
+
+^{::clerk/visibility {:code :hide}}
+(clerk/table
+  {:head ["Context" "Response" "RoTs"]
+   :rows (mapv
+           (fn [{:keys [context response rots]}]
+             [(helpers/text-div context)
+              (helpers/text-div response)
+              (helpers/text-list rots)])
+           dialog-ds-subset)})
 
 (def params {chat/conversation {wkk/service          [:llm/openai :provider/openai]
                                 wkk/model-parameters {:temperature 0
@@ -72,6 +83,10 @@
 ;; stored in the memory.
 
 (.forget mem-sys {})
+
+(doseq [prosoc-observation dialog-ds-subset]
+  (.remember mem-sys prosoc-observation {}))
+
 
 (defn chat-demo [queries params]
   (mapv
