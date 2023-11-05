@@ -48,7 +48,7 @@
 ;; The downloaded dataset is loaded from the local cache. The dataset is quite large and contains multi-round conversations.
 
 (def prosocial-dialog-dataset
-  (hfds/load-ds "allenai/prosocial-dialog"))
+  (hfds/load-dataset "allenai/prosocial-dialog"))
 
 ;; To simplify the example, let's only use the first round of the dialog, ignoring the subsequent dialog steps.
 

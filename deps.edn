@@ -20,7 +20,8 @@
            org.nd4j/nd4j-native            {:mvn/version "1.0.0-M2.1"}
            org.apache.commons/commons-text {:mvn/version "1.11.0"}
            net.modulolotus/truegrit        {:mvn/version "2.1.30"}
-           me.flowthing/pp                 {:mvn/version "2023-10-05.5"}}
+           me.flowthing/pp                 {:mvn/version "2023-10-05.5"}
+           progrock/progrock               {:mvn/version "0.1.2"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
                                       criterium/criterium         {:mvn/version "0.4.6"}
