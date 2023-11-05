@@ -31,21 +31,8 @@
 ;; > and 497K dialogue safety labels accompanied by free-form rationales.
 ;;
 ;; ### Getting the dataset
-;; Bosquet has HuggingFace dataset fetching tools (very likely that the HuggingFace datasets handler will become an independent OSS project). The commented-out code is to be
-;; run once to get the data. Subsequent runs will read it from the local cache.
-
-^{:nextjournal.clerk/visibility {:result :hide}}
-(comment
-  (hfds/download-ds
-    {:dataset "allenai/prosocial-dialog"
-     :split   "train"
-     :config  "default"
-     :offset  0
-     :length  100}
-    {:hfds/use-cache true
-     :hfds/record-limit 1000}))
-
-;; The downloaded dataset is loaded from the local cache. The dataset is quite large and contains multi-round conversations.
+;; Bosquet has HuggingFace dataset fetching tool (very likely that the HuggingFace datasets handler will become an independent OSS project).
+;; `load-dataset` when first called will download dataset. Subsequent runs will read it from the local cache.
 
 (def prosocial-dialog-dataset
   (hfds/load-dataset "allenai/prosocial-dialog"))
