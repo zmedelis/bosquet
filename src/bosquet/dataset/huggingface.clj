@@ -108,26 +108,27 @@
   is used as is for HF REST API HTTP calls.
 
   Second argument is a map specifying how to read the ds."
-  [{:keys [dataset split config offset length]
-    :or   {split  "train"
-           config "default"
-           offset 0
-           length 100}}
-   {:hfds/keys [cache-dir download-mode]
-    :or        {download-mode :reuse-dataset-if-exists
-                cache-dir     default-cache-dir}
-    :as        read-params}]
-  (let [ds-params {:dataset dataset
-                   :split   split
-                   :config  config
-                   :offset  offset
-                   :length  length}]
-    (if (and (= :reuse-dataset-if-exists download-mode)
-          (ds-cached? cache-dir split dataset))
-      (read-ds ds-params read-params)
-      (do
-        (download-ds ds-params read-params)
-        (read-ds ds-params read-params)))))
+  ([ds-params] (load-dataset ds-params nil))
+  ([{:keys [dataset split config offset length]
+     :or   {split  "train"
+            config "default"
+            offset 0
+            length 100}}
+    {:hfds/keys [cache-dir download-mode]
+     :or        {download-mode :reuse-dataset-if-exists
+                 cache-dir     default-cache-dir}
+     :as        read-params}]
+   (let [ds-params {:dataset dataset
+                    :split   split
+                    :config  config
+                    :offset  offset
+                    :length  length}]
+     (if (and (= :reuse-dataset-if-exists download-mode)
+           (ds-cached? cache-dir split dataset))
+       (read-ds ds-params read-params)
+       (do
+         (download-ds ds-params read-params)
+         (read-ds ds-params read-params))))))
 
 (comment
   (def prosoc-ds (load-dataset
