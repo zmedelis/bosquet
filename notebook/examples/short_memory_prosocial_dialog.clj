@@ -35,7 +35,7 @@
 ;; `load-dataset` when first called will download dataset. Subsequent runs will read it from the local cache.
 
 (def prosocial-dialog-dataset
-  (hfds/load-dataset "allenai/prosocial-dialog"))
+  (hfds/load-dataset {:dataset "allenai/prosocial-dialog"}))
 
 ;; To simplify the example, let's only use the first round of the dialog, ignoring the subsequent dialog steps.
 
