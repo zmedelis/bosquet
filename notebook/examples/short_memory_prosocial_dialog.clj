@@ -1,7 +1,7 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (ns short-memory-prosocial-dialog
   (:require
-    [bosquet.dataset.huggingface :as hfds]
+    [hfds-clj.core :as hfds]
     [bosquet.llm.chat :as chat]
     [bosquet.llm.generator :as gen]
     [bosquet.llm.llm :as llm]
