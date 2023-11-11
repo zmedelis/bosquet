@@ -119,6 +119,7 @@
     [:=> [:cat :string :map] llm/chat-response]
     [:=> [:cat :string :map :map] llm/chat-response]]
    :malli/gen mg/generate}
+  ;; TODO move 'messages' into params
   [messages {:keys [model] :as params} opts]
   (let [params   (if model params (assoc params :model cgpt-35))
         messages (mapv chat/bosquet->chatml messages)]
@@ -145,15 +146,3 @@
     (complete prompt params opts))
   (chat     [_this conversation params]
     (chat-completion conversation params opts)))
-
-(comment
-  (chat-completion
-   [(chat/speak chat/system "You are a helpful assistant.")
-    (chat/speak chat/user "Who won the world series in 2020?")
-    (chat/speak chat/assistant "The Los Angeles Dodgers won the World Series in 2020.")
-    (chat/speak chat/user "Where was it played?")]
-   nil nil)
-
-  (complete "What is your name?" {:max-tokens 10 :model "gpt-4"})
-  (complete "What is your name?" {:max-tokens 10 :model "x"})
-  (complete "What is your name?" {:max-tokens 10 :model "text-ada-001"}))
