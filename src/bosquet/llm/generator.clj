@@ -226,4 +226,25 @@ omit any other prose and explanations."
    {:text {wkk/service          [:llm/openai :provider/openai]
            wkk/cache            true
            wkk/model-parameters {:temperature 0 :max-tokens 100 :model "gpt-3.5-turbo"}}})
+
+  (chat
+   [(chat/speak chat/user "What's the weather like in San Francisco, Tokyo, and Paris?")]
+   {}
+   {chat/conversation
+    {wkk/service [:llm/openai :provider/openai]
+     wkk/model-parameters
+     {:temperature 0
+      :tools       [{:type "function"
+                     :function
+                     {:name       "get-current-weather"
+                      :decription "Get the current weather in a given location"
+                      :parameters {:type       "object"
+                                   :required   [:location]
+                                   :properties {:location {:type        "string"
+                                                           :description "The city and state, e.g. San Francisco, CA"}
+                                                :unit     {:type "string"
+                                                           :enum ["celsius" "fahrenheit"]}}}}}]
+
+      :model "gpt-3.5-turbo"}}})
+
   #__)
