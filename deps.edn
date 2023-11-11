@@ -1,24 +1,30 @@
 {:paths   ["src" "resources"]
- :deps    {org.clojure/clojure             {:mvn/version "1.11.1"}
-           io.github.zmedelis/hfds-clj     {:mvn/version "v2023.11.05"}
-           io.github.zmedelis/selmer       {:mvn/version "0.7.9"}
-           com.wsscode/pathom3             {:mvn/version "2023.08.22-alpha"}
-           net.clojars.wkok/openai-clojure {:mvn/version "0.12.2"}
-           org.flatland/useful             {:mvn/version "0.11.6"}
-           com.taoensso/timbre             {:mvn/version "6.3.1"}
-           com.knuddels/jtokkit            {:mvn/version "0.6.1"}
-           http-kit/http-kit               {:mvn/version "2.7.0"}
-           hato/hato                       {:mvn/version "0.9.0"}
-           metosin/jsonista                {:mvn/version "0.3.8"}
-           org.clojars.danielsz/cohere     {:mvn/version "1.0.0"}
-           com.taoensso/encore             {:mvn/version "3.74.0"}
-           io.aviso/pretty                 {:mvn/version "1.4.4"}
-           integrant/integrant             {:mvn/version "0.8.1"}
-           aero/aero                       {:mvn/version "1.1.6"}
-           org.clojure/core.cache          {:mvn/version "1.0.225"}
-           metosin/malli                   {:mvn/version "0.13.0"}
-           org.apache.commons/commons-text {:mvn/version "1.11.0"}
-           me.flowthing/pp                 {:mvn/version "2023-10-05.5"}}
+ :deps    {org.clojure/clojure                           {:mvn/version "1.11.1"}
+           io.github.zmedelis/hfds-clj                   {:mvn/version "v2023.11.05"}
+           io.github.zmedelis/selmer                     {:mvn/version "0.7.9"}
+           com.wsscode/pathom3                           {:mvn/version "2023.08.22-alpha"}
+           net.clojars.wkok/openai-clojure               {:mvn/version "0.12.2"}
+           org.flatland/useful                           {:mvn/version "0.11.6"}
+           com.taoensso/timbre                           {:mvn/version "6.3.1"}
+           com.knuddels/jtokkit                          {:mvn/version "0.6.1"}
+           http-kit/http-kit                             {:mvn/version "2.7.0"}
+           hato/hato                                     {:mvn/version "0.9.0"}
+           metosin/jsonista                              {:mvn/version "0.3.8"}
+           org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
+           com.taoensso/encore                           {:mvn/version "3.74.0"}
+           io.aviso/pretty                               {:mvn/version "1.4.4"}
+           integrant/integrant                           {:mvn/version "0.8.1"}
+           aero/aero                                     {:mvn/version "1.1.6"}
+           org.clojure/core.cache                        {:mvn/version "1.0.225"}
+           metosin/malli                                 {:mvn/version "0.13.0"}
+           org.apache.commons/commons-text               {:mvn/version "1.11.0"}
+           me.flowthing/pp                               {:mvn/version "2023-10-05.5"}
+           org.apache.tika/tika-core                     {:mvn/version "2.9.0" :exclusions [commons-logging/commons-logging log4j/log4j org.slf4j/slf4j-log4j12
+                                                                                            org.slf4j/slf4j-reload4j ch.qos.logback/logback-core ch.qos.logback/logback-classic
+                                                                                            ch.qos.reload4j/reload4j]}
+           org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.0"}
+           org.apache.poi/poi                            {:mvn/version "5.2.4"}
+           org.apache.tika/tika-parsers-standard-package {:mvn/version "2.9.0"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
                                       criterium/criterium         {:mvn/version "0.4.6"}
