@@ -1,4 +1,4 @@
-(ns bosquet.splitter
+(ns bosquet.nlp.splitter
   (:require
    [bosquet.llm.openai-tokens :as oai]
    [clojure.string :as str]

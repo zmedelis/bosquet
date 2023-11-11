@@ -1,7 +1,7 @@
-(ns bosquet.splitter-test
+(ns bosquet.nlp.splitter-test
   (:require
    [bosquet.llm.openai-tokens :as oai]
-   [bosquet.splitter :as splitter]
+   [bosquet.nlp.splittertter :as splitter]
    [clojure.test :refer [deftest is]]))
 
 (deftest max-tokens-under
