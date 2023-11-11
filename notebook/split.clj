@@ -16,7 +16,7 @@ What is the name of the licence ?")
 
 ;;  split the text in pieces
 (def splits
-  (splitter/split-max-tokens text 1000 splitter/heuristic-gpt-token-count-fn))
+  (splitter/split-max-tokens text 1000 "gpt-4"))
 
 
 ;; apply template to all pieces

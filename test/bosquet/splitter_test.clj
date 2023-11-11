@@ -1,18 +1,16 @@
 (ns bosquet.splitter-test
   (:require
-   [clojure.test :refer [deftest is]]
-   [bosquet.splitter :as splitter]))
+   [bosquet.llm.openai-tokens :as oai]
+   [bosquet.splitter :as splitter]
+   [clojure.test :refer [deftest is]]))
 
 (deftest max-tokens-under
-  (is (= [2 2 1]
-         (->>
-          (splitter/split-max-tokens "this is a teeeeeeexxxxxxxxxt" 3
-                                     splitter/heuristic-gpt-token-count-fn "")
-          (map splitter/heuristic-gpt-token-count-fn)))))
-
-(deftest max-tokens-over
-  (is (= [2 4]
-         (->>
-          (splitter/split-max-tokens "this is a teeeeeeexxxxxxxxxt" 3
-                                     splitter/heuristic-gpt-token-count-fn)
-          (map splitter/heuristic-gpt-token-count-fn)))))
+  ;; make sure than no chunk is larger than MAX tokens
+  (let [MAX 4 model "gpt-4"]
+    (is (> MAX
+           (apply max
+                  (->>
+                   (splitter/split-max-tokens
+                    "Talks from the AI Engineer Summit, October 8-10 2023"
+                    MAX model)
+                   (map #(count (oai/encode % model)))))))))
