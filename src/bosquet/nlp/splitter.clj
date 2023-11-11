@@ -35,6 +35,23 @@
   ([text max-tokens model]
    (split-max-tokens text max-tokens model " ")))
 
+(defn character-splitter
+  "Character based chunker. It will split tekst and `chunk-size` bits.
+  If `overlap` is specified those chunks will overlap by specified number
+  of characters"
+  [text {:keys [chunk-size overlap]
+         :or   {chunk-size 12000 overlap 0}}]
+  (loop [current-pos 0
+         chunks      []]
+    (if (> current-pos (count text))
+      chunks
+      (recur
+       (+ current-pos chunk-size)
+       (conj chunks
+             (subs text
+                   (max (- current-pos overlap) 0)
+                   (min (+ (- current-pos overlap) chunk-size) (count text))))))))
+
 (comment
   (defn gpt-count [encoding s]
     (count (.encode encoding s)))
