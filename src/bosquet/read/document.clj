@@ -15,6 +15,8 @@
    :metadata {:dc:creator \"Brett K. Hayes\"
               :dc:description \"Traditionally, memory, reasoning, and categorization have been \"}
   ```"
+  (:require
+   [clojure.java.io :as io])
   (:import
    [org.apache.tika.metadata Metadata]
    [org.apache.tika.parser AutoDetectParser]
@@ -48,10 +50,13 @@
   Returns a map with
   - `text` field containing document in a plain text format
   - `metadata` Dublin Core defined metadata fields if document has those defined"
-  ([doc-input-stream]
-   (let [parser          (AutoDetectParser.)
-         handler    (body-content-handler)
-         metadata        (Metadata.)]
-     (.parse parser doc-input-stream handler metadata)
-     {:text     (.toString handler)
-      :metadata (extract-metadata metadata)})))
+  [stream-or-file-name]
+  (let [input    (if (string? stream-or-file-name)
+                   (io/input-stream stream-or-file-name)
+                   stream-or-file-name)
+        parser   (AutoDetectParser.)
+        handler  (body-content-handler)
+        metadata (Metadata.)]
+    (.parse parser input handler metadata)
+    {:text     (.toString handler)
+     :metadata (extract-metadata metadata)}))
