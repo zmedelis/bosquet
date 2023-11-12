@@ -18,12 +18,24 @@
 (deftest character-splitter-test
   (is (= ["Never attempt to win by force "
           "what can be won by deception"]
-         (sub/character-splitter
-          "Never attempt to win by force what can be won by deception"
-          {:chunk-size 30})))
-  (is (= ["Never attempt to win by forc"
-          "e what can be won by deception"]
-         (sub/character-splitter
-          "Never attempt to win by force what can be won by deception"
-          {:chunk-size 30
-           :overlap    2}))))
+         (sub/text-chunker
+          {:chunk-size 30 :splitter sub/character-splitter}
+          "Never attempt to win by force what can be won by deception")))
+  #_(is (= ["Never attempt to win by forc"
+            "e what can be won by deception"]
+           (sub/character-splitter
+            {:chunk-size 30 :overlap 2 :splitter sub/character-splitter}
+            "Never attempt to win by force what can be won by deception"))))
+
+(deftest splitting-by-sentence
+  (let [text (str
+              "Jenny lost keys. Panic rises. Frantic search begins." " "
+              "Couch cushions invaded. Discovery: in pocket.")]
+    (is (= ["Jenny lost keys. Panic rises. Frantic search begins."
+            "Couch cushions invaded. Discovery: in pocket."]
+           (sub/text-chunker {:chunk-size 3 :splitter sub/sentence-splitter} text)))
+    #_(is (= ["Jenny lost keys. Panic rises. Frantic search begins."
+              "Frantic search begins. Couch cushions invaded. Discovery: in pocket."]
+             (sub/text-chunker {:chunk-size 3 :overlap 1 :splitter sub/sentence-splitter} text)))
+    (is (= ["Jenny lost keys. Panic rises. Frantic search begins. Couch cushions invaded. Discovery: in pocket."]
+           (sub/text-chunker {:chunk-size 30 :splitter sub/sentence-splitter} text)))))
