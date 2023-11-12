@@ -33,6 +33,11 @@
   [text model]
   (count (encode text model)))
 
+(comment
+  (def text (:text (bosquet.read.document/parse "data/llama2.pdf")))
+  (token-count text :gpt-4)
+  #__)
+
 ;;
 ;; ## Pricing
 ;;

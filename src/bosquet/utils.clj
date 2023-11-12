@@ -19,3 +19,6 @@
    (vec x))
   ([x & ys]
    (into (vec x) cat ys)))
+
+(defn join-nl [& lines]
+  (apply str (interpose "\n" lines)))
