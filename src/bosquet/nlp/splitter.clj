@@ -122,6 +122,7 @@
   (def text (slurp "https://raw.githubusercontent.com/scicloj/scicloj.ml.smile/main/LICENSE"))
 
   (def sentences (text->sentences text))
+  (tap> (sort-by :cnt > (map #(assoc {} :cnt (count %) :txt %) sentences)))
 
   (text-chunker {:chunk-size 3 :splitter text->sentences} text)
 
