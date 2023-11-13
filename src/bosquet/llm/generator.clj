@@ -212,7 +212,7 @@ omit any other prose and explanations."
     ;; TODO rename `model-parameters` -> `parameters`
    {:answer {wkk/service          [:llm/openai :provider/openai]
              wkk/cache            true
-             wkk/model-parameters {:temperature 0.4 :model "gpt-4"}}
+             wkk/model-parameters {:temperature 0.4 :model "gpt-4-1106-preview"}}
     :test   {wkk/service          [:llm/openai :provider/openai]
              wkk/cache            true
              wkk/model-parameters {:temperature 0}}})

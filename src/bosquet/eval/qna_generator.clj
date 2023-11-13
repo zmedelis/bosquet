@@ -22,7 +22,7 @@
    (utils/join-nl
     "You are an excelent Teacher who understands subject material perfectly."
     "Your ability to analyze text is astonishing. Based on that your task is to setup"
-    "{{question-number}} questions for the upcoming student examination."
+    "{{question-count}} questions for the upcoming student examination."
     "The questions should be diverse and cover interesting and important topics and facts across the document."
     "Restrict questions to the CONTEXT INFORMATION provided.")
 
@@ -49,35 +49,36 @@
    "{{forloop.counter}}. {{q}}{% endfor %}"
    "Answer queries in exact same order as they are listed"
    "Provide ANSWERS as string Clojure vector."
-   "ANSWERS: {% gen var-name=answers %}"))
+   "ANSWERS: {% gen %}"))
 
 (defn generate-qna-dataset
-  [document]
+  [document number-of-questions]
   (let [chunks       (splitter/text-chunker
                       {:chunk-size 50 :splitter splitter/sentence-splitter}
                       document)
+        model        #_"gpt-4-1106-preview" "gpt-3.5-turbo"
         q-gen-params {:questions
-                      {wkk/service          [:llm/openai :provider/openai]
+                      {wkk/service          wkk/oai-service
                        wkk/output-format    :edn
                        wkk/cache            true
-                       wkk/model-parameters {:temperature 0.2 :max-tokens 500 :model "gpt-3.5-turbo"}}}
-        a-gen-params {:answers
-                      {wkk/service          [:llm/openai :provider/openai]
+                       wkk/model-parameters {:temperature 0.2 :max-tokens 500 :model model}}}
+        a-gen-params {:gen
+                      {wkk/service          wkk/oai-service
                        wkk/output-format    :edn
                        wkk/cache            true
-                       wkk/model-parameters {:temperature 0.0 :max-tokens 1500 :model "gpt-3.5-turbo"}}}]
-    (map-indexed
-     (fn [idx chunk]
-       (timbre/debugf "QnA for chunk #%s. Toekn count -  %s" idx (otok/token-count chunk :gpt-4))
+                       wkk/model-parameters {:temperature 0.0 :max-tokens 1500 :model model}}}]
+    (map
+     (fn [chunk]
+       (timbre/debugf "QnA for chunk with token count -  %s" (otok/token-count chunk model))
        (let [questions (:questions (gen/generate
-                                    question-building-prompts
-                                    {:question-number 5
-                                     :context         chunk}
-                                    q-gen-params))
-             answers   (:answers (gen/generate
-                                  answering-prompt
-                                  {:queries questions :context chunk}
-                                  a-gen-params))]
+                                     question-building-prompts
+                                     {:question-count number-of-questions
+                                      :context         chunk}
+                                     q-gen-params))
+             answers   (:gen (gen/generate
+                               answering-prompt
+                               {:queries questions :context chunk}
+                               a-gen-params))]
          {:questions questions
           :answers   answers
           :context   chunk}))
@@ -86,15 +87,5 @@
 (comment
   (def text (:text (bosquet.read.document/parse "data/llama2.pdf")))
 
-  (def qna (generate-qna-dataset text))
-  (tap> qna)
-
-  (gen/generate
-   question-building-prompts
-   {:question-number 3
-    :context (subs text 0 20000)}
-   {:questions
-    {wkk/service          [:llm/openai :provider/openai]
-     wkk/output-format    :edn
-     wkk/cache            true
-     wkk/model-parameters {:temperature 0.2 :max-tokens 500 :model "gpt-3.5-turbo"}}}))
+  (def qna (generate-qna-dataset text 5))
+  (tap> qna))

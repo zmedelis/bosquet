@@ -60,3 +60,8 @@
 (def recall-function
   "Function to retrieve memory using passed in memory type"
   :bosquet.recall/function)
+
+;;
+;; Misc shortcuts
+;;
+(def oai-service [:llm/openai :provider/openai])
