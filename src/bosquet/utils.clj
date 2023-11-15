@@ -11,6 +11,17 @@
   [x]
   (with-out-str (pp/pprint x)))
 
+(defn pp
+  [x]
+  (pp/pprint x))
+
+(defn safe-subs
+  "Substring with safety of going over the max length"
+  ([s start end]
+   (subs s start (min end (count s))))
+  ([s start]
+   (subs s start)))
+
 (defn concatv
   "Non-lazily concat any number of collections, returning a persistent vector."
   ([]
