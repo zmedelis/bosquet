@@ -11,7 +11,6 @@
   (remember [_this observation {:keys [collection-name]}]
     (let [observations (if (vector? observation) observation [observation])
           encoder      (:encoder opts)
-          _ (prn "ENCODER " encoder)
           embeds       (mapv (fn [{:keys [text payload]}]
                                (assoc
                                 (.encode encoder text)
