@@ -27,7 +27,7 @@
                 :texts     tweets}))
 
 {:nextjournal.clerk/visibility {:code :hide :result :hide}}
-(def sentiment-labels (-> sentiment-result :completion converter/numbered-items->list vec))
+(def sentiment-labels (-> sentiment-result :completion converter/itemized-text->list vec))
 
 ;; Sentiment anlaysis results
 
