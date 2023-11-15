@@ -48,12 +48,14 @@
   (p/open)
   (add-tap #'p/submit))
 
+(defn reset-ig []
+  (ir/reset))
+
 (comment
   (open-portal)
 
-  ;; integrant restart
   (ir/go)
-  (ir/reset)
+  (reset-ig)
 
   (clerk/serve! {:watch-paths ["notebook"]})
 
