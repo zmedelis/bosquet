@@ -21,7 +21,7 @@
   [\"foo\" \"bar\" \"baz\"]"
   [items]
   (map drop-digit
-    (s/split (s/trim items) #"\n")))
+       (s/split (s/trim items) #"\n")))
 
 (defn yes-no->bool
   "Converts yes/no answer to boolean
@@ -43,9 +43,9 @@
   "
   [completion]
   (-> completion
-    (s/replace #"(?m)^```json" "")
-    (s/replace #"(?m)```$" "")
-    (j/read-value)))
+      (s/replace #"(?m)^```json" "")
+      (s/replace #"(?m)```$" "")
+      (j/read-value)))
 
 (defn edn-reader
   "GPT-3.5-* tends to wrap response with Makrdown code
@@ -56,9 +56,9 @@
   "
   [completion]
   (-> completion
-    (s/replace #"(?m)^```(edn|clojure)" "")
-    (s/replace #"(?m)```$" "")
-    (read-string)))
+      (s/replace #"(?m)^```(edn|clojure)" "")
+      (s/replace #"(?m)```$" "")
+      (read-string)))
 
 (defn coerce
   [completion format]

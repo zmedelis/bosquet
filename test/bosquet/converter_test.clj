@@ -6,17 +6,17 @@
 
 (deftest converting-lists
   (testing "numbered lists and edge cases"
-      (is (= ["foo" "bar" "baz"]
-            (c/list-reader "1. foo\n2. bar\n3. baz")))
-      (is (= ["foo1.1" "bar" "baz"]
-            (c/list-reader "1. foo1.1 \n2. bar\n3. baz")))
-      (is (= ["foo" "bar" "baz"]
-            (c/list-reader "\n\n1. foo\n2. bar\n3. baz"))))
+    (is (= ["foo" "bar" "baz"]
+           (c/list-reader "1. foo\n2. bar\n3. baz")))
+    (is (= ["foo1.1" "bar" "baz"]
+           (c/list-reader "1. foo1.1 \n2. bar\n3. baz")))
+    (is (= ["foo" "bar" "baz"]
+           (c/list-reader "\n\n1. foo\n2. bar\n3. baz"))))
   (testing "numbered unordered lists"
     (is (= ["foo" "bar" "baz"]
-          (c/list-reader "* foo\n* bar\n* baz")))
+           (c/list-reader "* foo\n* bar\n* baz")))
     (is (= ["foo" "bar" "baz"]
-          (c/list-reader "- foo\n- bar\n- baz")))))
+           (c/list-reader "- foo\n- bar\n- baz")))))
 
 (deftest converting-yes-and-noes
   (is (true? (c/yes-no->bool "yes")))
