@@ -82,5 +82,6 @@
  ;; Long term memory that converts data going through AI generations to
  ;; embeddings and stores them in DB.
  :memory/long-term-embeddings
- {:encoder (integrat.core/ref :embedding/openai)
-  :storage (integrant.core/ref :db/qdrant)}}
+ {}
+ #_{:encoder #ig/ref :embedding/openai
+    :storage #ig/ref :db/qdrant}}

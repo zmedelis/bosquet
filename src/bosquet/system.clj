@@ -110,10 +110,10 @@
 ;; TODO fix integrant/aero conflicting edn processing and
 ;; get storage plus encoder from edn
 (defmethod ig/init-key :memory/long-term-embeddings [_ _opts #_{:keys [storage encoder] :as opts}]
-  (let [opts {:storage (get system :db/qdrant)
-              :encoder (get system :embedding/openai)}]
-    (timbre/infof "\t* Long term memory with (%s; %s)" (:storage opts) (:encoder opts))
-    (LongTermMemory. opts)))
+  (let [storage (get system :db/qdrant)
+        encoder (get system :embedding/openai)]
+    (timbre/infof "\t* Long term memory with (%s; %s)" storage encoder)
+    (LongTermMemory. storage encoder)))
 
 ;;
 ;; Convenience functions to get LLM API instances
