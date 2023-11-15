@@ -20,9 +20,13 @@
   (require '[bosquet.system :as system])
   (require '[bosquet.db.qdrant :as qd])
 
+  (def embeddings-collection-config
+    {:vectors-size     1536
+     :vectors-distance :Dot})
+
   (def qd-coll-name "test-embs")
   (qd/delete-collection qd-coll-name)
-  (qd/create-collection qd-coll-name qd/embeddings-collection-config)
+  (qd/create-collection qd-coll-name embeddings-collection-config)
 
   (def oai-emb (system/get-service :embedding/openai))
   (def texts ["Hello world"
@@ -32,10 +36,10 @@
   (def embeds (mapv (fn [text]
                       {:data {:text text}
                        :embedding
-                       (-> oai-emb (create text) :data first :embedding)})
+                       (-> oai-emb (.encode text) :data first :embedding)})
                     texts))
 
-  (def query (-> oai-emb (create "Cars in town") :data first :embedding))
+  (def query (-> oai-emb (.encode "Cars in town") :data first :embedding))
 
   (def qd (system/get-service :db/qdrant))
 

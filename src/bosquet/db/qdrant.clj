@@ -5,10 +5,6 @@
    [hato.client :as hc]
    [jsonista.core :as j]))
 
-(def embeddings-collection-config
-  {:vectors {:size     1536
-             :distance :Dot}})
-
 (def ^:private qdrant-endpoint
   "http://localhost:6333")
 
