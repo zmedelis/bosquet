@@ -63,7 +63,6 @@
       ::pco/input   input
       ::pco/resolve
       (fn [_env input]
-        (timbre/info "Resolving: " the-key)
         (let [[completed completion] (template/fill-slots template
                                        ;; TODO refactor out `the-key`
                                                           (assoc input :the-key the-key)
@@ -212,10 +211,10 @@ omit any other prose and explanations."
     ;; TODO rename `model-parameters` -> `parameters`
    {:answer {wkk/service          [:llm/openai :provider/openai]
              wkk/cache            true
-             wkk/model-parameters {:temperature 0.4 :model "gpt-4-1106-preview"}}
+             wkk/model-parameters {:temperature 0.4 :model "gpt-3.5-turbo"}}
     :test   {wkk/service          [:llm/openai :provider/openai]
              wkk/cache            true
-             wkk/model-parameters {:temperature 0}}})
+             wkk/model-parameters {:temperature 0.0}}})
 
   (complete-template
    "You are a playwright. Given the play's title and it's genre write synopsis for that play.
@@ -223,9 +222,9 @@ omit any other prose and explanations."
      Genre: {{genre}}
      Playwright: This is a synopsis for the above play: {% gen var-name=text %}"
    {:title "Mr. X" :genre "crime"}
-   {:text {wkk/service          [:llm/openai :provider/openai]
-           wkk/cache            true
-           wkk/model-parameters {:temperature 0 :max-tokens 100 :model "gpt-3.5-turbo"}}})
+   {:text {wkk/service          wkk/oai-service
+           wkk/cache            false
+           wkk/model-parameters {:temperature 0.0 :max-tokens 100 :model "gpt-3.5-turbo-1106"}}})
 
   (chat
    [(chat/speak chat/user "What's the weather like in San Francisco, Tokyo, and Paris?")]
