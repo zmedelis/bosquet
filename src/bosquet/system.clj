@@ -82,18 +82,6 @@
     (Cohere. opts)))
 
 ;;
-;; Memory Components
-;;
-
-(defmethod ig/init-key :memory/simple-short-term [_ _opts]
-  (timbre/infof "\t* Short term memory")
-  (SimpleMemory. simple-memory/memory-store))
-
-(defmethod ig/init-key :memory/long-term-embeddings [_ {:keys [storage encoder] :as opts}]
-  (timbre/infof "\t* Long term memory with (%s; %s)" (second storage) (second encoder))
-  (LongTermMemory. opts))
-
-;;
 ;; Embedding Services
 ;;
 
@@ -109,14 +97,32 @@
   (timbre/infof "\t* Qdrant vector DB on '%s'" host)
   (Qdrant. opts))
 
-(def system
-  (do
-    (timbre/info "🏗️ Initializing Bosquet resources:")
-    (ig/init sys-config)))
+;;
+;; Memory Components
+;;
+
+(defmethod ig/init-key :memory/simple-short-term [_ _opts]
+  (timbre/infof "\t* Short term memory")
+  (SimpleMemory. simple-memory/memory-store))
+
+(declare system)
+
+;; TODO fix integrant/aero conflicting edn processing and
+;; get storage plus encoder from edn
+(defmethod ig/init-key :memory/long-term-embeddings [_ _opts #_{:keys [storage encoder] :as opts}]
+  (let [opts {:storage (get system :db/qdrant)
+              :encoder (get system :embedding/openai)}]
+    (timbre/infof "\t* Long term memory with (%s; %s)" (:storage opts) (:encoder opts))
+    (LongTermMemory. opts)))
 
 ;;
 ;; Convenience functions to get LLM API instances
 ;;
+
+(def system
+  (do
+    (timbre/info "🏗️ Initializing Bosquet resources:")
+    (ig/init sys-config)))
 
 (defn openai []
   (get system [:llm/openai :provider/openai]))

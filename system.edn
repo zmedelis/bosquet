@@ -68,7 +68,7 @@
  :db/qdrant
  {:host             #or [#ref [:config :qdrant-host] "localhost"]
   :port             #or [#ref [:config :qdrant-port] 6333]
-  :vectors-on-disk  #or [#ref [:config :qdrant-vectors-on-disk] false]
+  :vectors-on-disk  #or [#ref [:config :qdrant-vectors-on-disk] true]
   :vectors-size     #or [#ref [:config :qdrant-vectors-size] 1536]
   :vectors-distance #or [#ref [:config :qdrant-vectors-distance] :Dot]}
 
