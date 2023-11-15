@@ -44,10 +44,12 @@
                  :index    "notebook/index.clj"
                  :out-path "docs"}))
 
-(comment
-  (def p (p/open))
-  (add-tap #'p/submit)
+(defn open-portal []
+  (p/open)
+  (add-tap #'p/submit))
 
+(comment
+  (open-portal)
 
   ;; integrant restart
   (ir/go)
