@@ -1,8 +1,10 @@
 (ns papers.llms-as-optimizers
   (:require
     [bosquet.eval.evaluator :as eval]
+    [bosquet.eval.qna-generator :as qna]
     [bosquet.llm.generator :as gen]
     [bosquet.read.document :as document]
+    [bosquet.template.read :as read]
     [bosquet.utils :as u]
     [bosquet.wkk :as wkk]))
 
@@ -21,7 +23,10 @@
     "Your task is to generate the instruction <INS>. Below are some previous instructions with their scores."
     "The score ranges from 1 to 5."
     ""
-    "{{instruction-score-pairs}}"
+    "{% for i in instruction-score-pairs %}"
+    "Instruction (<INS>): {{i.instruction}}"
+    "Score: {{i.score}}"
+    "{% endfor %}"
     ""
     "Below we show the task. The <INS> tag is prepended to the below prompt template, e.g. as follows:"
     ""
@@ -35,13 +40,20 @@
     "Some examples of template variable inputs and expected outputs are given below to illustrate the task. **NOTE**: These do NOT represent the"
     "entire evaluation dataset."
     ""
-    "{{qna-pairs}}"
+    "{% for q,a in qna-pairs %}"
+    "Question: {{q}}"
+    "Answer: {{a}}"
+    "{% endfor %}"
     ""
-    "We run every input in an evaluation dataset through an LLM. If the LLM-generated output doesn't match the expected output, we mark it as wrong (score 0)."
-    "A correct answer has a score of 1. The final 'score' for an instruction is the average of scores across an evaluation dataset."
+    #_"We run every input in an evaluation dataset through an LLM. If the LLM-generated output doesn't match the expected output, we mark it as wrong (score 0)."
+    "We run every input in an evaluation dataset through an LLM. If the LLM-generated output doesn't match the expected output, we mark it as wrong (score 1)."
+    "Ideal answer has a score of 5. With range in between indicating various matching levels."
+    #_"The final 'score' for an instruction is the average of scores across an evaluation dataset."
     "Write your new instruction (<INS>) that is different from the old ones and has a score as high as possible."
+    "Be very concise in your instruction. As the same time try to write more genericaly applicable instruction."
     ""
-    "Instruction (<INS>):"))
+    "<INS>"
+    "{% gen var-name=instruction %}"))
 
 
 (def mem-opts {:collection-name "llama2-qna-eval"
@@ -52,32 +64,60 @@
 
 (eval/remember-knowledge mem-opts text)
 
+
+(defn optimization-step-prompt
+  [instruction]
+  {:instruction     instruction
+   :prompt-template (u/join-nl
+                      "{{instruction}}"
+                      "Context information is below."
+                      u/separator
+                      "{{context}}"
+                      u/separator
+                      "Query: {{query}}"
+                      "Answer:")
+   :generation      (u/join-nl
+                      "{{prompt-template}}"
+                      "{% gen var-name=answer %}")})
+
 (def step-0-prompt
-  (u/join-nl
-    "Context information is below. Given the context information and not prior knowledge, answer the query."
-    u/separator
-    "{{context}}"
-    u/separator
-    "Query: {{query}}"
-    "Answer:"))
+  (optimization-step-prompt "Given the context information and not prior knowledge, answer the query."))
+
+;; Questions and answers golden dataset. Will be used to eval against and optimize the prompts
+(def qna-goldenset
+  (qna/load-qna-dataset "data/llama2-eval.edn"))
 
 (def question
-  "What are the key contributions of the Llama 2 project, and how do the Llama 2-Chat models compare to existing open-source and closed-source chat models based on human evaluations for helpfulness and safety?")
+  (first qna-goldenset))
 
 (def relevant-memories
   (eval/query mem-opts question))
 
-
 (def answer-from-context
-  (:gen
+  (:answer
    (gen/generate
      step-0-prompt
      {:query question
       :context relevant-memories}
      {:score wkk/gpt3.5-turbo-with-cache})))
 
+(def score
+  (eval/evaluate-answer
+    question
+    "The key contributions of the Llama 2 project include the development and release of pretrained and fine-tuned large language models (LLMs) optimized for dialogue use cases. The Llama 2-Chat models outperform existing open-source chat models on most benchmarks, and based on human evaluations for helpfulness and safety, they may be a suitable substitute for closed-source models."
+    answer-from-context))
 
-(eval/evaluate-answer
-  question
-  "The key contributions of the Llama 2 project include the development and release of pretrained and fine-tuned large language models (LLMs) optimized for dialogue use cases. The Llama 2-Chat models outperform existing open-source chat models on most benchmarks, and based on human evaluations for helpfulness and safety, they may be a suitable substitute for closed-source models."
-  answer-from-context)
+
+(read/fill-slots
+  opro-prompt
+  {:instruction-score-pairs [{:instruction (:instruction step-0-prompt) :score score}]
+   :prompt-template (:prompt-template step-0-prompt)
+   :qna-pairs (take 4 qna-goldenset)})
+
+
+(gen/generate
+  opro-prompt
+  {:instruction-score-pairs [{:instruction (:instruction step-0-prompt) :score score}]
+   :prompt-template (:prompt-template step-0-prompt)
+   :qna-pairs (take 4 qna-goldenset)}
+  {:score wkk/gpt3.5-turbo-with-cache})
