@@ -1,8 +1,10 @@
 (ns papers.llms-as-optimizers
   (:require
     [bosquet.eval.evaluator :as eval]
+    [bosquet.llm.generator :as gen]
     [bosquet.read.document :as document]
-    [bosquet.utils :as u]))
+    [bosquet.utils :as u]
+    [bosquet.wkk :as wkk]))
 
 ;; https://arxiv.org/pdf/2309.03409.pdf
 ;;
@@ -42,20 +44,40 @@
     "Instruction (<INS>):"))
 
 
-(def opts {:collection-name "llama2-qna-eval"
-           :encoder         :embedding/openai
-           :storage         :db/qdrant})
+(def mem-opts {:collection-name "llama2-qna-eval"
+               :encoder         :embedding/openai
+               :storage         :db/qdrant})
 
 (def text (:text (document/parse "data/llama2.pdf")))
 
-(eval/remember-knowledge opts text)
+(eval/remember-knowledge mem-opts text)
+
+(def step-0-prompt
+  (u/join-nl
+    "Context information is below. Given the context information and not prior knowledge, answer the query."
+    u/separator
+    "{{context}}"
+    u/separator
+    "Query: {{query}}"
+    "Answer:"))
+
+(def question
+  "What are the key contributions of the Llama 2 project, and how do the Llama 2-Chat models compare to existing open-source and closed-source chat models based on human evaluations for helpfulness and safety?")
+
+(def relevant-memories
+  (eval/query mem-opts question))
 
 
-(eval/query opts "What are the inputs and outputs to Reward Modeling?")
+(def answer-from-context
+  (:gen
+   (gen/generate
+     step-0-prompt
+     {:query question
+      :context relevant-memories}
+     {:score wkk/gpt3.5-turbo-with-cache})))
 
 
 (eval/evaluate-answer
-
-  "What are the inputs and outputs to Reward Modeling?"
-  "The reward model takes a model response and its corresponding prompt as inputs. It outputs a scalar score to indicate the quality of the model generation."
-  "Inputs: response. Outputs: score")
+  question
+  "The key contributions of the Llama 2 project include the development and release of pretrained and fine-tuned large language models (LLMs) optimized for dialogue use cases. The Llama 2-Chat models outperform existing open-source chat models on most benchmarks, and based on human evaluations for helpfulness and safety, they may be a suitable substitute for closed-source models."
+  answer-from-context)

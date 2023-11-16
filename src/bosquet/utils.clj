@@ -33,3 +33,7 @@
 
 (defn join-nl [& lines]
   (apply str (interpose "\n" lines)))
+
+(def separator
+  "A separator to be used in prompts to indicate data bloks."
+  "~~~~~~~~~~~~~~")
