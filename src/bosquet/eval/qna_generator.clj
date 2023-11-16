@@ -6,10 +6,11 @@
    [bosquet.read.document :as document]
    [bosquet.utils :as u]
    [bosquet.wkk :as wkk]
-   [malli.core :as m]
+   [clojure.core :as c]
+   [clojure.edn :as edn]
    [clojure.java.io :as io]
-   [taoensso.timbre :as timbre]
-   [clojure.core :as c]))
+   [malli.core :as m]
+   [taoensso.timbre :as timbre]))
 
 ;; Some of the details are borrowed from
 ;; https://github.com/run-llama/llama_index/blob/29ef306ae0536de44840ca5acfdf93d84b9a560c/llama_index/evaluation/dataset_generation.py
@@ -153,22 +154,29 @@
        (qna->eval-dataset document-file)
        (save-dataset dataset-file)))
 
+(defn load-qna-dataset
+  "Load eval tuples from file (created via `save-dataset`)"
+  [file-name]
+  (-> file-name slurp edn/read-string :eval))
+
 (comment
   (document->dataset {query-count 4} "data/llama2.pdf" "data/llama2-eval.edn")
+
+  (load-qna-dataset "data/llama2-eval.edn")
 
   (def text (:text (document/parse "data/llama2.pdf")))
   (def qna (generate-qna-dataset {query-count 3} text))
   (tap> qna)
 
   (gen/generate
-   question-building-prompts
-   {:question-count 3
-    :context
-    (second (splitter/text-chunker
-             {:chunk-size 25 :splitter splitter/sentence-splitter}
-             text))}
-   {:questions
-    {wkk/service          wkk/oai-service
-     wkk/output-format    :list
-     wkk/model-parameters {:temperature 0.0 :max-tokens 500 :model "gpt-3.5-turbo-1106"}}})
+    question-building-prompts
+    {:question-count 3
+     :context
+     (second (splitter/text-chunker
+               {:chunk-size 25 :splitter splitter/sentence-splitter}
+               text))}
+    {:questions
+     {wkk/service          wkk/oai-service
+      wkk/output-format    :list
+      wkk/model-parameters {:temperature 0.0 :max-tokens 500 :model "gpt-3.5-turbo-1106"}}})
   #__)

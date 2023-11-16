@@ -62,8 +62,9 @@
 
 (defn fill-slots
   "Use Selmer to fill in `text` template `slots`"
-  [text ctx config]
-  (without-escaping
-   (selmer/render-with-values
-    text
-    (assoc ctx wkk/llm-config config))))
+  ([text ctx] (fill-slots text ctx nil))
+  ([text ctx config]
+   (without-escaping
+     (selmer/render-with-values
+       text
+       (assoc ctx wkk/llm-config config)))))
