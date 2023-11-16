@@ -2,6 +2,7 @@
   (:require
    [bosquet.db.vector-db :as vdb]
    [bosquet.utils :as utils]
+   [clojure.walk :as walk]
    [hato.client :as hc]
    [jsonista.core :as j]))
 
@@ -38,15 +39,19 @@
   ([collection-name embeds-vector]
    (search collection-name embeds-vector 3))
   ([collection-name embeds-vector top-n]
-   (-> (format "%s/collections/%s/points/search" qdrant-endpoint collection-name)
-       (hc/post
-        {:content-type :json
-         :body         (j/write-value-as-string
-                        {:vector embeds-vector
-                         :top    top-n
-                         :with_payload true})})
-       :body
-       j/read-value)))
+   (let [res
+         (-> (format "%s/collections/%s/points/search" qdrant-endpoint collection-name)
+           (hc/post
+             {:content-type :json
+              :body         (j/write-value-as-string
+                              {:vector embeds-vector
+                               :top    top-n
+                               :with_payload true})})
+           :body
+           j/read-value
+           (get "result")
+           (walk/keywordize-keys))]
+     (map #(select-keys % [:id :score :payload]) res))))
 
 (deftype Qdrant
          [opts]
