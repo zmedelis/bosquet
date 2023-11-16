@@ -65,3 +65,13 @@
 ;; Misc shortcuts
 ;;
 (def oai-service [:llm/openai :provider/openai])
+
+(def gpt3.5-turbo-with-cache
+  {service          oai-service
+   cache            true
+   model-parameters {:model :gpt-3.5-turbo}})
+
+(def gpt4-turbo-with-cache
+  {service          oai-service
+   cache            true
+   model-parameters {:model :gpt-4-1106-preview}})

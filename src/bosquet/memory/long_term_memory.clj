@@ -13,9 +13,9 @@
   (remember
     [_this observation {:keys [collection-name]}]
     (let [observations (if (vector? observation) observation [observation])
-          embeds       (mapv (fn [{:keys [text payload]}]
+          embeds       (mapv (fn [text]
                                {:embedding (-> encoder (.encode text) :data first :embedding)
-                                :payload  payload})
+                                :payload   {:text text}})
                              observations)]
       (.add storage collection-name embeds)))
 
@@ -24,10 +24,11 @@
   (sequential-recall [_this _params])
 
   (cue-recall
-    [_this cue {:keys [collection-name limit]}]
+    [_this cue {:keys [collection-name limit]
+                :or   {limit 3}}]
     (.search storage collection-name
              (-> encoder
-                 (.create cue)
+                 (.encode cue)
                  :data first :embedding)
              limit))
 

@@ -34,7 +34,7 @@
               "Goodmorning fields"
               "Cars are driving on the road"])
   (def embeds (mapv (fn [text]
-                      {:data {:text text}
+                      {:payload {:text text}
                        :embedding
                        (-> oai-emb (.encode text) :data first :embedding)})
                     texts))

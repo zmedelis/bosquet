@@ -20,7 +20,7 @@
 (defn chat-model?
   "Check if `model` (name provided as string) is a chat model"
   [model]
-  (string/starts-with? model "gpt-"))
+  (string/starts-with? (name model) "gpt-"))
 
 (defn- ->completion*
   [generation-type content {:keys [prompt_tokens completion_tokens total_tokens]}]
