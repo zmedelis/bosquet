@@ -39,18 +39,17 @@
   ([collection-name embeds-vector]
    (search collection-name embeds-vector 3))
   ([collection-name embeds-vector top-n]
-   (let [res
-         (-> (format "%s/collections/%s/points/search" qdrant-endpoint collection-name)
-           (hc/post
-             {:content-type :json
-              :body         (j/write-value-as-string
-                              {:vector embeds-vector
-                               :top    top-n
-                               :with_payload true})})
-           :body
-           j/read-value
-           (get "result")
-           (walk/keywordize-keys))]
+   (let [res (-> (format "%s/collections/%s/points/search" qdrant-endpoint collection-name)
+               (hc/post
+                 {:content-type :json
+                  :body (j/write-value-as-string
+                          {:vector embeds-vector
+                           :top top-n
+                           :with_payload true})})
+               :body
+               j/read-value
+               (get "result")
+               (walk/keywordize-keys))]
      (map #(select-keys % [:id :score :payload]) res))))
 
 (deftype Qdrant
