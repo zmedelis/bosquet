@@ -65,6 +65,6 @@
   ([text ctx] (fill-slots text ctx nil))
   ([text ctx config]
    (without-escaping
-     (selmer/render-with-values
-       text
-       (assoc ctx wkk/llm-config config)))))
+    (selmer/render-with-values
+     text
+     (assoc ctx wkk/llm-config config)))))
