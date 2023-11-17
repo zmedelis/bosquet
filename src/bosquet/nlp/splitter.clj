@@ -104,7 +104,7 @@
   "Chunk `text` into `chunk-size` blocks using specified `splitter`. Optionaly
   `overlap` can be specified by how many text units chunks can overap (defaults to 0).
 
-  TODO `overap` is currently failing, see unit-test
+  TODO `overlap` is currently failing, see unit-test
 
   Supported text splitters:
   - `sentence-splitter`
@@ -121,17 +121,16 @@
 
   (def text (slurp "https://raw.githubusercontent.com/scicloj/scicloj.ml.smile/main/LICENSE"))
 
-  (def sentences (text->sentences text))
-  (tap> (sort-by :cnt > (map #(assoc {} :cnt (count %) :txt %) sentences)))
+  (tap>
+   (text-chunker {:chunk-size 3 :splitter sentence-splitter} text))
 
-  (text-chunker {:chunk-size 3 :splitter text->sentences} text)
-
-  (text-chunker
-   {:chunk-size 30 :splitter text->characters}
-   "Never attempt to win by force what can be won by deception")
+  (tap>
+   (text-chunker
+    {:chunk-size 10 :splitter character-splitter}
+    "Never attempt to win by force what can be won by deception"))
 
   (->> (split-max-tokens text 12 "gpt-4")
        (map #(hash-map :c (oai/token-count % "gpt-4") :s %))
        (map :c))
   (split-max-tokens text 10 "gpt-4")
-  :ok)
+  #__)
