@@ -4,7 +4,6 @@
     [bosquet.eval.qna-generator :as qna]
     [bosquet.llm.generator :as gen]
     [bosquet.read.document :as document]
-    [bosquet.template.read :as read]
     [bosquet.utils :as u]
     [bosquet.wkk :as wkk]))
 
@@ -23,23 +22,36 @@
 ;; ## Setup
 ;;
 
+;; Create evaluation QnA dataset
+(comment
+  (qna/document->dataset {eval/query-count 4}
+    "data/llama2.pdf" "data/llama2-eval.edn"))
+
 (def mem-opts {:collection-name "llama2-qna-eval"
                :encoder         :embedding/openai
                :storage         :db/qdrant})
 
-(def text (:text (document/parse "data/llama2.pdf")))
 
-(eval/remember-knowledge mem-opts text)
+;; Commit document contents to memory, it will be chunked, chunks turned into embeddings,
+;; and saved to Qdrant
+;;
+;; Results should be available in
+;; http://localhost:6333/dashboard#/collections/llama2-qna-eval
+(comment
+  (def text (:text (document/parse "data/llama2.pdf")))
+  (eval/remember-knowledge mem-opts text))
 
 
 ;; Questions and answers golden dataset. Will be used to eval against and optimize the prompts
 (def qna-goldenset
   (qna/load-qna-dataset "data/llama2-eval.edn"))
 
-;; ##
-;; Prompts
 ;;
-
+;; ## Prompts
+;;
+;;
+;; OPRO Meta-prompt
+;;
 (def opro-prompt
   (u/join-nl
     "Your task is to generate the instruction <INS>. Below are some previous instructions with their scores."
@@ -92,15 +104,11 @@
                       "{{prompt-template}}"
                       "{% gen var-name=answer %}")})
 
-#_(def step-0-prompt
-  (optimization-step-prompt "Given the context information and not prior knowledge, answer the query."))
-
 
 (defn evaluate-instruction
   [step-prompt eval-qna]
   (map (fn [[eval-question eval-answer]]
          (let [relevant-memories (eval/query mem-opts eval-question)
-               ;; step-prompt       (optimization-step-prompt instruction-prompt)
                {:keys [answer]}  (gen/generate
                                    step-prompt
                                    {:query   eval-question
@@ -132,9 +140,7 @@
                             :prompt-template         (:prompt-template step-prompt-template)
                             :qna-pairs               (take 4 (shuffle qna-goldenset))}
                            {:score wkk/gpt3.5-turbo-with-cache})
-            eval         (evaluate-instruction
-                           step-prompt-template
-                           #_(:instruction optimization) eval-set)]
+            eval         (evaluate-instruction step-prompt-template eval-set)]
         (tap> {'optimization optimization
                'eval eval})
         (recur
@@ -144,10 +150,10 @@
                               :avg-score   (average-instruction-score eval)
                               :eval        eval}))))))
 
-(tap> (prompt-optimizer
-        "Given the context information and not prior knowledge, answer the query."
-        (take 5 qna-goldenset)
-        5))
+(tap>
+  (prompt-optimizer
+    "Given the context information and not prior knowledge, answer the query."
+    (take 6 qna-goldenset) 4))
 
 
 #_(def relevant-memories
