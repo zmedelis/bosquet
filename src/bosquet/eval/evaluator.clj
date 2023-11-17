@@ -95,11 +95,11 @@
    query]
   (let [storage (sys/get-service storage)
         memory  (LongTermMemory.
-                  storage
-                  (sys/get-service encoder))]
+                 storage
+                 (sys/get-service encoder))]
     (->
-      (.cue-recall memory query opts)
-      first :payload :text)))
+     (.cue-recall memory query opts)
+     first :payload :text)))
 
 (comment
   (def opts {:collection-name "llama2-qna-eval"
