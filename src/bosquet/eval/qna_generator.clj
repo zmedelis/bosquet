@@ -16,6 +16,7 @@
 ;; https://github.com/run-llama/llama_index/blob/29ef306ae0536de44840ca5acfdf93d84b9a560c/llama_index/evaluation/dataset_generation.py
 
 (def query-count :eval/query-count)
+(def max-chunks :eval/max-chunks)
 
 (def context-prompt-block
   (u/join-nl
@@ -59,7 +60,6 @@
    "Given the CONTEXT INFORMATION and using zero prior knowledge, answer the following QUESTIONS."
    "QUESTIONS"
    "{% for q in queries %}"
-   #_"{{forloop.counter}}. {{q}}{% endfor %}"
    "* {{q}}{% endfor %}"
    ""
    "Answer questions in exact same order as they are listed in QUESTIONS. Answer exactly the same list of questions as provided."
@@ -68,10 +68,10 @@
    "{% gen %}"))
 
 (def question-set
-  [:sequential [:string {:min 2 :max 400}]])
+  [:sequential [:string {:min 2 :max 1000}]])
 
 (def response-set
-  [:sequential [:string {:min 6 :max 1200}]])
+  [:sequential [:string {:min 6 :max 6000}]])
 
 (defn- query-response-valid?
   "Check the validity of questions and responses.
@@ -86,17 +86,25 @@
        (= (count responses) (count responses)))
     true
     (do
-      (timbre/warnf "Query (count:%s) / Response (count: %s) is invalid. Context: '%s'"
-                    (count queries) (count responses)
-                    (u/safe-subs context 0 200))
+      (timbre/warnf
+        "Query (count:%s) / Response (count: %s) is invalid. Context: '%s'"
+        (count queries) (count responses) (u/safe-subs context 0 200))
       false)))
 
 (defn generate-qna-dataset
-  [{q-count query-count} document]
-  (let [chunks       (splitter/text-chunker
-                      {:chunk-size (* q-count 45) :splitter splitter/sentence-splitter}
-                      document)
-        model        #_"gpt-3.5-turbo" #_"gpt-4-1106-preview" "gpt-3.5-turbo-1106"
+  "Generate a QnA dataset. First a `document` will be loaded and split into sentence chunks.
+  The size of the chunk is a function of how many questions we are generating per chunk.
+
+  Passed in options control the scope of the QnA generation process:
+  - `query-count`: how many queries per chunk to generate
+  - `max-chunks`: how many chunks to take, nil will take them all"
+  [{q-count query-count chunk-count max-chunks} document]
+  (let [n-sentence   45
+        chunks       (splitter/text-chunker
+                       {:chunk-size (* q-count n-sentence)
+                        :splitter   splitter/sentence-splitter}
+                       document)
+        model        #_"gpt-3.5-turbo" "gpt-4-1106-preview" #_"gpt-3.5-turbo-1106"
         q-gen-params {:questions
                       {wkk/service          wkk/oai-service
                        wkk/output-format    :list
@@ -107,30 +115,29 @@
                        wkk/model-parameters {:temperature 0.0 :max-tokens (* q-count 400) :model model}}}
 
         xf (comp
-            (map
-             (fn [chunk]
-               (timbre/debugf "QnA for chunk with token count -  %s" (otok/token-count chunk model))
-               (let [{questions :questions :as g}
-                     (gen/generate
-                      question-building-prompts
-                      {:question-count q-count :context chunk}
-                      q-gen-params)
+             (map
+               (fn [chunk]
+                 (timbre/debugf "QnA for chunk with token count -  %s" (otok/token-count chunk model))
+                 (let [{questions :questions :as g}
+                       (gen/generate
+                         question-building-prompts
+                         {:question-count q-count :context chunk}
+                         q-gen-params)
 
-                     {resp :gen :as answers}
-                     (gen/generate
-                      answering-prompt
-                      {:queries questions :context chunk}
-                      a-gen-params)]
-                 (tap> {'answers answers
-                        'g g})
-                 {:queries questions
-                  :responses resp
-                  :context chunk})))
+                       resp
+                       (gen/generate
+                         answering-prompt
+                         {:queries questions :context chunk}
+                         a-gen-params)]
+                   {:queries   questions
+                    :responses resp
+                    :context   chunk})))
              ;; TODO instead of filtering out - retry
-            (filter query-response-valid?))]
+             (filter query-response-valid?))]
     (into [] xf
-          chunks
-          #_(take 8 chunks))))
+      (if chunk-count
+        (take chunk-count chunks)
+        chunks))))
 
 (defn qna->eval-dataset
   "Convert QnA data to a dataset format -  a list of question to answer tuples"
@@ -146,6 +153,8 @@
   (spit ds-file (u/pp-str ds)))
 
 (defn document->dataset
+  "Given a `document-file` create a QnA dataset. Save it to
+  `dataset-file`"
   [opts document-file dataset-file]
   (->> document-file
        document/parse
@@ -165,18 +174,18 @@
   (load-qna-dataset "data/llama2-eval.edn")
 
   (def text (:text (document/parse "data/llama2.pdf")))
-  (def qna (generate-qna-dataset {query-count 3} text))
+  (def qna (generate-qna-dataset {query-count 2 max-chunks 2} text))
   (tap> qna)
 
   (gen/generate
-    question-building-prompts
-    {:question-count 3
-     :context
-     (second (splitter/text-chunker
-               {:chunk-size 25 :splitter splitter/sentence-splitter}
-               text))}
-    {:questions
-     {wkk/service          wkk/oai-service
-      wkk/output-format    :list
-      wkk/model-parameters {:temperature 0.0 :max-tokens 500 :model "gpt-3.5-turbo-1106"}}})
+   question-building-prompts
+   {:question-count 3
+    :context
+    (second (splitter/text-chunker
+             {:chunk-size 25 :splitter splitter/sentence-splitter}
+             text))}
+   {:questions
+    {wkk/service          wkk/oai-service
+     wkk/output-format    :list
+     wkk/model-parameters {:temperature 0.0 :max-tokens 500 :model "gpt-3.5-turbo-1106"}}})
   #__)
