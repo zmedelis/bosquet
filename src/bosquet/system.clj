@@ -41,23 +41,14 @@
   "Aero #ref will complain if config is not created and #include fails to add
   keys to the config. This resolver will return nil valued map for missing keys
   when `config.edn` is not created by the user.
-
-  Copy paste from
-  https://github.com/juxt/aero/blob/814b0006a1699e8149045e55c4e112e61b983fe9/src/aero/core.cljc#L105"
-  [source include]
-  (let [fl (if (.isAbsolute (io/file include))
-             (io/file include)
-             (when-let [source-file
-                        (try (io/file source)
-                             (catch java.lang.IllegalArgumentException _ nil))]
-               (io/file (.getParent ^java.io.File source-file) include)))]
-
-    (if (and fl (.exists fl))
-      fl
-      (StringReader.
-        (pr-str
-          ;; config map with nil values for missing keys
-          (zipmap config-keys (repeat nil)))))))
+"
+  [_source include]
+  (if (.exists (io/file include))
+    include
+    (StringReader.
+      (pr-str
+        ;; config map with nil values for missing keys
+        (zipmap config-keys (repeat nil))))))
 
 (def ^:private config
   (aero/read-config

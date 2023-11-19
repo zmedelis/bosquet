@@ -10,7 +10,7 @@
           :qdrant-vectors-on-disk         nil
           :qdrant-vectors-size            nil
           :qdrant-vectors-distance        nil}
-         #include "../config.edn"]
+         #include "config.edn"]
 
  ;; config.edn is a file that contains settings for the LLM services,
  ;; Tools, and other components. Those include config options as well as
