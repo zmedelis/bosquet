@@ -55,13 +55,14 @@
     (if (and fl (.exists fl))
       fl
       (StringReader.
-       (pr-str
+        (pr-str
           ;; config map with nil values for missing keys
-        (zipmap config-keys (repeat nil)))))))
+          (zipmap config-keys (repeat nil)))))))
 
 (def ^:private config
-  (aero/read-config "system.edn"
-                    {:resolver aero-resolver-with-missing-keys}))
+  (aero/read-config
+    (io/resource "system.edn")
+    {:resolver aero-resolver-with-missing-keys}))
 
 (def sys-config
   (dissoc config :config wkk/default-llm))
