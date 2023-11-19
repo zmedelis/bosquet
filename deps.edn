@@ -3,7 +3,7 @@
            io.github.zmedelis/hfds-clj                   {:mvn/version "v2023.11.05"}
            io.github.zmedelis/selmer                     {:mvn/version "0.7.9"}
            com.wsscode/pathom3                           {:mvn/version "2023.08.22-alpha"}
-           net.clojars.wkok/openai-clojure               {:mvn/version "0.12.3"}
+           net.clojars.wkok/openai-clojure               {:mvn/version "0.13.0"}
            org.flatland/useful                           {:mvn/version "0.11.6"}
            com.taoensso/timbre                           {:mvn/version "6.3.1"}
            com.knuddels/jtokkit                          {:mvn/version "0.6.1"}
