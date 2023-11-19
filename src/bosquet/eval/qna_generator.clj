@@ -83,7 +83,7 @@
   (if (and
        (m/validate question-set queries)
        (m/validate response-set responses)
-       (= (count responses) (count responses)))
+       (= (count responses) (count queries)))
     true
     (do
       (timbre/warnf
