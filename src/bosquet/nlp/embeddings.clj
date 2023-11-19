@@ -37,9 +37,16 @@
                       {:payload {:text text}
                        :embedding
                        (-> oai-emb (.encode text) :data first :embedding)})
-                    texts))
+                texts))
+
+
+  (qd/add-docs qd-coll-name embeds)
 
   (def query (-> oai-emb (.encode "Cars in town") :data first :embedding))
+
+  (qd/search qd-coll-name query 2)
+
+  ;; Same but via Memory component
 
   (def qd (system/get-service :db/qdrant))
 
@@ -47,8 +54,6 @@
   (.add qd qd-coll-name embeds)
   (.search qd qd-coll-name query 2)
 
-  (qd/add-docs qd-coll-name embeds)
 
-  (qd/search qd-coll-name query 2)
 
   #__)
