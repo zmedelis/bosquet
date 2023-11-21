@@ -45,6 +45,7 @@
         (get-in opts [wkk/llm-config (or gen-var wkk/default-gen-var-name)])
 
         llm       (sys/get-service service)
+        _         (when-not llm (throw (ex-info "LLM service is not configured" {:service service})))
         generator (fn [prompt params] (.generate llm prompt params))
 
         {{completion :completion} llm/content :as generation}

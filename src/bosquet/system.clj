@@ -86,8 +86,9 @@
 ;; DB
 ;;
 (defmethod ig/init-key :db/qdrant [_ {:keys [host] :as opts}]
-  (timbre/infof "\t* Qdrant vector DB on '%s'" host)
-  (Qdrant. opts))
+  (when host
+    (timbre/infof "\t* Qdrant vector DB on '%s'" host)
+    (Qdrant. opts)))
 
 ;;
 ;; Memory Components
