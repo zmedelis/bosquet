@@ -32,7 +32,7 @@
                                       djblue/portal               {:mvn/version "0.49.1"}
                                       integrant/repl              {:mvn/version "0.3.3"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
-                                  :version "v2023.10.31"}}
+                                  :version "v2023.11.21"}}
            :rebel      {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
                         :main-opts  ["-m" "rebel-readline.main"]}
            :outdated   {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
