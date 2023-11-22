@@ -166,7 +166,7 @@
     (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
    {:role "cook" :meal "cake"}
    {chat/conversation
-    {wkk/service          [:llm/openai :provider/openai]
+    {wkk/service          :llm/openai
      wkk/model-parameters {:temperature 0
                            :model       "gpt-3.5-turbo"}}})
 

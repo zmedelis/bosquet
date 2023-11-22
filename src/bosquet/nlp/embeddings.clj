@@ -37,8 +37,7 @@
                       {:payload {:text text}
                        :embedding
                        (-> oai-emb (.encode text) :data first :embedding)})
-                texts))
-
+                    texts))
 
   (qd/add-docs qd-coll-name embeds)
 
@@ -53,7 +52,5 @@
   (.create qd qd-coll-name)
   (.add qd qd-coll-name embeds)
   (.search qd qd-coll-name query 2)
-
-
 
   #__)

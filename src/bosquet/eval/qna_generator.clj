@@ -87,8 +87,8 @@
     true
     (do
       (timbre/warnf
-        "Query (count:%s) / Response (count: %s) is invalid. Context: '%s'"
-        (count queries) (count responses) (u/safe-subs context 0 200))
+       "Query (count:%s) / Response (count: %s) is invalid. Context: '%s'"
+       (count queries) (count responses) (u/safe-subs context 0 200))
       false)))
 
 (defn generate-qna-dataset
@@ -101,9 +101,9 @@
   [{q-count query-count chunk-count max-chunks} document]
   (let [n-sentence   45
         chunks       (splitter/text-chunker
-                       {:chunk-size (* q-count n-sentence)
-                        :splitter   splitter/sentence-splitter}
-                       document)
+                      {:chunk-size (* q-count n-sentence)
+                       :splitter   splitter/sentence-splitter}
+                      document)
         model        #_"gpt-3.5-turbo" "gpt-4-1106-preview" #_"gpt-3.5-turbo-1106"
         q-gen-params {:questions
                       {wkk/service          wkk/oai-service
@@ -115,29 +115,29 @@
                        wkk/model-parameters {:temperature 0.0 :max-tokens (* q-count 400) :model model}}}
 
         xf (comp
-             (map
-               (fn [chunk]
-                 (timbre/debugf "QnA for chunk with token count -  %s" (otok/token-count chunk model))
-                 (let [{questions :questions :as g}
-                       (gen/generate
-                         question-building-prompts
-                         {:question-count q-count :context chunk}
-                         q-gen-params)
+            (map
+             (fn [chunk]
+               (timbre/debugf "QnA for chunk with token count -  %s" (otok/token-count chunk model))
+               (let [{questions :questions :as g}
+                     (gen/generate
+                      question-building-prompts
+                      {:question-count q-count :context chunk}
+                      q-gen-params)
 
-                       resp
-                       (gen/generate
-                         answering-prompt
-                         {:queries questions :context chunk}
-                         a-gen-params)]
-                   {:queries   questions
-                    :responses resp
-                    :context   chunk})))
+                     resp
+                     (gen/generate
+                      answering-prompt
+                      {:queries questions :context chunk}
+                      a-gen-params)]
+                 {:queries   questions
+                  :responses resp
+                  :context   chunk})))
              ;; TODO instead of filtering out - retry
-             (filter query-response-valid?))]
+            (filter query-response-valid?))]
     (into [] xf
-      (if chunk-count
-        (take chunk-count chunks)
-        chunks))))
+          (if chunk-count
+            (take chunk-count chunks)
+            chunks))))
 
 (defn qna->eval-dataset
   "Convert QnA data to a dataset format -  a list of question to answer tuples"

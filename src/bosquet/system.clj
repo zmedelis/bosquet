@@ -9,7 +9,6 @@
    [bosquet.memory.simple-memory :as simple-memory]
    [bosquet.memory.long-term-memory :as long-term-memory]
    [bosquet.db.qdrant :as qdrant]
-   [bosquet.wkk :as wkk]
    [clojure.java.io :as io]
    [integrant.core :as ig]
    [taoensso.timbre :as timbre])
@@ -30,17 +29,24 @@
 
 (def ^:private config
   (aero/read-config
-    (io/resource "system.edn")
-    {:resolver aero/root-resolver}))
+   (io/resource "system.edn")
+   {:resolver aero/root-resolver}))
 
 (def sys-config
-  (dissoc config :config wkk/default-llm))
+  "Get rid of Aero injected config key. It did its job by now of inserting
+  config values into components."
+  (dissoc config :config))
 
 ;;
 ;; LLM Services
 ;;
 
 (defmethod ig/init-key :llm/openai [_ {:keys [api-key impl] :as opts}]
+  (when api-key
+    (timbre/infof "\t* OpenAI API service (%s)" (name impl))
+    (OpenAI. opts)))
+
+(defmethod ig/init-key :llm/openai-azure [_ {:keys [api-key impl] :as opts}]
   (when api-key
     (timbre/infof "\t* OpenAI API service (%s)" (name impl))
     (OpenAI. opts)))
@@ -76,33 +82,34 @@
   (timbre/infof "\t* Short term memory")
   (SimpleMemory. simple-memory/memory-store))
 
-(declare system)
-
-;; TODO fix integrant/aero conflicting edn processing and
-;; get storage plus encoder from edn
-(defmethod ig/init-key :memory/long-term-embeddings [_ {:keys [storage encoder] :as opts}]
+(defmethod ig/init-key :memory/long-term-embeddings [_ {:keys [storage encoder]}]
   (timbre/infof "\t* Long term memory with (%s; %s)" storage encoder)
   (LongTermMemory. storage encoder))
+
+(def system
+  (do
+    (timbre/info "🏗️ Initializing Bosquet resources (control what is loading via 'config.edn'):")
+    (if-let [load-components (get-in config [:config :load-components])]
+      (ig/init sys-config load-components)
+      (ig/init sys-config))))
 
 ;;
 ;; Convenience functions to get LLM API instances
 ;;
 
-(def system
-  (do
-    (timbre/info "🏗️ Initializing Bosquet resources:")
-    (ig/init sys-config)))
-
 (defn openai []
-  (get system [:llm/openai :provider/openai]))
+  (get system :llm/openai))
 
 (defn get-service
   "Get LLM service by Integrant confg key. If there is none
-  configured under that key - get the default one specified under
-  `:llm/default` key."
+  configured under that key - get the default one specified
+  in `config.edn` `:default-llm` key.
+
+  If all fails fall back to OpenAI LLM."
   [key]
-  (or (get system key)
-      (get system (config wkk/default-llm))))
+  (get system key
+       (get system (get-in config [:config :default-llm]
+                           :llm/openai))))
 
 (defn get-memory
   [key]

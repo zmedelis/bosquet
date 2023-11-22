@@ -9,10 +9,6 @@
   "Key to reference LLM service components in props when making `generate` calls."
   :bosquet.llm/llm-config)
 
-(def default-llm
-  "Key referencing default LLM service in a `system.edn` system config."
-  :llm/default-llm)
-
 (def service
   "Key to reference LLM service name in gen call parameters"
   :bosquet.llm/service)
@@ -64,7 +60,7 @@
 ;;
 ;; Misc shortcuts
 ;;
-(def oai-service [:llm/openai :provider/openai])
+(def oai-service :llm/openai)
 
 (def gpt3.5-turbo-with-cache
   {service          oai-service

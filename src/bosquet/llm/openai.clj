@@ -81,16 +81,16 @@
   (ex-info
    "Completion error in OAI call"
    (or
-     (-> ex ex-data :body
-       (j/read-value j/keyword-keys-object-mapper)
-       :error)
+    (-> ex ex-data :body
+        (j/read-value j/keyword-keys-object-mapper)
+        :error)
      ;; Azure has different error data structure
-     (ex-data ex)
-     (do
+    (ex-data ex)
+    (do
        ;; Highly suspicious solution. What kind of error happens when above two result
        ;; in nil
-       (timbre/error "Error when making OAI call. Error data:" ex)
-       {:error ex}))))
+      (timbre/error "Error when making OAI call. Error data:" ex)
+      {:error ex}))))
 
 (defn complete
   "Complete `prompt` if passed in `model` is cGPT the completion will

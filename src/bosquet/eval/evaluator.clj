@@ -77,11 +77,11 @@
   [{:keys [storage encoder collection-name] :as opts} knowledge]
   (let [storage (sys/get-service storage)
         memory  (LongTermMemory.
-                  storage
-                  (sys/get-service encoder))
+                 storage
+                 (sys/get-service encoder))
         chunks  (splitter/text-chunker
-                  {:chunk-size 20 :splitter splitter/sentence-splitter}
-                  knowledge)
+                 {:chunk-size 20 :splitter splitter/sentence-splitter}
+                 knowledge)
         _       (timbre/debugf "Got %s cunks to remember" (count chunks))]
     (.forget memory opts)
     (.create storage collection-name)
@@ -110,8 +110,8 @@
   (query opts "What are the inputs and outputs to Reward Modeling?")
 
   (evaluate-answer
-    "What are the inputs and outputs to Reward Modeling?"
-    "The reward model takes a model response and its corresponding prompt as inputs. It outputs a scalar score to indicate the quality of the model generation."
-    "Inputs: response. Outputs: score")
+   "What are the inputs and outputs to Reward Modeling?"
+   "The reward model takes a model response and its corresponding prompt as inputs. It outputs a scalar score to indicate the quality of the model generation."
+   "Inputs: response. Outputs: score")
 
   #__)

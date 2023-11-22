@@ -1,16 +1,4 @@
-{:config
- #merge [{:azure-openai-api-key           nil
-          :azure-openai-api-endpoint      nil
-          :openai-api-key                 nil
-          :openai-api-endpoint            nil
-          :openai-api-embeddings-endpoint nil
-          :cohere-api-key                 nil
-          :qdrant-host                    nil
-          :qdrant-port                    nil
-          :qdrant-vectors-on-disk         nil
-          :qdrant-vectors-size            nil
-          :qdrant-vectors-distance        nil}
-         #include "config.edn"]
+{:config #include "config.edn"
 
  ;; config.edn is a file that contains settings for the LLM services,
  ;; Tools, and other components. Those include config options as well as
@@ -23,7 +11,7 @@
  ;; ######################################################################
 
  ;; Config for OpenAI LLM provided by OpenAI
- [:llm/openai :provider/openai]
+ :llm/openai
  {:api-key      #ref [:config :openai-api-key]
   :api-endpoint #or [#env "OPENAI_API_ENDPOINT"
                      #ref [:config :openai-api-endpoint]
@@ -31,15 +19,12 @@
   :impl         :openai}
 
  ;; Config for OpenAI LLM provided by MS Azure
- [:llm/openai :provider/azure]
+ :llm/openai-azure
  {:api-key      #ref [:config :azure-openai-api-key]
   :api-endpoint #or [#env "AZURE_OPENAI_API_ENDPOINT"
                      #ref [:config :azure-openai-api-endpoint]]
   :impl         :azure}
 
- ;; Default LLM service to use if this is not specified in the
- ;; `generate` call options
- :llm/default-llm [:llm/openai :provider/openai]
 
  ;; Config for Cohere LLM
  :llm/cohere
