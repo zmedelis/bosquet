@@ -20,35 +20,7 @@
    [bosquet.memory.memory Amnesiac]
    [bosquet.memory.simple_memory SimpleMemory]
    [bosquet.memory.long_term_memory LongTermMemory]
-   [bosquet.nlp.embeddings OpenAIEmbeddings]
-   [java.io StringReader]))
-
-(def ^:private config-keys
-  "Keys that are to be found in the `config.edn` file."
-  [:azure-openai-api-key
-   :azure-openai-api-endpoint
-   :openai-api-key
-   :openai-api-endpoint
-   :openai-api-embeddings-endpoint
-   :cohere-api-key
-   :qdrant-host
-   :qdrant-port
-   :qdrant-vectors-on-disk
-   :qdrant-vectors-size
-   :qdrant-vectors-distance])
-
-(defn aero-resolver-with-missing-keys
-  "Aero #ref will complain if config is not created and #include fails to add
-  keys to the config. This resolver will return nil valued map for missing keys
-  when `config.edn` is not created by the user.
-"
-  [_source include]
-  (if (.exists (io/file include))
-    include
-    (StringReader.
-      (pr-str
-        ;; config map with nil values for missing keys
-        (zipmap config-keys (repeat nil))))))
+   [bosquet.nlp.embeddings OpenAIEmbeddings]))
 
 (defmethod aero/reader 'ig/ref
   ;; Aero tries to read ig/ref and fails bacause it does not deal with IG readers
@@ -59,7 +31,7 @@
 (def ^:private config
   (aero/read-config
     (io/resource "system.edn")
-    {:resolver aero-resolver-with-missing-keys}))
+    {:resolver aero/root-resolver}))
 
 (def sys-config
   (dissoc config :config wkk/default-llm))
