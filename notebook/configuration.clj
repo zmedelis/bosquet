@@ -18,14 +18,27 @@
 
 ;; System components are listed in the *Integrant* `resources/system.edn` file. Using it together with *Areo* allows us to specify how externally defined properties are used, declaring alternative ways of loading them, and setting the defaults.
 
-;; Properties like API keys, passwords, or other secrets are not stored in the `system.edn` they go into the `config.edn` file. The `config.edn.sample` file shows available fields. It is not required to list all of them in your `config.edn`
+;;
+;; ### config.edn
+;;
+;; ### Component properties
+;;
+;; Properties like API keys, passwords, or other secrets are not stored in the `system.edn` they go into the `config.edn` file. The `config.edn.sample` file shows available fields.
+;; It is not required to list all of them in your `config.edn`.
+;;
+;; ### Component loading properties
+;;
+;; `config.edn` also contains settings that controll how to load the various compoents.
+;;
+ ;; * `:load-components` -  List of Integrant component keys to be loaded. If this key is *NOT* specified *ALL* components will be loaded
+ ;; * `:default-llm` - LLM to use if LLM service is not specified when making completion calls
 
 ;; ### Configuring LLM services
 
 ;; LLM service components wrap access to the APIs provided by LLM vendors like *OpenAI*.
 ;; Currently *Bosquet* supports *OpenAI* and *Cohere* LLM services. A new service can be integrated by implementing the `bosquet.llm.llm/LLM` protocol.
 
-;; Let's take the OpenAI model provided by OpenAI as an example. `system.edn` under `[:llm/openai :provider/openai]`
+;; Let's take the OpenAI model provided by OpenAI as an example. `system.edn` under `:llm/openai`
 ;; the key defines it like this:
 ;; ```edn
 ;; {:api-key      #ref [:config :openai-api-key]
@@ -39,7 +52,7 @@
 
 ;; You would hardly need to access LLM services from your code, but for some low-level tinkering, you can get the LLM Service like this:
 
-(def service (system/get-service [:llm/openai :provider/openai]))
+(def service (system/get-service :llm/openai))
 (.service-name service)
 
 ;; LLM service declaration accepts the optional `model-name-mapping` parameter. This allows the use of a unified naming scheme for models provided by different vendors. The benefit of that is that you can declare prompt templates and their invocation parameters without having to
