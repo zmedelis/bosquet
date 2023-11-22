@@ -66,7 +66,7 @@
  ;; ######################################################################
 
  :db/qdrant
- {:host             #or [#ref [:config :qdrant-host]]
+ {:host             #or [#ref [:config :qdrant-host] "localhost"]
   :port             #or [#ref [:config :qdrant-port] 6333]
   :vectors-on-disk  #or [#ref [:config :qdrant-vectors-on-disk] true]
   :vectors-size     #or [#ref [:config :qdrant-vectors-size] 1536]
@@ -82,6 +82,5 @@
  ;; Long term memory that converts data going through AI generations to
  ;; embeddings and stores them in DB.
  :memory/long-term-embeddings
- {}
- #_{:encoder #ig/ref :embedding/openai
-    :storage #ig/ref :db/qdrant}}
+ {:encoder #ig/ref :embedding/openai
+  :storage #ig/ref :db/qdrant}}

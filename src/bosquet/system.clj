@@ -50,6 +50,12 @@
         ;; config map with nil values for missing keys
         (zipmap config-keys (repeat nil))))))
 
+(defmethod aero/reader 'ig/ref
+  ;; Aero tries to read ig/ref and fails bacause it does not deal with IG readers
+  ;; Pass handling of IG to IG.
+  [_opts _tag value]
+  (ig/ref value))
+
 (def ^:private config
   (aero/read-config
     (io/resource "system.edn")
@@ -102,11 +108,9 @@
 
 ;; TODO fix integrant/aero conflicting edn processing and
 ;; get storage plus encoder from edn
-(defmethod ig/init-key :memory/long-term-embeddings [_ _opts #_{:keys [storage encoder] :as opts}]
-  (let [storage (get system :db/qdrant)
-        encoder (get system :embedding/openai)]
-    (timbre/infof "\t* Long term memory with (%s; %s)" storage encoder)
-    (LongTermMemory. storage encoder)))
+(defmethod ig/init-key :memory/long-term-embeddings [_ {:keys [storage encoder] :as opts}]
+  (timbre/infof "\t* Long term memory with (%s; %s)" storage encoder)
+  (LongTermMemory. storage encoder))
 
 ;;
 ;; Convenience functions to get LLM API instances
