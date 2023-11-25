@@ -38,7 +38,7 @@
  :llm/lm-studio
  {:api-endpoint #or [#env "LMSTUDIO_API_ENDPOINT"
                      #ref [:config :lmstudio-api-endpoint]
-                     "https://localhost:1234/v1"]}
+                     "http://localhost:1234/v1"]}
 
 
  ;; ######################################################################

@@ -2,29 +2,51 @@
   (:require
    [bosquet.llm.chat :as chat]
    [bosquet.llm.llm :as llm]
-   [taoensso.timbre :as timbre]
+   [clojure.string :as string]
    [hato.client :as hc]
-   [jsonista.core :as j]))
+   [jsonista.core :as j]
+   [taoensso.timbre :as timbre]))
 
-(defn- chat-completion
-  [messages params {:keys [api-endpoint]}]
-  (let [res (hc/post api-endpoint
-                    {:content-type :json
-                     :body         (j/write-value-as-string
-                                    {:messages          messages
-                                     :max_tokens        150
-                                     :temperature       0.9
-                                     :top_p             1
-                                     :frequency_penalty 0.0
-                                     :presence_penalty  0.6
-                                     :stop              ["\n"]})})]
-    (tap> (:body res))
+(defn- fix-params
+  [params]
+  (reduce-kv
+   (fn [m k v]
+     (assoc m
+            (-> k name (string/replace "-" "_") keyword)
+            v))
+   {}
+   params))
+
+(defn- post-completion
+  [params {:keys [api-endpoint]}]
+  (prn ">>>> "(-> params fix-params j/write-value-as-string))
+  (let [res (hc/post (str api-endpoint "/chat/completions")
+                     {:content-type :json
+                      :body         (-> params fix-params j/write-value-as-string)})]
+    (clojure.pprint/pprint res)
     (-> res
         :body
-        (j/read-value j/keyword-keys-object-mapper)
-        :choices
-        first
-        :message)))
+        (j/read-value j/keyword-keys-object-mapper))))
+
+(defn- ->completion [result]
+  (-> result :choices first :message))
+
+(defn- ->error [e]
+  (let [{:keys [message code]} e]
+    (throw (ex-info message {:code code}))))
+
+(defn- chat-completion
+  [messages params opts]
+  (timbre/infof "💬 Calling LM Studio with:")
+  (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
+  (timbre/infof "\tConfig: '%s'" opts)
+  (try
+    (-> params
+        (assoc :messages messages)
+        (post-completion opts)
+        ->completion)
+    (catch Exception e
+      (throw e))))
 
 (deftype LMStudio
     [opts]
