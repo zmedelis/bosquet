@@ -25,7 +25,6 @@
                      #ref [:config :azure-openai-api-endpoint]]
   :impl         :azure}
 
-
  ;; Config for Cohere LLM
  :llm/cohere
  {:api-key #ref [:config :cohere-api-key]
@@ -34,6 +33,13 @@
    :gpt-4          :command
    :text-ada-001   :command-light
    :text-curie-001 :command-light}}
+
+ ;; Config for LM Studio LLM services
+ :llm/lm-studio
+ {:api-endpoint #or [#env "LMSTUDIO_API_ENDPOINT"
+                     #ref [:config :lmstudio-api-endpoint]
+                     "https://localhost:1234/v1"]}
+
 
  ;; ######################################################################
  ;; Embedding services

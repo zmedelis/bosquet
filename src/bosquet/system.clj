@@ -3,6 +3,7 @@
    [aero.core :as aero]
    [bosquet.llm.cohere :as cohere]
    [bosquet.llm.openai :as oai]
+   [bosquet.llm.lmstudio :as lmstudio]
    [bosquet.memory.encoding :as encoding]
    [bosquet.memory.memory :as mem]
    [bosquet.nlp.embeddings :as embeddings]
@@ -16,6 +17,7 @@
    [bosquet.db.qdrant Qdrant]
    [bosquet.llm.cohere Cohere]
    [bosquet.llm.openai OpenAI]
+   [bosquet.llm.lmstudio LMStudio]
    [bosquet.memory.memory Amnesiac]
    [bosquet.memory.simple_memory SimpleMemory]
    [bosquet.memory.long_term_memory LongTermMemory]
@@ -50,6 +52,11 @@
   (when api-key
     (timbre/infof "\t* OpenAI API service (%s)" (name impl))
     (OpenAI. opts)))
+
+(defmethod ig/init-key :llm/lm-studio [_ {:keys [api-endpoint] :as opts}]
+  (when api-endpoint
+    (timbre/info "\t* LM Studio API service")
+    (LMStudio. opts)))
 
 (defmethod ig/init-key :llm/cohere [_ {:keys [api-key] :as opts}]
   (when api-key
