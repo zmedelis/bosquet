@@ -102,9 +102,7 @@
                                   (if (zero? current-pos) 0 overlap)) chunk-size)
                             unit-count)))
          (+ current-pos (- chunk-size
-                           (if (zero? current-pos) 0 overlap)
-                           )))))))
-
+                           (if (zero? current-pos) 0 overlap))))))))
 
 (defn- text->sentences
   "Split `text` into sentences using OpenNLP sentence splitting model"
@@ -142,8 +140,6 @@
 (defn chunk-text
   "Chunk `text` into `chunk-size` blocks using specified `splitter`. Optionaly
   `overlap` can be specified by how many text units chunks can overap (defaults to 0).
-
-  TODO `overlap` is currently failing, see unit-test
 
   Supported text splitters:
   - `sentence-splitter`
