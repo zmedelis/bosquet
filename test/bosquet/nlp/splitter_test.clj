@@ -1,7 +1,7 @@
 (ns bosquet.nlp.splitter-test
   (:require
    [bosquet.llm.openai-tokens :as oai]
-   [bosquet.nlp.splitter :as sub]
+   [bosquet.nlp.splitter :as split]
    [clojure.test :refer [deftest is]]))
 
 (deftest max-tokens-under
@@ -10,22 +10,34 @@
     (is (> MAX
            (apply max
                   (->>
-                   (sub/split-max-tokens
+                   (split/split-max-tokens
                     "Talks from the AI Engineer Summit, October 8-10 2023"
                     MAX model)
                    (map #(count (oai/encode % model)))))))))
 
-(deftest character-splitter-test
+(deftest splitting-by-tokens
+  (is (= ["Think not, is my eleventh commandment;"
+          "ment; and sleep when you can, is my"
+          " is my twelfth."]
+         (split/chunk-text
+          {split/chunk-size 10
+           split/overlap    2
+           split/split-unit split/token
+           split/model      :gpt-4}
+          "Think not, is my eleventh commandment; and sleep when you can, is my twelfth."))))
+
+(deftest splitting-by-characters
   (is (= ["Never attempt to win by force "
           "what can be won by deception"]
-         (sub/text-chunker
-          {:chunk-size 30 :splitter sub/character-splitter}
+         (split/chunk-text
+          {split/chunk-size 30 split/split-unit split/character}
           "Never attempt to win by force what can be won by deception")))
-  #_(is (= ["Never attempt to win by forc"
-            "e what can be won by deception"]
-           (sub/character-splitter
-            {:chunk-size 30 :overlap 2 :splitter sub/character-splitter}
-            "Never attempt to win by force what can be won by deception"))))
+  (is (= ["Never attempt to win by force"
+          "ce what can be won by deception"
+          "ion"]
+         (split/chunk-text
+          {split/chunk-size 30 split/overlap 2 split/split-unit split/character}
+          "Never attempt to win by force what can be won by deception"))))
 
 (deftest splitting-by-sentence
   (let [text (str
@@ -33,9 +45,12 @@
               "Couch cushions invaded. Discovery: in pocket.")]
     (is (= ["Jenny lost keys. Panic rises. Frantic search begins."
             "Couch cushions invaded. Discovery: in pocket."]
-           (sub/text-chunker {:chunk-size 3 :splitter sub/sentence-splitter} text)))
-    #_(is (= ["Jenny lost keys. Panic rises. Frantic search begins."
-              "Frantic search begins. Couch cushions invaded. Discovery: in pocket."]
-             (sub/text-chunker {:chunk-size 3 :overlap 1 :splitter sub/sentence-splitter} text)))
+           (split/chunk-text {split/chunk-size 3 split/split-unit split/sentence} text)))
+    (is (= ["Jenny lost keys. Panic rises. Frantic search begins."
+            "Frantic search begins. Couch cushions invaded. Discovery: in pocket."
+            "Discovery: in pocket."]
+           (split/chunk-text
+            {split/chunk-size 3 split/overlap 1 split/split-unit split/sentence}
+            text)))
     (is (= ["Jenny lost keys. Panic rises. Frantic search begins. Couch cushions invaded. Discovery: in pocket."]
-           (sub/text-chunker {:chunk-size 30 :splitter sub/sentence-splitter} text)))))
+           (split/chunk-text {split/chunk-size 30 split/split-unit split/sentence} text)))))

@@ -100,9 +100,9 @@
   - `max-chunks`: how many chunks to take, nil will take them all"
   [{q-count query-count chunk-count max-chunks} document]
   (let [n-sentence   45
-        chunks       (splitter/text-chunker
-                      {:chunk-size (* q-count n-sentence)
-                       :splitter   splitter/sentence-splitter}
+        chunks       (splitter/chunk-text
+                      {splitter/chunk-size (* q-count n-sentence)
+                       splitter/split-unit splitter/sentence}
                       document)
         model        #_"gpt-3.5-turbo" "gpt-4-1106-preview" #_"gpt-3.5-turbo-1106"
         q-gen-params {:questions
@@ -181,7 +181,7 @@
    question-building-prompts
    {:question-count 3
     :context
-    (second (splitter/text-chunker
+    (second (splitter/text-splitter
              {:chunk-size 25 :splitter splitter/sentence-splitter}
              text))}
    {:questions

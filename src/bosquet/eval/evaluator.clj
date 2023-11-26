@@ -79,8 +79,8 @@
         memory  (LongTermMemory.
                  storage
                  (sys/get-service encoder))
-        chunks  (splitter/text-chunker
-                 {:chunk-size 20 :splitter splitter/sentence-splitter}
+        chunks  (splitter/text-splitter
+                 {splitter/chunk-size 20 splitter/split-unit splitter/sentence}
                  knowledge)
         _       (timbre/debugf "Got %s cunks to remember" (count chunks))]
     (.forget memory opts)

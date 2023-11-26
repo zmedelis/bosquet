@@ -7,8 +7,40 @@
   (:import
    [opennlp.tools.sentdetect SentenceDetectorME SentenceModel]))
 
-(defn split-max-tokens
-  "Splits a given string `text` in several sub-strings.
+(def chunk-size
+  "Since of the chunks in which the text gets split."
+  :splitter/chunk-size)
+
+(def split-unit
+  "Lexical units in which the text gets split: character, token, sentence."
+  :splitter/unit)
+
+(def overlap
+  "Number of units by which chunks can overlap."
+  :splitter/overlap)
+
+(def model
+  "Model used for tokenization."
+  :splitter/model)
+
+(def sentence
+  "Text splitter by sentences. It will use OpenNLP sentnce splitter to partition
+  the text."
+  :splitter/sentence-split)
+
+(def character
+  "Text splitter by individual characters."
+  :splitter/character-split)
+
+(def token
+  "Text splitter by tokens. Tokenization is done based on the provided model."
+  :splitter/token-split)
+
+
+(defn ^{:deprecated true} split-max-tokens
+  "DEPRECATED use `text-chunker` instead with `split-unit` set to `token`.
+
+  Splits a given string `text` in several sub-strings.
   Each split will have maximum length, while having less tokens then `max-token`.
   The numer of tokens of a substring gets obtained by calling `token-count-fn` with the current string repeatedly
   while growing the string.
@@ -52,9 +84,10 @@
   (reduce (fn [cnt chunk] (+ cnt (count chunk))) 0 units))
 
 (defn text-splitter
-  [{:keys [chunk-size overlap]
-    :or   {overlap 0}} text-units]
-  (let [unit-count  (count text-units)]
+  [{:splitter/keys [chunk-size overlap]
+    :or            {overlap 0}}
+   text-units]
+  (let [unit-count (count text-units)]
     (loop [chunks      []
            current-pos (text-units-length chunks)]
       (if (> current-pos unit-count)
@@ -63,44 +96,50 @@
          (conj chunks
                (subvec text-units
                        (max (- current-pos overlap) 0)
-                       (min (+ (- current-pos overlap) chunk-size) unit-count)))
-         (+ current-pos chunk-size))))))
+                       (min (+ (- current-pos
+                                  ;; cant figure nicer way, this if is needed
+                                  ;; to avoid getting the first chunk made shorter by overlap
+                                  (if (zero? current-pos) 0 overlap)) chunk-size)
+                            unit-count)))
+         (+ current-pos (- chunk-size
+                           (if (zero? current-pos) 0 overlap)
+                           )))))))
 
-(defn text->sentences
+
+(defn- text->sentences
   "Split `text` into sentences using OpenNLP sentence splitting model"
-  [text]
+  [_opts text]
   (vec (.sentDetect en-sentence-detector text)))
 
-(defn text<-sentences
-  [sentences]
+(defn- text<-sentences
+  [_opts sentences]
   (string/join " " sentences))
 
-(defn text->characters
-  [text]
+(defn- text->characters
+  [_opts text]
   (vec (map identity text)))
 
-(defn text<-characters
-  [chars]
+(defn- text<-characters
+  [_opts chars]
   (string/join chars))
 
-(def sentence-splitter
-  "Text splitter by sentences. It will use OpenNLP sentnce splitter to partition
-  the text into a vector of sentences"
-  ::sentence-splitter)
+(defn- text->tokens [{:splitter/keys [model]} text]
+  (vec (oai/encode text model)))
 
-(def character-splitter
-  "Text splitter by individual characters. Text will be turned into array of characers."
-  ::character-splitter)
+(defn- text<-tokens [{:splitter/keys [model]} text]
+  (oai/decode text model))
 
 (def ^:private split-handlers
   "Split handlers are needed to turn text into specified text units via `encode` function.
   `decode` function will turn those units back into single text string."
-  {sentence-splitter  {:encode text->sentences
-                       :decode text<-sentences}
-   character-splitter {:encode text->characters
-                       :decode text<-characters}})
+  {sentence  {:encode text->sentences
+              :decode text<-sentences}
+   character {:encode text->characters
+              :decode text<-characters}
+   token     {:encode text->tokens
+              :decode text<-tokens}})
 
-(defn text-chunker
+(defn chunk-text
   "Chunk `text` into `chunk-size` blocks using specified `splitter`. Optionaly
   `overlap` can be specified by how many text units chunks can overap (defaults to 0).
 
@@ -109,9 +148,11 @@
   Supported text splitters:
   - `sentence-splitter`
   - `character-splitter`
-  - TODO `token-splitter`"
-  [{:keys [splitter] :as opts} text]
-  (let [{:keys [encode decode]} (split-handlers splitter)]
+  - `token-splitter`"
+  [{:splitter/keys [unit] :as opts} text]
+  (let [{:keys [encode decode]} (split-handlers unit)
+        encode                  (partial encode opts)
+        decode                  (partial decode opts)]
     (->> text
          encode
          (text-splitter opts)
@@ -122,15 +163,8 @@
   (def text (slurp "https://raw.githubusercontent.com/scicloj/scicloj.ml.smile/main/LICENSE"))
 
   (tap>
-   (text-chunker {:chunk-size 3 :splitter sentence-splitter} text))
+   (chunk-text {chunk-size 3 split-unit sentence} text))
 
-  (tap>
-   (text-chunker
-    {:chunk-size 10 :splitter character-splitter}
-    "Never attempt to win by force what can be won by deception"))
-
-  (->> (split-max-tokens text 12 "gpt-4")
-       (map #(hash-map :c (oai/token-count % "gpt-4") :s %))
-       (map :c))
-  (split-max-tokens text 10 "gpt-4")
+  (chunk-text {chunk-size 10 split-unit token model :gpt-4}
+              "Think not, is my eleventh commandment; and sleep when you can, is my twelfth.")
   #__)
