@@ -14,6 +14,7 @@
   (:require
    [bosquet.llm.generator :as g]
    [bosquet.nlp.splitter :as split]
+   [clojure.string :as string]
    [helpers :as h]
    [nextjournal.clerk :as clerk]))
 
@@ -53,8 +54,8 @@ get to sea as soon as I can.")
 ;; Note how `10` characters from the `N-1` chunk are included at the beggingin of the `N` chunk.
 
 (def char-chunks (split/chunk-text
-                  {split/chunk-size 140
-                   split/overlap    10
+                  {split/chunk-size 200
+                   split/overlap    20
                    split/split-unit split/character}
                   text))
 
@@ -108,8 +109,8 @@ get to sea as soon as I can.")
 ;; tokens are used in a given split, thus we can be sure to prevent overflows of the context window.
 
 (def token-chunks (split/chunk-text
-                   {split/chunk-size 20
-                    split/overlap    2
+                   {split/chunk-size 50
+                    split/overlap    5
                     split/split-unit split/token
                     split/model      :gpt-4}
                    text))
@@ -134,17 +135,57 @@ get to sea as soon as I can.")
 ;; Lets extract the feelings expressed by the character in the Moby Dick in that first paragraph of the book.
 ;;
 
-(def token-analysis
-  (mapv
-   #(g/generate
-     "You are a brillian reader of human emotions. Your ability to analyze text is unparalleled.
+(def extraction-prompt
+  "You are a brillian reader of human emotions. Your ability to analyze text is unparalleled.
 Please analyze the text bellow, and provide a list emotions expressed by the character in that text.
 
+Reply with one or two words name for the empotion. Please refrain from further explanations.
 If no emotions are epressed, reply with 'no emotions expressed'.
 
-TEXT: {{chunk}}"
-     {:chunk %})
+TEXT: {{chunk}}")
+
+(def char-analysis
+  (mapv
+   #(g/generate extraction-prompt {:chunk %})
+   char-chunks))
+
+(def sentence-analysis
+  (mapv
+   #(g/generate extraction-prompt {:chunk %})
+   sentence-chunks))
+
+(def token-analysis
+  (mapv
+   #(g/generate extraction-prompt {:chunk %})
    token-chunks))
 
+
+;; ### Characters
+
 ^{:nextjournal.clerk/visibility {:code :hide}}
-(h/card-list token-analysis)
+(h/card-list (map :gen char-analysis))
+
+;; ### Sentences
+
+^{:nextjournal.clerk/visibility {:code :hide}}
+(h/card-list (map :gen sentence-analysis))
+
+;; ### Tokens
+
+^{:nextjournal.clerk/visibility {:code :hide}}
+(h/card-list (map :gen token-analysis))
+
+;; ### Summary
+
+(def summarization-proompt
+  "You are provided with a list of expressions of emotions. Please aggregate them into
+a single list of unique expressions. Omit any duplicates and skip 'no empotions expressed' entries.
+Respond with unnumbered bullet list and nothing else.
+
+EMOTIONS: {{emotions}}")
+
+(g/generate summarization-proompt {:emotions (string/join ", " (mapv :gen char-analysis))})
+
+(g/generate summarization-proompt {:emotions (string/join ", " (mapv :gen sentence-analysis))})
+
+(g/generate summarization-proompt {:emotions (string/join ", " (mapv :gen token-analysis))})
