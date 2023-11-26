@@ -32,9 +32,9 @@
          (split/chunk-text
           {split/chunk-size 30 split/split-unit split/character}
           "Never attempt to win by force what can be won by deception")))
-  (is (= ["Never attempt to win by force"
-          "ce what can be won by deception"
-          "ion"]
+  (is (= ["Never attempt to win by force "
+          "e what can be won by deception"
+          "on"]
          (split/chunk-text
           {split/chunk-size 30 split/overlap 2 split/split-unit split/character}
           "Never attempt to win by force what can be won by deception"))))
