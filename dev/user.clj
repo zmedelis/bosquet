@@ -62,6 +62,7 @@
   (clerk/serve! {:browse? false})
 
   (clerk/show! "notebook/getting_started.clj")
+  (clerk/show! "notebook/text_splitting.clj")
   (clerk/show! "notebook/examples/short_memory_prosocial_dialog.clj")
   (clerk/show! "notebook/papers/chain_of_verification.clj")
   (clerk/show! "notebook/configuration.clj")
