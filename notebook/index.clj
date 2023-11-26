@@ -7,6 +7,7 @@
   [:ul
    [:li [:a.underline {:href (clerk/doc-url "notebook/getting_started/index.html")} "Getting Started"]]
    [:li [:a.underline {:href (clerk/doc-url "notebook/configuration/index.html")} "Configuration"]]
+   [:li [:a.underline {:href (clerk/doc-url "notebook/text_splitting/index.html")} "Text Chunking"]]
    [:li
     [:div "Examples"]
     [:ul

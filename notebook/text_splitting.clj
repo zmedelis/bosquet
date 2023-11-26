@@ -1,12 +1,13 @@
 ;; ## Text chunking
 ;;
-;; Text chunking is the process of breaking a text into parts. It is an essential part
-;; of working with LLMs, since they can only process a limited amount of text at once.
-;; Even as LLM context windows grow text chunking remains important. LLMs are U shaped
-;; reasoners, they are good at remembering the beginning of a text and the end of a text,
-;; but are not great at dealing with content in the middle.
-;;
-;; Thus text chunking can help with increasing relevancy of LLM based extraction and generation.
+;; Text chunking is the process of breaking a text into parts. It is an essential part of
+;; working with LLMs since they can only process a limited amount of text. Even as LLM context
+;; windows grow, text chunking remains important. LLMs are U-shaped reasoners. They are good
+;; at remembering the beginning and the end of a text but are not great at dealing with content
+;; in the middle.
+
+;; Thus text chunking can help to increase the relevancy of LLM-based extraction and text
+;; generation.
 
 ;; ### Chunking strategies
 
@@ -14,19 +15,20 @@
   (:require
    [bosquet.llm.generator :as g]
    [bosquet.nlp.splitter :as split]
+   [bosquet.wkk :as wkk]
    [clojure.string :as string]
    [helpers :as h]
    [nextjournal.clerk :as clerk]))
 
-;; Text can be split using different splitting units. *Bosquet* supports splitting by:
+;; Text splitting can be done by using different splitting units. *Bosquet* supports splitting by:
+;;
 ;; - characters
 ;; - tokens
 ;; - sentences
 ;;
-;; Additional important splitting feature is the overlap between chunks. This helps to prevent
-;; loosing context information at the chunk boundaries.
-
-;; Example text (first paragraph from 'Moby Dick') to experiment with different chunking approaches
+;; An additional important splitting feature is the overlap between chunks. This helps to
+;; prevent losing context information at the chunk boundaries. Example text (first paragraph
+;; from *Moby Dick*) to experiment with different chunking approaches
 
 ^{:nextjournal.clerk/visibility {:result :hide}}
 (def text
@@ -44,14 +46,14 @@ methodically knocking people’s hats off—then, I account it high time to
 get to sea as soon as I can.")
 
 ;;
-;;#### Splitting by characers
+;; #### Splitting by characters
 ;;
-;; Splitting by characters will take the text and chop it every N characters. A strategy
-;; probebly best used for text that have some known structure or have some data regularity:
+;; Splitting by characters will take the text and chop it at every N-th character. This
+;; strategy is probably best used for text that has a known structure or a regular data form:
 ;; tables, CSV content, etc.
 ;;
-;; Here the text will be split every `140` characters with `10` characters overlap.
-;; Note how `10` characters from the `N-1` chunk are included at the beggingin of the `N` chunk.
+;; Here, the text will be split at every 140 characters with the 10 characters overlap.
+;; *Note*, how 10 characters from the N-1 chunk are included at the beginning of the N chunk.
 
 (def char-chunks (split/chunk-text
                   {split/chunk-size 200
@@ -75,14 +77,14 @@ get to sea as soon as I can.")
 ;;
 ;; #### Splitting by sentences
 ;;
-;; Splitting by sentences will take the text and chop it every N sentences. This results in
-;; text segments that are natural for the human reader and will also prevent cutting the meaning
-;; of the sentence into two chunks. For this reason sentence splitting the need for `overlap` is less
-;; important. However, long sentences might result in overflows of the context window of the LLM.
-;; (An imprvement would be needed to sentence splitter to prevent this.)
 ;;
-;; *Note:* that `overlap` is not specified in the example below, thus the default value of `0` is used.
+;; Splitting by sentences will partition the text into chunks of N sentences. This results in
+;; chunks that are natural to reader. It will also prevent cutting the meaning of the sentence
+;; into two chunks. For this reason, the need for overlap parameter is less important when
+;; using this splitting method. However, long sentences might result in overflows of the context
+;; window of the LLM.
 ;;
+;; *Note*: that overlap is not specified in the example below - the default of 0 is used.
 
 (def sentence-chunks (split/chunk-text
                       {split/chunk-size 3
@@ -127,12 +129,11 @@ get to sea as soon as I can.")
             [:div chunk]]])
         token-chunks))))
 
-;; ## Using text chunking with LLM
+;; ### Using text chunking with LLM
 ;;
-;; A typical example of using text chunking would be to send parts parts of the longer text to LLM for
-;; processing separately and then aggregating the results.
-;;
-;; Lets extract the feelings expressed by the character in the Moby Dick in that first paragraph of the book.
+;; An example of using text chunking would be to send parts of the longer text to LLM for
+;; processing separately and then aggregating the results. Let's extract the feelings expressed
+;; by the character in Moby Dick's first paragraph (pretending that it is a very long text).
 ;;
 
 (def extraction-prompt
@@ -140,52 +141,66 @@ get to sea as soon as I can.")
 Please analyze the text bellow, and provide a list emotions expressed by the character in that text.
 
 Reply with one or two words name for the empotion. Please refrain from further explanations.
-If no emotions are epressed, reply with 'no emotions expressed'.
+If no emotions are epressed, reply with 'no emotions expressed'. Provide your response as
+a bullet list.
 
 TEXT: {{chunk}}")
 
-(def char-analysis
-  (mapv
-   #(g/generate extraction-prompt {:chunk %})
-   char-chunks))
+(defn analysis
+  [chunks]
+  (mapv :gen
+        (map
+         #(g/generate extraction-prompt {:chunk %}
+                      {:gen {wkk/model-parameters {:model "gpt-4"}}})
+         chunks)))
 
-(def sentence-analysis
-  (mapv
-   #(g/generate extraction-prompt {:chunk %})
-   sentence-chunks))
-
-(def token-analysis
-  (mapv
-   #(g/generate extraction-prompt {:chunk %})
-   token-chunks))
+;; #### Per chunk results
+;;
+;; Bellow per chunker resutls show how chunking methid can influence the output. The three methods
+;; return quite different extracted emotions.
+;;
+;; ##### Character splitter
 
 
-;; ### Characters
-
-^{:nextjournal.clerk/visibility {:code :hide}}
-(h/card-list (map :gen char-analysis))
-
-;; ### Sentences
+(def char-results (analysis char-chunks))
 
 ^{:nextjournal.clerk/visibility {:code :hide}}
-(h/card-list (map :gen sentence-analysis))
+(h/card-list (mapv clerk/md char-results))
 
-;; ### Tokens
+;; ##### Sentence splitter
+
+(def sentence-results (analysis sentence-chunks))
 
 ^{:nextjournal.clerk/visibility {:code :hide}}
-(h/card-list (map :gen token-analysis))
+(h/card-list (mapv clerk/md sentence-results))
+
+;; ##### Token splitter
+
+(def token-results (analysis token-chunks))
+
+^{:nextjournal.clerk/visibility {:code :hide}}
+(h/card-list (mapv clerk/md token-results))
+
 
 ;; ### Summary
+;;
+;; All the chunk results need to be consolidated into a single list of unique emotions. This can
+;; be done with another LLM request that gets all the per chunk detected emotions and aggregates
+;; them into a single list.
 
 (def summarization-proompt
   "You are provided with a list of expressions of emotions. Please aggregate them into
-a single list of unique expressions. Omit any duplicates and skip 'no empotions expressed' entries.
+a single list of summarizing emotions. Omit any duplicates and skip 'no empotions expressed' entries.
 Respond with unnumbered bullet list and nothing else.
 
 EMOTIONS: {{emotions}}")
 
-(g/generate summarization-proompt {:emotions (string/join ", " (mapv :gen char-analysis))})
+(defn summarize [analysis]
+  (:gen
+   (g/generate summarization-proompt
+               {:emotions (string/join ", " analysis)}
+               {:gen {wkk/model-parameters {:model "gpt-4"}}})))
 
-(g/generate summarization-proompt {:emotions (string/join ", " (mapv :gen sentence-analysis))})
-
-(g/generate summarization-proompt {:emotions (string/join ", " (mapv :gen token-analysis))})
+(clerk/table [["Character split" (clerk/md (summarize char-results))]
+              ["Sentence split" (clerk/md (summarize sentence-results))]
+              ["Token split" (clerk/md (summarize token-results))]])
