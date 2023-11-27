@@ -2,12 +2,13 @@
   (:require
    [bosquet.llm.chat :as chat]
    [bosquet.llm.llm :as llm]
+   [bosquet.utils :as u]
    [clojure.string :as string]
    [hato.client :as hc]
-   [jsonista.core :as j]
    [taoensso.timbre :as timbre]))
 
 (defn- fix-params
+  "Snake case keys from `:max-tokens` to `:max_tokens`"
   [params]
   (reduce-kv
    (fn [m k v]
@@ -19,21 +20,15 @@
 
 (defn- post-completion
   [params {:keys [api-endpoint]}]
-  (prn ">>>> "(-> params fix-params j/write-value-as-string))
   (let [res (hc/post (str api-endpoint "/chat/completions")
                      {:content-type :json
-                      :body         (-> params fix-params j/write-value-as-string)})]
-    (clojure.pprint/pprint res)
+                      :body         (-> params fix-params u/write-json)})]
     (-> res
         :body
-        (j/read-value j/keyword-keys-object-mapper))))
+        (u/read-json))))
 
 (defn- ->completion [result]
   (-> result :choices first :message))
-
-(defn- ->error [e]
-  (let [{:keys [message code]} e]
-    (throw (ex-info message {:code code}))))
 
 (defn- chat-completion
   [messages params opts]
@@ -46,7 +41,7 @@
         (post-completion opts)
         ->completion)
     (catch Exception e
-      (throw e))))
+      (throw (ex-info "LM Studio error" (-> e ex-data :body u/read-json))))))
 
 (deftype LMStudio
     [opts]
@@ -60,9 +55,10 @@
 
 (comment
   (def llm (LMStudio.
-            {:api-endpoint "http://localhost:1234/v1/chat/completions"}))
+            {:api-endpoint "http://localhost:1234/v1"}))
   (.chat llm
-         [(chat/speak chat/system "You are a brilliant cook.")
+         [:x 1
+          (chat/speak chat/system "You are a brilliant cook.")
           (chat/speak chat/user "What is a good cookie?")]
          {})
   #__)

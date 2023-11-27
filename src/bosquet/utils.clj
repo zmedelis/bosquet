@@ -1,5 +1,6 @@
 (ns bosquet.utils
   (:require
+   [jsonista.core :as j]
    [me.flowthing.pp :as pp])
   (:import
    [java.util UUID]))
@@ -37,3 +38,13 @@
 (def separator
   "A separator to be used in prompts to indicate data bloks."
   "~~~~~~~~~~~~~~")
+
+(defn read-json
+  "Read JSON from a string keywordizing keys"
+  [s]
+  (j/read-value s j/keyword-keys-object-mapper))
+
+(defn write-json
+  "Write JSON to a string"
+  [s]
+  (j/write-value-as-string s))
