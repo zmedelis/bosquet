@@ -98,30 +98,6 @@
       (output-keys prompt-key (get prompts prompt-key)))
     (keys prompts))))
 
-(defn ^{:deprecated "0.4" :superseded-by "generate"}
-  complete
-  "Given a `prompt-palette` and a map of `data` to fill in template slots,
-  generate text as a combination of template slot filling and AI generation.
-
-  `entry-prompts` are the keys to the `prompt-palette` indicating where to start
-  the generation process.
-
-  When not provided, all keys in `prompt-palette` are used.
-  With big prompt palettes, this can be a problem, because multiple unrelated
-  prompts can be invoked"
-  ([prompt-palette data]
-   (complete prompt-palette data nil nil))
-  ([prompt-palette data entry-prompt-keys]
-   (complete prompt-palette data entry-prompt-keys nil))
-  ([prompt-palette data entry-prompt-keys opts]
-   (let [entry-prompts   (if (empty? entry-prompt-keys) (keys prompt-palette) entry-prompt-keys)
-         extraction-keys (all-keys (select-keys prompt-palette entry-prompts) data)]
-     (timbre/info "Resolving keys: " extraction-keys)
-     (-> (prompt-indexes prompt-palette opts)
-         (resolver-error-wrapper)
-         (psm/smart-map data)
-         (select-keys extraction-keys)))))
-
 (defn generate
   ([prompts] (generate prompts nil nil))
   ([prompts inputs] (generate prompts inputs nil))
