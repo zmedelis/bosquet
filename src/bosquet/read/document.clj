@@ -23,7 +23,7 @@
    [org.apache.tika.sax BodyContentHandler]))
 
 (defn- extract-metadata
-  "Convert tika Metadata object into plain map containing only Dublin Core metadata."
+  "Convert tika Metadata object into plain map."
   [metadata]
   (reduce (fn [m k]
             (assoc m (keyword k)
