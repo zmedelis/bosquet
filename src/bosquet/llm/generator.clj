@@ -149,10 +149,12 @@
   (generate
    {:role            "As a brilliant {{you-are}} answer the following question."
     :question        "What is the distance between Io and Europa?"
-    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
+    :question-answer "{{role}} Question: {{question}}  Answer: {% gen var-name=answer %}"
     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
    {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"})
+    :question "What is the distance from Moon to Io?"}
+   {:answer {wkk/service :llm/lmstudio}
+    :test   {wkk/service :llm/lmstudio}})
 
   (generate
    "As a brilliant {{you-are}} list distances between planets and the Sun

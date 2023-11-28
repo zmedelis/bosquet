@@ -3,11 +3,9 @@
    [bosquet.converter :as converter]
    [bosquet.llm.chat :as llm.chat]
    [bosquet.llm.llm :as llm]
-   [bosquet.memory.memory :as memory]
    [bosquet.system :as sys]
    [bosquet.wkk :as wkk]
-   [clojure.core.cache.wrapped :as w]
-   [taoensso.timbre :as timbre]))
+   [clojure.core.cache.wrapped :as w]))
 
 ;; TODO Cache is basic and experimantal, needs to be improved
 ;; at last better configuration instead of hardcoding to FIFO

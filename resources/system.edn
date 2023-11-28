@@ -35,7 +35,7 @@
    :text-curie-001 :command-light}}
 
  ;; Config for LM Studio LLM services
- :llm/lm-studio
+ :llm/lmstudio
  {:api-endpoint #or [#env "LMSTUDIO_API_ENDPOINT"
                      #ref [:config :lmstudio-api-endpoint]
                      "http://localhost:1234/v1"]}

@@ -51,6 +51,7 @@
       :finish-reason finish}
      usage)))
 
+;; TODO get rid of default system prompt
 (def default-system-prompt
   {:role :system :content "You are a helpful assistant."})
 

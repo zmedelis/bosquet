@@ -53,7 +53,7 @@
     (timbre/infof "\t* OpenAI API service (%s)" (name impl))
     (OpenAI. opts)))
 
-(defmethod ig/init-key :llm/lm-studio [_ {:keys [api-endpoint] :as opts}]
+(defmethod ig/init-key :llm/lmstudio [_ {:keys [api-endpoint] :as opts}]
   (when api-endpoint
     (timbre/info "\t* LM Studio API service")
     (LMStudio. opts)))
