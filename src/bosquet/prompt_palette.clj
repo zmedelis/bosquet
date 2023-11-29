@@ -11,7 +11,7 @@
   it will be reused with each call for different completions."
   ([palette-key intro-data]
    (fn [data]
-     (generator/complete
+     (generator/generate
       palettes
       (merge intro-data data)
       [palette-key])))
