@@ -27,17 +27,24 @@
         :body
         (u/read-json))))
 
-(defn- ->completion [{choices :choices {prompt_tokens     :prompt_tokens
-                                        completion_tokens :completion_tokens
-                                        total_tokens      :total_tokens} :usage}]
-  {llm/generation-type :chat
-   llm/content         {:completion (-> choices first :message chat/chatml->bosquet :content)}
-   llm/usage           {:prompt     prompt_tokens
-                        :completion completion_tokens
-                        :total      total_tokens}})
+(defn- ->completion
+  [{choices :choices {prompt_tokens     :prompt_tokens
+                      completion_tokens :completion_tokens
+                      total_tokens      :total_tokens} :usage}
+   generation-type]
+  (let [result (-> choices first :message chat/chatml->bosquet)]
+    {llm/generation-type generation-type
+     llm/content         (if (= :chat generation-type)
+                           result
+                           {:completion (:content result)})
+     llm/usage           {:prompt     prompt_tokens
+                          :completion completion_tokens
+                          :total      total_tokens}}))
+
+(def ^:private gen-type :gen-type)
 
 (defn- chat-completion
-  [messages params opts]
+  [messages {generation-type gen-type :as params} opts]
   (timbre/infof "💬 Calling LM Studio with:")
   (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
   (timbre/infof "\tConfig: '%s'" opts)
@@ -45,14 +52,10 @@
                    [(chat/speak chat/user messages)]
                    messages)]
     (try
-      (let [result
-            (-> params
-                (assoc :messages messages)
-                (post-completion opts)
-                ->completion)]
-        (tap> result)
-        result
-        )
+      (-> params
+          (assoc :messages messages)
+          (post-completion opts)
+          (->completion generation-type))
       (catch Exception e
         (throw (ex-info "LM Studio error" (-> e ex-data :body u/read-json)))))))
 
@@ -60,11 +63,10 @@
     [opts]
     llm/LLM
     (service-name [_this] ::lm-studio)
-    (generate [this prompt params]
-      (timbre/warn "LMStudio does not support 'completions'. Forcing to 'chat'.")
-      (.chat this prompt params))
+    (generate [_this prompt params]
+      (chat-completion prompt (assoc params gen-type :complete) opts))
     (chat     [_this conversation params]
-      (chat-completion conversation params opts)))
+      (chat-completion conversation (assoc params gen-type :chat) opts)))
 
 (comment
   (def llm (LMStudio.

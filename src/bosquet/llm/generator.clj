@@ -142,9 +142,9 @@
     (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
    {:role "cook" :meal "cake"}
    {chat/conversation
-    {wkk/service          :llm/openai
+    {wkk/service          :llm/lmstudio
      wkk/model-parameters {:temperature 0
-                           :model       "gpt-3.5-turbo"}}})
+                           :max-tokens  100}}})
 
   (generate
    {:role            "As a brilliant {{you-are}} answer the following question."
@@ -153,15 +153,17 @@
     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
-   {:answer {wkk/service :llm/lmstudio}
-    :test   {wkk/service :llm/lmstudio}})
+   {:answer {wkk/service          :llm/lmstudio
+             wkk/model-parameters {:max-tokens 100}}
+    :test   {wkk/service          :llm/lmstudio
+             wkk/model-parameters {:max-tokens 100}}})
 
   (generate
    "As a brilliant {{you-are}} list distances between planets and the Sun
 in the Solar System. Provide the answer in JSON map where the key is the
 planet name and the value is the string distance in millions of kilometers. Generate only JSON
 omit any other prose and explanations."
-   {:you-are  "astronomer"}
+   {:you-are "astronomer"}
    {:gen {wkk/output-format :json}})
 
   (generate
