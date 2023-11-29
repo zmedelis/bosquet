@@ -9,6 +9,7 @@
    [:li [:a.underline {:href (clerk/doc-url "notebook/configuration/index.html")} "Configuration"]]
    [:li [:a.underline {:href (clerk/doc-url "notebook/text_splitting/index.html")} "Text Chunking"]]
    [:li [:a.underline {:href (clerk/doc-url "notebook/document_loading/index.html")} "Document Loading"]]
+   [:li [:a.underline {:href (clerk/doc-url "notebook/using_llms/index.html")} "Using LLMs"]]
    [:li
     [:div "Examples"]
     [:ul

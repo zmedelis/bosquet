@@ -142,7 +142,7 @@
     (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
    {:role "cook" :meal "cake"}
    {chat/conversation
-    {wkk/service          :llm/lmstudio
+    {wkk/service          :llm/cohere
      wkk/model-parameters {:temperature 0
                            :max-tokens  100}}})
 
@@ -153,9 +153,9 @@
     :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
-   {:answer {wkk/service          :llm/lmstudio
+   {:answer {wkk/service          :llm/cohere
              wkk/model-parameters {:max-tokens 100}}
-    :test   {wkk/service          :llm/lmstudio
+    :test   {wkk/service          :llm/cohere
              wkk/model-parameters {:max-tokens 100}}})
 
   (generate

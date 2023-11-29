@@ -39,6 +39,7 @@
                             "notebook/configuration.clj"
                             "notebook/text_splitting.clj"
                             "notebook/document_loading.clj"
+                            "notebook/using_llms.clj"
                             "notebook/math_generate_code.clj"
                             "notebook/examples/short_memory_prosocial_dialog.clj"
                             "notebook/papers/chain_of_density.clj"
@@ -66,6 +67,7 @@
   (clerk/show! "notebook/getting_started.clj")
   (clerk/show! "notebook/text_splitting.clj")
   (clerk/show! "notebook/document_loading.clj")
+  (clerk/show! "notebook/using_llms.clj")
   (clerk/show! "notebook/examples/short_memory_prosocial_dialog.clj")
   (clerk/show! "notebook/papers/chain_of_verification.clj")
   (clerk/show! "notebook/configuration.clj")
