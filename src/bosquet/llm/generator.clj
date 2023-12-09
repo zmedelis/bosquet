@@ -182,16 +182,15 @@ omit any other prose and explanations."
              wkk/cache            true
              wkk/model-parameters {:temperature 0.0}}})
 
-  (chat [(chat/speak
-           chat/system
-           "You are a playwright. Given the play's title and genre write synopsis.")
-         (chat/speak chat/user "Title: {{title}}; Genre: {{genre}}")
-         (chat/speak chat/user "Playwright: This is a synopsis for the above play:")]
-        {:title "Mr. X" :genre "crime"}
-        {chat/conversation
-         {wkk/service          :llm/lmstudio
-          wkk/model-parameters {:temperature 0.0 :max-tokens 100}}})
-
+  (chat
+   (chat/converse
+    chat/system "You are a playwright. Given the play's title and genre write synopsis."
+    chat/user "Title: {{title}}; Genre: {{genre}}"
+    chat/user "Playwright: This is a synopsis for the above play:")
+   {:title "Mr. X" :genre "crime"}
+   {chat/conversation
+    {wkk/service          :llm/lmstudio
+     wkk/model-parameters {:temperature 0.0 :max-tokens 100}}})
 
   (complete-template
    "You are a playwright. Given the play's title and it's genre write synopsis for that play.

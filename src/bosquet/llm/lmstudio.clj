@@ -75,7 +75,7 @@
   (def llm (LMStudio.
             {:api-endpoint "http://localhost:1234/v1"}))
   (.chat llm
-         [(chat/speak chat/system "You are a brilliant cook.")
-          (chat/speak chat/user "What is a good cookie?")]
+         (chat/converse chat/system "You are a brilliant cook."
+                        chat/user "What is a good cookie?")
          {})
   #__)
