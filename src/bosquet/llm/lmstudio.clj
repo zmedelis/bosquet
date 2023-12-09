@@ -7,7 +7,6 @@
    [hato.client :as hc]
    [taoensso.timbre :as timbre]))
 
-
 (defn- fix-params
   "Snake case keys from `:max-tokens` to `:max_tokens`"
   [params]
@@ -19,7 +18,6 @@
    {}
    params))
 
-
 (defn- post-completion
   [params {:keys [api-endpoint]}]
   (let [res (hc/post (str api-endpoint "/chat/completions")
@@ -28,7 +26,6 @@
     (-> res
         :body
         (u/read-json))))
-
 
 (defn- ->completion
   [{choices :choices {prompt_tokens     :prompt_tokens
@@ -44,9 +41,7 @@
                           :completion completion_tokens
                           :total      total_tokens}}))
 
-
 (def ^:private gen-type :gen-type)
-
 
 (defn- chat-completion
   [messages {generation-type gen-type :as params} opts]
@@ -61,15 +56,14 @@
         (post-completion opts)
         (->completion generation-type))))
 
-
 (deftype LMStudio
-    [opts]
-    llm/LLM
-    (service-name [_this] ::lm-studio)
-    (generate [_this prompt params]
-      (chat-completion prompt (assoc params gen-type :complete) opts))
-    (chat     [_this conversation params]
-      (chat-completion conversation (assoc params gen-type :chat) opts)))
+         [opts]
+  llm/LLM
+  (service-name [_this] ::lm-studio)
+  (generate [_this prompt params]
+    (chat-completion prompt (assoc params gen-type :complete) opts))
+  (chat     [_this conversation params]
+    (chat-completion conversation (assoc params gen-type :chat) opts)))
 
 (comment
   (def llm (LMStudio.

@@ -64,8 +64,8 @@
   "Helper function to create onversation sequence. Pass in conversation params:
 
   ```
-  (converse chat/system "You are a brilliant cook."
-            chat/user   "What is a good cookie? ")
+  (converse chat/system \"You are a brilliant cook.\"
+            chat/user   \"What is a good cookie?\")
   ```
 
   and this will create a message seq ready to pass to gen service."

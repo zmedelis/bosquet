@@ -1,8 +1,9 @@
 (ns math-generate-code
   (:require
-    [nextjournal.clerk :as c]
-    [bosquet.llm.generator :as g]
-    [helpers :as h]))
+   [bosquet.llm.generator :as g]
+   [bosquet.wkk :as wkk]
+   [helpers :as h]
+   [nextjournal.clerk :as c]))
 
 ;; ## Code generation for math calculations
 ;;
@@ -44,10 +45,11 @@
 ;; that constructs the request to generate text in the following 'CODE:'.
 
 (def prompt {:few-shot few-shot
+             ;; :format   "Your are required to write the response in Clojure code as shown in the examples. Omit all other prose and explanations."
              :calc     (h/join
-                         "{{few-shot}}"
-                         "QUESTION: {{question}}"
-                         "CODE: {% gen var-name=answer %}")})
+                        "{{few-shot}}"
+                        "QUESTION: {{question}}"
+                        "CODE: {% gen var-name=answer %}")})
 
 ;;
 ;; Let's have two questions to generate code for.
@@ -66,8 +68,11 @@
 ;;
 ;; #### Question 1 answer
 ;;
+(def q1-answer (g/generate prompt
+                           {:examples examples :question question1}
+                           {:answer {wkk/service :llm/lmstudio}}))
 ^{:nextjournal.clerk/visibility :fold}
-(let [{:keys [answer]} (g/generate prompt {:examples examples :question question1})]
+(let [{:keys [answer]} q1-answer]
   (c/html [:div
            [:div "Code:" [:pre answer]]
            [:div "Eval:" [:pre (-> answer read-string eval)]]]))

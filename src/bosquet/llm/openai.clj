@@ -145,10 +145,10 @@
   ::open-ai)
 
 (deftype OpenAI
-    [opts]
-    llm/LLM
-    (service-name [_this] openai)
-    (generate [_this prompt params]
-      (complete prompt params opts))
-    (chat     [_this conversation params]
-      (chat-completion conversation params opts)))
+         [opts]
+  llm/LLM
+  (service-name [_this] openai)
+  (generate [_this prompt params]
+    (complete prompt params opts))
+  (chat     [_this conversation params]
+    (chat-completion conversation params opts)))

@@ -104,7 +104,7 @@
                       {splitter/chunk-size (* q-count n-sentence)
                        splitter/split-unit splitter/sentence}
                       document)
-        model        #_"gpt-3.5-turbo" "gpt-4-1106-preview" #_"gpt-3.5-turbo-1106"
+        model        "gpt-4-1106-preview"
         q-gen-params {:questions
                       {wkk/service          wkk/oai-service
                        wkk/output-format    :list

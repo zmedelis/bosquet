@@ -36,7 +36,6 @@
   "Text splitter by tokens. Tokenization is done based on the provided model."
   :splitter/token-split)
 
-
 (defn ^{:deprecated true} split-max-tokens
   "DEPRECATED use `text-chunker` instead with `split-unit` set to `token`.
 
