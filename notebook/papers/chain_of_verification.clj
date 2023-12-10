@@ -99,7 +99,7 @@
        "{% endfor %}"
        ""
        "Give your estimation if PROVIDED ANSWER matches CORRECT ANSWER with 'true' or 'false' boolean values."
-       "Combine the results of the corect answer, provided answer, and evaluation result Clojure EDN data structure like this:"
+       "Combine the results of the corect answer, provided answer, and evaluation result into Clojure EDN data structure like this:"
        "[{:question \"QUESTION\" :correct-answer \"CORRECT ANSWER\" :provided-answer \"PROVIDED ANSWER\" :result true}]"
        "{% gen var-name=validations %}")
 
