@@ -1,6 +1,6 @@
 {:paths   ["src" "resources"]
  :deps    {org.clojure/clojure                           {:mvn/version "1.11.1"}
-           io.github.zmedelis/hfds-clj                   {:mvn/version "v2023.11.05"}
+           io.github.zmedelis/hfds-clj                   {:mvn/version "2023.12.10"}
            io.github.zmedelis/selmer                     {:mvn/version "0.7.9"}
            com.wsscode/pathom3                           {:mvn/version "2023.08.22-alpha"}
            net.clojars.wkok/openai-clojure               {:mvn/version "0.14.0"}
@@ -29,7 +29,7 @@
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
                                       criterium/criterium         {:mvn/version "0.4.6"}
-                                      djblue/portal               {:mvn/version "0.49.1"}
+                                      djblue/portal               {:mvn/version "0.50.0"}
                                       integrant/repl              {:mvn/version "0.3.3"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "v2023.11.21"}}
