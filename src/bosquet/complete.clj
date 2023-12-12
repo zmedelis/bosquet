@@ -39,12 +39,12 @@
   (let [{service       wkk/service
          params        wkk/model-parameters
          cache         wkk/cache
-         output-format wkk/output-format}
+         output-format wkk/output-format :as gen-opts}
         (get-in opts [wkk/llm-config (or gen-var wkk/default-gen-var-name)])
 
         llm       (sys/get-service service)
         _         (when-not llm (throw (ex-info "LLM service is not configured" {:service service})))
-        generator (fn [prompt params] (.generate llm prompt params))
+        generator (fn [prompt params] (.generate llm prompt (merge gen-opts params)))
 
         {{completion :completion} llm/content :as generation}
         (generate-with-cache cache generator prompt params)]

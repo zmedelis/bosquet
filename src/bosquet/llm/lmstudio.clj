@@ -44,16 +44,15 @@
 (def ^:private gen-type :gen-type)
 
 (defn- chat-completion
-  [messages {generation-type gen-type :as params} opts]
+  [messages {generation-type gen-type :as params}]
   (timbre/infof "💬 Calling LM Studio with:")
   (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
-  (timbre/infof "\tConfig: '%s'" opts)
   (let [messages (if (string? messages)
                    [(chat/speak chat/user messages)]
                    messages)]
     (-> params
         (assoc :messages messages)
-        (post-completion opts)
+        (post-completion params)
         (->completion generation-type))))
 
 (deftype LMStudio
@@ -61,9 +60,9 @@
   llm/LLM
   (service-name [_this] ::lm-studio)
   (generate [_this prompt params]
-    (chat-completion prompt (assoc params gen-type :complete) opts))
+    (chat-completion prompt (assoc params gen-type :complete)))
   (chat     [_this conversation params]
-    (chat-completion conversation (assoc params gen-type :chat) opts)))
+    (chat-completion conversation (assoc params gen-type :chat))))
 
 (comment
   (def llm (LMStudio.
