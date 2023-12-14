@@ -2,30 +2,8 @@
   (:require
    [bosquet.llm.chat :as chat]
    [bosquet.llm.llm :as llm]
-   [bosquet.utils :as u]
-   [clojure.string :as string]
-   [hato.client :as hc]
+   [bosquet.llm.http :as http]
    [taoensso.timbre :as timbre]))
-
-(defn- fix-params
-  "Snake case keys from `:max-tokens` to `:max_tokens`"
-  [params]
-  (reduce-kv
-   (fn [m k v]
-     (assoc m
-            (-> k name (string/replace "-" "_") keyword)
-            v))
-   {}
-   params))
-
-(defn- post-completion
-  [params {:keys [api-endpoint]}]
-  (let [res (hc/post (str api-endpoint "/chat/completions")
-                     {:content-type :json
-                      :body         (-> params fix-params u/write-json)})]
-    (-> res
-        :body
-        (u/read-json))))
 
 (defn- ->completion
   [{choices :choices {prompt_tokens     :prompt_tokens
@@ -44,31 +22,37 @@
 (def ^:private gen-type :gen-type)
 
 (defn- chat-completion
-  [messages {generation-type gen-type :as params}]
+  [messages {generation-type gen-type
+             api-endpoint    :api-endpoint
+             :as             params}]
   (timbre/infof "💬 Calling LM Studio with:")
   (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
-  (let [messages (if (string? messages)
-                   [(chat/speak chat/user messages)]
-                   messages)]
-    (-> params
-        (assoc :messages messages)
-        (post-completion params)
-        (->completion generation-type))))
+  (-> params
+      (assoc :messages (if (string? messages)
+                         [(chat/speak chat/user messages)]
+                         messages)
+             :api-endpoint (str api-endpoint "/chat/completions"))
+      (http/post)
+      (->completion generation-type)))
 
 (deftype LMStudio
          [opts]
   llm/LLM
   (service-name [_this] ::lm-studio)
   (generate [_this prompt params]
-    (chat-completion prompt (assoc params gen-type :complete)))
+    (chat-completion prompt
+                     (merge opts
+                            (assoc params gen-type :complete))))
   (chat     [_this conversation params]
-    (chat-completion conversation (assoc params gen-type :chat))))
+    (chat-completion conversation
+                     (merge opts
+                            (assoc params gen-type :chat)))))
 
 (comment
   (def llm (LMStudio.
             {:api-endpoint "http://localhost:1234/v1"}))
   (.chat llm
-         (chat/converse chat/system "You are a brilliant cook."
-                        chat/user "What is a good cookie?")
+         (chat/converse chat/system "You are good at maths."
+                        chat/user "1 + 2 =")
          {})
   #__)
