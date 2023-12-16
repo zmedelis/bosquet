@@ -9,8 +9,6 @@
 
 (def lm-studio ::lm-studio)
 
-(def azure ::azure)
-
 (def provider ::provider)
 
 (defn- handle-openai-chat [params service-config]
