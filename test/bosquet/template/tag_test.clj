@@ -6,7 +6,8 @@
    [selmer.parser :as parser]))
 
 (defn tag-fixture [f]
-  (with-redefs [tag/gen-tag (fn [_args _context] "GEN")]
+  (with-redefs [tag/gen-tag  (fn [_args _context] "GEN")
+                tag/gen-tag2 (fn [_args _context] "GEN2")]
     (tag/add-tags)
     (f))
   ;; restore original tag setup
@@ -35,3 +36,7 @@
   (is (= {wkk/gen-var-name :test1
           wkk/llm-config   {:test1 {:x "override" :y "2"}}}
          (tag/generation-params ["var=test1" "x=1" "y=2"] {wkk/llm-config {:test1 {:x "override"}}}))))
+
+
+(deftest gen2-tag
+  (is (= "val = GEN2" (parser/render "{{x}} = {% gen2 my-var %}" {:x "val"}))))

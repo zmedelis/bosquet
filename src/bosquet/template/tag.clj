@@ -2,6 +2,7 @@
   (:require
    [bosquet.complete :as complete]
    [bosquet.llm.llm :as llm]
+   [bosquet.llm :as llm2]
    [bosquet.wkk :as wkk]
    [clojure.string :as string]
    [selmer.parser :as parser]))
@@ -47,7 +48,16 @@
       llm/content
       :completion))
 
+(defn gen-tag2
+  [args {prompt preceding-text
+         :as    opts}]
+  (-> prompt
+      (llm2/chat (generation-params args opts) {})
+      llm/content
+      :completion))
+
 (defn add-tags []
   (parser/add-tag! :gen gen-tag)
+  (parser/add-tag! :gen2 gen-tag2)
   ;; for backwards compatability
   (parser/add-tag! :llm-generate gen-tag))

@@ -2,6 +2,7 @@
   (:require
    [bosquet.wkk :as wkk]
    [clojure.edn :as edn]
+   [clojure.set :as set]
    [clojure.java.io :as io]
    [clojure.string :as string]
    [selmer.parser :as selmer]
@@ -51,12 +52,34 @@
                         (str variable) #".*=" ""))))
        (set)))
 
+(defn generation-vars2 [template]
+  (set (map-indexed
+        (fn [idx [_ var]]
+          (if (string/blank? var)
+            (keyword "bosquet" (str "gen-" (inc idx)))
+            (keyword var)))
+        (re-seq #"\{%\s*gen2\s*(.*?)\s*%\}" template))))
+
+(defn template-vars
+  "Extract variables from the `tempalte`. There are two types of variables:
+
+  - `data-slots` are your regular template variables like `{{x}}` those come from
+    the passed in data or template references
+
+  - `gen-vars` are generation variables declared in `gen` tag and those will hold
+  generation results."
+  [template]
+  (let [all-vars (selmer/known-variables template)
+        gen-vars (generation-vars2 template)]
+    {:data-slots (set/difference all-vars gen-vars)
+     :gen-vars   gen-vars}))
+
 (defn slots-required
   "Find slots reffered to in the template"
   [text]
   (set
    (remove
-      ;; remove config values coming from tags like `gen`
+    ;; remove config values coming from tags like `gen`
     (fn [variable] (string/includes? (name variable) "="))
     (selmer/known-variables text))))
 
@@ -65,6 +88,6 @@
   ([text ctx] (fill-slots text ctx nil))
   ([text ctx config]
    (without-escaping
-    (selmer/render-with-values
-     text
-     (assoc ctx wkk/llm-config config)))))
+     (selmer/render-with-values
+      text
+      (assoc ctx wkk/llm-config config)))))
