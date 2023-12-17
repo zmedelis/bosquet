@@ -52,6 +52,26 @@
     (assoc-in generation [llm/content :completion]
               (converter/coerce completion output-format))))
 
+
+(defn complete-2
+  [{prompt  :prompt
+    gen-var wkk/gen-var-name :as opts}]
+  (let [{service       wkk/service
+         params        wkk/model-parameters
+         cache         wkk/cache
+         output-format wkk/output-format :as gen-opts}
+        (get-in opts [wkk/llm-config (or gen-var wkk/default-gen-var-name)])
+
+        llm       (sys/get-service service)
+        _         (when-not llm (throw (ex-info "LLM service is not configured" {:service service})))
+        generator (fn [prompt params] (.generate llm prompt (merge gen-opts params)))
+
+        {{completion :completion} llm/content :as generation}
+        (generate-with-cache cache generator prompt params)]
+
+    (assoc-in generation [llm/content :completion]
+              (converter/coerce completion output-format))))
+
 (defn chat-completion [messages
                        {{service      wkk/service
                          model-params wkk/model-parameters} llm.chat/conversation}]

@@ -63,7 +63,7 @@
 (defn template-vars
   "Extract variables from the `tempalte`. There are two types of variables:
 
-  - `data-slots` are your regular template variables like `{{x}}` those come from
+  - `data-vars` are your regular template variables like `{{x}}` those come from
     the passed in data or template references
 
   - `gen-vars` are generation variables declared in `gen` tag and those will hold
@@ -71,8 +71,8 @@
   [template]
   (let [all-vars (selmer/known-variables template)
         gen-vars (generation-vars2 template)]
-    {:data-slots (set/difference all-vars gen-vars)
-     :gen-vars   gen-vars}))
+    {:data-vars (vec (set/difference all-vars gen-vars))
+     :gen-vars  (vec gen-vars)}))
 
 (defn slots-required
   "Find slots reffered to in the template"
