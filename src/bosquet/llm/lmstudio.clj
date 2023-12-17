@@ -27,13 +27,13 @@
              :as             params}]
   (timbre/infof "💬 Calling LM Studio with:")
   (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
-  (-> params
-      (assoc :messages (if (string? messages)
-                         [(chat/speak chat/user messages)]
-                         messages)
-             :api-endpoint (str api-endpoint "/chat/completions"))
-      (http/post)
-      (->completion generation-type)))
+  (let [call (partial http/post (str api-endpoint "/chat/completions"))]
+    (-> params
+        (assoc :messages (if (string? messages)
+                           [(chat/speak chat/user messages)]
+                           messages))
+        call
+        (->completion generation-type))))
 
 (deftype LMStudio
          [opts]
