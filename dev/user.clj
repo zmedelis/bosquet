@@ -51,6 +51,10 @@
   (p/open)
   (add-tap #'p/submit))
 
+
+(defn clear-portal []
+  (p/clear))
+
 (defn reset-ig []
   (ir/reset))
 
