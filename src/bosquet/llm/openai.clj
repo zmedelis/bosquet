@@ -128,11 +128,10 @@
      (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
      (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
      (try
-       (timbre/spy
-        (-> params
-            (assoc :messages messages)
-            (api/create-chat-completion opts)
-            ->completion))
+       (-> params
+           (assoc :messages messages)
+           (api/create-chat-completion opts)
+           ->completion)
        (catch Exception e
          (throw (->error e)))))))
 

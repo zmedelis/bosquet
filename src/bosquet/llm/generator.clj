@@ -89,10 +89,12 @@
       ::pco/resolve
       (fn [_env input]
         (let [[completed completion] (template/fill-slots-2
-                                      llm-config properties template input)]
-          (tap> {'completed completed
+                                      llm-config properties template input)
+              completed              ((first gen-vars) completed)
+              completion             (:gen2 completion)]
+          (tap> {'completed  completed
                  'completion completion
-                 'input input})
+                 'input      input})
           (merge {current-prompt completed} completion input)))})))
 
 (defn- resolver-error-wrapper
@@ -195,13 +197,14 @@
 (comment
   (generate-2
    {llm/openai {:api-key      (-> "config.edn" slurp read-string :openai-api-key)
-                :api-endpoint "https://api.openai.com/v1"
-                :handler-fn   (fn [_x _y] (prn "HANDLER" _x _y))}}
+                :api-endpoint "https://api.openai.com/v1"}}
    {:answer {llm/service      llm/openai
              :cache           true
              llm/model-params {:temperature 0.4
-                               :model       :gpt-3.5-turbo}}}
-   {:question-answer "Question: {{question}}  Answer: {% gen2 answer %}"}
+                               :model       :gpt-3.5-turbo}}
+    :eval   {llm/gen-fn (fn [prompt] {:eval (str "TODO-" prompt "-TODO")})}}
+   {:question-answer "Question: {{question}}  Answer: {% gen2 answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% gen2 eval %}"}
    {:question "What is the distance from Moon to Io?"})
 
   (generate

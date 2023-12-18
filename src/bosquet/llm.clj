@@ -11,6 +11,7 @@
 
 (def service :llm/service)
 (def model-params :llm/model-params)
+(def gen-fn :llm/gen-fn)
 
 (defn- handle-openai-chat [service-config params]
   (openai/chat-completion params service-config))

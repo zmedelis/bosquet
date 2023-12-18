@@ -100,5 +100,5 @@
     (selmer/render-with-values
      prompt
      (merge data
-            {:service llm-config
+            {:service    llm-config
              :properties properties}))))
