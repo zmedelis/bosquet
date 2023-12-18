@@ -119,26 +119,22 @@
          (throw (->error e)))))))
 
 (defn chat-completion
-  {:malli/schema
-   [:function
-    [:=> [:cat :string] llm/chat-response]
-    [:=> [:cat :string :map] llm/chat-response]
-    [:=> [:cat :string :map :map] llm/chat-response]]
-   :malli/gen mg/generate}
-  ;; TODO move 'messages' into params
-  [messages {:keys [model] :as params} opts]
-  (let [params   (if model params (assoc params :model cgpt-35))
-        messages (mapv chat/bosquet->chatml messages)]
-    (timbre/infof "💬 Calling OAI chat with:")
-    (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
-    (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
-    (try
-      (-> params
-          (assoc :messages messages)
-          (api/create-chat-completion opts)
-          ->completion)
-      (catch Exception e
-        (throw (->error e))))))
+  ([messages props opts]
+   (chat-completion (assoc props :messages messages) opts))
+  ([{:keys [messages model] :as params} opts]
+   (let [params   (if model params (assoc params :model cgpt-35))
+         messages (mapv chat/bosquet->chatml messages)]
+     (timbre/infof "💬 Calling OAI chat with:")
+     (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
+     (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
+     (try
+       (timbre/spy
+        (-> params
+            (assoc :messages messages)
+            (api/create-chat-completion opts)
+            ->completion))
+       (catch Exception e
+         (throw (->error e)))))))
 
 (def openai
   "Service name to refernece OpenAI"

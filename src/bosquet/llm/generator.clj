@@ -1,6 +1,7 @@
 (ns bosquet.llm.generator
   (:require
    [bosquet.complete :as complete]
+   [bosquet.llm :as llm]
    [bosquet.llm.chat :as chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
@@ -69,6 +70,31 @@
                                                           system-config)]
           (merge {the-key completed} completion input)))})))
 
+
+(defn- generation-resolver-2
+  "Build dynamic resolvers figuring out what each prompt tempalte needs
+  and set it as required inputs for the resolver.
+
+  For the output check if themplate is producing generated content
+  anf if so add a key for it into the output"
+  [llm-config properties current-prompt template]
+  (let [{:keys [data-vars gen-vars]} (template/template-vars template)]
+    (timbre/info "Resolving: " current-prompt)
+    (timbre/info "\tInput data: " data-vars)
+    (timbre/info "\tGenerate for: " gen-vars)
+    (pco/resolver
+     {::pco/op-name (-> current-prompt .-sym (str "-gen") keyword symbol)
+      ::pco/output  gen-vars
+      ::pco/input   data-vars
+      ::pco/resolve
+      (fn [_env input]
+        (let [[completed completion] (template/fill-slots-2
+                                      llm-config properties template input)]
+          (tap> {'completed completed
+                 'completion completion
+                 'input input})
+          (merge {current-prompt completed} completion input)))})))
+
 (defn- resolver-error-wrapper
   [env]
   (p.plugin/register
@@ -87,6 +113,13 @@
       (generation-resolver prompt-key (prompt-key prompts) opts))
     (keys prompts))))
 
+(defn- prompt-indexes-2 [llm-config opts prompts]
+  (pci/register
+   (mapv
+    (fn [prompt-key]
+      (generation-resolver-2 llm-config opts prompt-key (prompt-key prompts) ))
+    (keys prompts))))
+
 (defn all-keys
   "Produce a list of all the data keys that will come out of the Pathom processing.
   Whatever is refered in `prompts` and comes in via input `data`"
@@ -97,6 +130,15 @@
     (fn [prompt-key]
       (output-keys prompt-key (get prompts prompt-key)))
     (keys prompts))))
+
+(defn all-keys2
+  [prompts data]
+  (reduce
+   (fn [m prompt-key]
+     (concat m
+             (:gen-vars (template/template-vars (get prompts prompt-key)))))
+   (vec (keys data))
+   (keys prompts)))
 
 (defn generate
   ([prompts] (generate prompts nil nil))
@@ -114,6 +156,21 @@
            (resolver-error-wrapper)
            (psm/smart-map inputs)
            (select-keys extraction-keys))))))
+
+(defn generate-2
+  [llm-provider-config
+   gen-props
+   prompt
+   input-data]
+  (if (string? prompt)
+    (let [[completed completion] (complete-template prompt input-data llm-provider-config)]
+      (merge completion input-data {:bosquet.gen/completed-prompt completed}))
+    (let [extraction-keys (all-keys2 prompt input-data)]
+      (timbre/info "Resolving for: " extraction-keys)
+      (-> (prompt-indexes-2 llm-provider-config gen-props prompt)
+          (resolver-error-wrapper)
+          (psm/smart-map input-data)
+          (select-keys extraction-keys)))))
 
 (defn- fill-converation-slots
   "Fill all the Selmer slots in the conversation context. It will
@@ -134,7 +191,24 @@
    (let [updated-context (fill-converation-slots messages inputs opts)]
      (complete/chat-completion updated-context opts))))
 
+
 (comment
+  (generate-2
+   {llm/openai {:api-key      (-> "config.edn" slurp read-string :openai-api-key)
+                :api-endpoint "https://api.openai.com/v1"
+                :handler-fn   (fn [_x _y] (prn "HANDLER" _x _y))}}
+   {:answer {llm/service      llm/openai
+             :cache           true
+             llm/model-params {:temperature 0.4
+                               :model       :gpt-3.5-turbo}}}
+   {:question-answer "Question: {{question}}  Answer: {% gen2 answer %}"}
+   {:question "What is the distance from Moon to Io?"})
+
+  (generate
+   {:question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"}
+   {:question "What is the distance from Moon to Io?"}
+   {:answer {wkk/service          :llm/openai
+             wkk/model-parameters {:max-tokens 100}}})
 
   (chat
    [(chat/speak chat/system "You are a brilliant {{role}}.")
@@ -169,18 +243,12 @@ omit any other prose and explanations."
 
   (generate
    {:role            "As a brilliant {{you-are}} answer the following question."
-    :question        "What is the distance between Io and Europa?"
-    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
+    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"}
    {:you-are  "astronomer"
     :question "What is the distance from Moon to Io?"}
-   ;; TODO rename `model-parameters` -> `parameters`
    {:answer {wkk/service          :llm/openai
              wkk/cache            true
-             wkk/model-parameters {:temperature 0.4 :model "gpt-3.5-turbo"}}
-    :test   {wkk/service          :llm/openai
-             wkk/cache            true
-             wkk/model-parameters {:temperature 0.0}}})
+             wkk/model-parameters {:temperature 0.4 :model "gpt-3.5-turbo"}}})
 
   (chat
    (chat/converse
@@ -201,6 +269,16 @@ omit any other prose and explanations."
    {:text {wkk/service          wkk/oai-service
            wkk/cache            false
            wkk/model-parameters {:temperature 0.0 :max-tokens 100 :model "gpt-3.5-turbo-1106"}}})
+
+  (generate
+   "As a brilliant {{you-are}} list distances between planets and the Sun
+      in the Solar System. Provide the answer in JSON map where the key is the
+      planet name and the value is the string distance in millions of kilometers.
+      Generate only JSON omit any other prose and explanations."
+   {:you-are "astronomer"}
+   {:gen {wkk/service       :llm/lmstudio
+          wkk/output-format :json
+          :api-endpoint     "http://localhost:1235/v1"}})
 
   (chat
    [(chat/speak chat/user "What's the weather like in San Francisco, Tokyo, and Paris?")]

@@ -6,5 +6,5 @@
 (deftest picking-the-right-handler
   (is (= {:model  :raccoon
           :called true}
-         (llm/chat {llm/provider :umbrella-corp} {:model :raccoon}
+         (llm/chat {llm/service :umbrella-corp} {:model :raccoon}
                    {:umbrella-corp (fn [_config props] (assoc props :called true))}))))

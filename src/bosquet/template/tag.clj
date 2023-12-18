@@ -5,7 +5,8 @@
    [bosquet.llm :as llm2]
    [bosquet.wkk :as wkk]
    [clojure.string :as string]
-   [selmer.parser :as parser]))
+   [selmer.parser :as parser]
+   [bosquet.llm.chat :as chat]))
 
 (def ^:private preceding-text
   "This is where Selmer places text preceding the `gen` tag"
@@ -50,11 +51,21 @@
 
 (defn gen-tag2
   [args {prompt preceding-text
-         :as    opts}]
-  (-> prompt
-      (llm2/chat (generation-params args opts) {})
-      llm/content
-      :completion))
+         service :service
+         properties :properties}]
+  (let [target (-> args first keyword)]
+    (-> (llm2/chat
+
+         (assoc
+          ((get-in properties [target llm2/service]) service)
+          llm2/service (get-in properties [target llm2/service]))
+
+         (assoc
+          (get-in properties [target llm2/model-params])
+          :messages (chat/converse chat/user prompt)))
+        llm/content
+        :completion
+        :content)))
 
 (defn add-tags []
   (parser/add-tag! :gen gen-tag)

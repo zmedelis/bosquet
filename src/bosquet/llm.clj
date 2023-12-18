@@ -9,10 +9,11 @@
 
 (def lm-studio ::lm-studio)
 
-(def provider ::provider)
+(def service :llm/service)
+(def model-params :llm/model-params)
 
-(defn- handle-openai-chat [params service-config]
-  (openai/chat-completion service-config params))
+(defn- handle-openai-chat [service-config params]
+  (openai/chat-completion params service-config))
 
 (defn- handle-cohere-chat [arg1]
   )
@@ -29,18 +30,18 @@
   ([llm-service-config generation-props]
    (chat llm-service-config generation-props chat-handlers))
 
-  ([{service provider :as llm-config} generation-props handlers]
-   (let [handler (handlers service)]
+  ([{llm service :as llm-config} generation-props handlers]
+   (let [handler (handlers llm)]
      (handler llm-config generation-props))))
 
 
 (comment
   (chat
-   {provider openai
+   {service       openai
     :api-key      (-> "config.edn" slurp read-string :openai-api-key)
     :api-endpoint "https://api.openai.com/v1"}
-   {:model  :gpt-3.5-turbo
-    :messages (chat/converse chat/user "What is the distance from Moon to Io?")
-    :max-tokens 100
+   {:model       :gpt-3.5-turbo
+    :messages    (chat/converse chat/user "What is the distance from Moon to Io?")
+    :max-tokens  100
     :temperature 0.0})
   #__)
