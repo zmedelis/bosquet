@@ -159,14 +159,14 @@
 (defn generate-2
   [llm-provider-config
    gen-props
-   prompt
+   context
    input-data]
-  (if (string? prompt)
-    (let [[completed completion] (complete-template prompt input-data llm-provider-config)]
+  (if (string? context)
+    (let [[completed completion] (complete-template context input-data llm-provider-config)]
       (merge completion input-data {:bosquet.gen/completed-prompt completed}))
-    (let [extraction-keys (all-keys2 prompt input-data)]
+    (let [extraction-keys (all-keys2 context input-data)]
       (timbre/info "Resolving for: " extraction-keys)
-      (-> (prompt-indexes-2 llm-provider-config gen-props prompt)
+      (-> (prompt-indexes-2 llm-provider-config gen-props context)
           (resolver-error-wrapper)
           (psm/smart-map input-data)
           (select-keys extraction-keys)))))
@@ -190,8 +190,65 @@
    (let [updated-context (fill-converation-slots messages inputs opts)]
      (complete/chat-completion updated-context opts))))
 
+(defn ->completer
+  [llm-services]
+  (fn [parameters context data]
+    (generate-2 llm-services parameters context data)))
 
 (comment
+
+  (def generator
+    (->completer
+     (merge
+      llm/default-services
+      {llm/cohere {:api-key      (-> "config.edn" slurp read-string :cohere-api-key)
+                   :api-endpoint "https://api.openai.com/v1"
+                   llm/chat-fn   llm/handle-cohere-chat}
+       :local2    {llm/complete-fn (fn [_system _options] "COMPLETE-LOCAL2")
+                   llm/chat-fn     (fn [_system _options]
+                                     (prn "LOCAL")
+                                     {bosquet.llm.llm/content
+                                      {:completion
+                                       {:content "CHAT-LOCAL2"}}})}})))
+
+  ;; COMPLETION
+  (generator
+   {:answer {llm/service      llm/openai
+             :cache           true
+             llm/model-params {:model :gpt-3.5-turbo}}
+    :eval   {llm/service :local2}}
+
+   {:question-answer "Question: {{question}}  Answer: {% gen2 answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% gen2 eval%}"}
+
+   {:question "What is the distance from Moon to Io?"})
+
+  ;; CHAT
+  (generator
+   {:answer {llm/service      llm/openai
+             llm/model-params {:temperature 0.4
+                               :model       :gpt-3.5-turbo}}
+    :eval   {llm/service :local2
+             :cache      true}}
+
+   [:system "You are a playwright. Given the play's title and genre write synopsis."
+    :user "Title: {{title}}; Genre: {{genre}}"
+    :user "Playwright: This is a synopsis for the above play:"]
+
+   {:title "Mr. X" :genre "crime"})
+
+  ;; TEMPLATE
+  (generator
+   {:answer {llm/service      llm/openai
+             llm/model-params {:temperature 0.4
+                               :model       :gpt-3.5-turbo}}
+    :eval   {llm/service :local2
+             :cache      true}}
+
+   "Question: {{question}}  Answer: {{answer}}"
+
+   {:question "What is the distance from Moon to Io?"})
+
   (generate-2
    {llm/openai {:api-key      (-> "config.edn" slurp read-string :openai-api-key)
                 :api-endpoint "https://api.openai.com/v1"}
