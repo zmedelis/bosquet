@@ -92,9 +92,6 @@
                                       llm-config properties template input)
               completed              ((first gen-vars) completed)
               completion             (:gen2 completion)]
-          (tap> {'completed  completed
-                 'completion completion
-                 'input      input})
           (merge {current-prompt completed} completion input)))})))
 
 (defn- resolver-error-wrapper
@@ -197,12 +194,13 @@
 (comment
   (generate-2
    {llm/openai {:api-key      (-> "config.edn" slurp read-string :openai-api-key)
-                :api-endpoint "https://api.openai.com/v1"}}
+                :api-endpoint "https://api.openai.com/v1"}
+    :local     {llm/gen-fn (fn [_system options] {:eval (str "TODO-" (:gen options) "-TODO")})}}
    {:answer {llm/service      llm/openai
-             :cache           true
              llm/model-params {:temperature 0.4
                                :model       :gpt-3.5-turbo}}
-    :eval   {llm/gen-fn (fn [prompt] {:eval (str "TODO-" prompt "-TODO")})}}
+    :eval   {llm/service :local
+             :cache      true}}
    {:question-answer "Question: {{question}}  Answer: {% gen2 answer %}"
     :self-eval       "{{answer}} Is this a correct answer? {% gen2 eval %}"}
    {:question "What is the distance from Moon to Io?"})

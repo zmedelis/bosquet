@@ -31,17 +31,18 @@
   ([llm-service-config generation-props]
    (chat llm-service-config generation-props chat-handlers))
 
-  ([{llm service :as llm-config} generation-props handlers]
+  ([llm-config {llm service :as generation-props} handlers]
    (let [handler (handlers llm)]
-     (handler llm-config generation-props))))
+     (handler llm-config
+              (dissoc generation-props service)))))
 
 
 (comment
   (chat
-   {service       openai
-    :api-key      (-> "config.edn" slurp read-string :openai-api-key)
+   {:api-key      (-> "config.edn" slurp read-string :openai-api-key)
     :api-endpoint "https://api.openai.com/v1"}
-   {:model       :gpt-3.5-turbo
+   {service       openai
+    :model       :gpt-3.5-turbo
     :messages    (chat/converse chat/user "What is the distance from Moon to Io?")
     :max-tokens  100
     :temperature 0.0})

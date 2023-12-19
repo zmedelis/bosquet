@@ -56,18 +56,15 @@
          properties :properties}]
   (let [target   (-> args first keyword)
         llm-impl (get-in properties [target llm2/service])
-        gen-fn   (get-in properties [target llm2/gen-fn])]
+        gen-fn   (llm2/gen-fn (llm-impl service))]
     (if gen-fn
-      (gen-fn prompt)
+      (gen-fn service {:gen prompt})
       {target
        (-> (llm2/chat
-
-            (assoc
-             (llm-impl service)
-             llm2/service (get-in properties [target llm2/service]))
-
+            (llm-impl service)
             (assoc
              (get-in properties [target llm2/model-params])
+             llm2/service (get-in properties [target llm2/service])
              :messages (chat/converse chat/user prompt)))
            llm/content
            :completion
