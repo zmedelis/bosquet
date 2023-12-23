@@ -35,6 +35,20 @@
 (def ^:private ^{:deprecated true} var-name ":var-name=")
 (def ^:prvate var-name2 ":var=")
 
+
+(def gen-tag-name "gen2")
+
+(defn has-gen-tag? [template]
+  (re-find
+   (re-pattern (str "\\{%\\s+" gen-tag-name "\\s+\\S*?\\s*%\\}"))
+   template))
+
+(defn ensure-gen-tag
+  [template]
+  (if (has-gen-tag? template)
+    template
+    (format "%s {%% %s %%}" template gen-tag-name)))
+
 (defn- var-name? [name]
   (or
    (string/starts-with? (str name) var-name)
@@ -58,7 +72,8 @@
           (if (string/blank? var)
             (keyword "bosquet" (str "gen-" (inc idx)))
             (keyword var)))
-        (re-seq #"\{%\s*gen2\s*(.*?)\s*%\}" template))))
+        (re-seq
+         (re-pattern (str "\\{%\\s*" gen-tag-name "\\s*(.*?)\\s*%\\}")) template))))
 
 (defn template-vars
   "Extract variables from the `tempalte`. There are two types of variables:

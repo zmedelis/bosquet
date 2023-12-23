@@ -1,9 +1,12 @@
 (ns bosquet.template.read-test
   (:require
-   [matcher-combinators.matchers :as m]
-   [matcher-combinators.test]
+   [bosquet.template.read :as read]
+   [bosquet.template.tag :as tag]
    [clojure.test :refer [deftest is]]
-   [bosquet.template.read :as read]))
+   [matcher-combinators.matchers :as m]
+   [matcher-combinators.test]))
+
+(tag/add-tags)
 
 (deftest fill-slots-test
   (is (= "What is 1 + 2"
@@ -30,3 +33,14 @@
        {:data-vars [:x]
         :gen-vars  (m/in-any-order [:bosquet/gen-1 :y])}
        (read/template-vars "{{x}}{%gen2%}{%gen2 y%}"))))
+
+(deftest ensure-gen-tag-test
+  (is (= (str "So it begins {% " read/gen-tag-name " %}")
+         (read/ensure-gen-tag "So it begins")))
+  (is (= (str "So it begins {% " read/gen-tag-name " %}")
+         (read/ensure-gen-tag "So it begins")))
+  (is (= (str "So it begins {% " read/gen-tag-name " var-name %}")
+         (read/ensure-gen-tag (str "So it begins {% " read/gen-tag-name " var-name %}"))))
+  (is (= (str "{% " read/gen-tag-name " %} so it ends.")
+         (read/ensure-gen-tag
+          (str "{% " read/gen-tag-name " %} so it ends.")))))

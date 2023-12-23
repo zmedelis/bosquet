@@ -62,9 +62,6 @@
                         (llm-impl service)
                         llm2/gen-fn
                         llm2/chat-fn)]
-    (tap> {'opts opts 'target target 'model-params model-params
-           'chat-fn chat-fn
-           'service-config service-config})
     {target
      (->
       (chat-fn service-config
