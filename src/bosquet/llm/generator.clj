@@ -5,7 +5,9 @@
    [bosquet.llm.chat :as chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
+   [bosquet.utils :as u]
    [bosquet.wkk :as wkk]
+   [clojure.walk :as w]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
    [com.wsscode.pathom3.interface.smart-map :as psm]
@@ -13,9 +15,6 @@
    [taoensso.timbre :as timbre]))
 
 (tag/add-tags)
-
-(defn- has-gen-tag? [template]
-  (re-find #"\{%\s+gen\s+%\}" template))
 
 (defn complete-template
   "Fill in `template` `slots` with Selmer and call generation function
@@ -37,8 +36,8 @@
   ([template] (complete-template template nil nil))
   ([template slots] (complete-template template slots {}))
   ([template slots config]
-   (let [template (if (has-gen-tag? template) template (str template " {% gen %}"))]
-     (template/fill-slots
+   (let [template (template/ensure-gen-tag template)]
+     (template/fill-slots-2
       template
       (assoc slots :the-key (first (template/generation-vars template))) ; only one `gen` is supported in template
       config))))
@@ -70,7 +69,6 @@
                                                           system-config)]
           (merge {the-key completed} completion input)))})))
 
-
 (defn- generation-resolver-2
   "Build dynamic resolvers figuring out what each prompt tempalte needs
   and set it as required inputs for the resolver.
@@ -88,8 +86,7 @@
       ::pco/input   data-vars
       ::pco/resolve
       (fn [_env input]
-        (let [[completed completion] (template/fill-slots-2
-                                      llm-config properties template input)
+        (let [[completed completion] (template/fill-slots-2 llm-config properties template input)
               completed              ((first gen-vars) completed)
               completion             (:gen2 completion)]
           (merge {current-prompt completed} completion input)))})))
@@ -116,7 +113,7 @@
   (pci/register
    (mapv
     (fn [prompt-key]
-      (generation-resolver-2 llm-config opts prompt-key (prompt-key prompts) ))
+      (generation-resolver-2 llm-config opts prompt-key (prompt-key prompts)))
     (keys prompts))))
 
 (defn all-keys
@@ -132,12 +129,16 @@
 
 (defn all-keys2
   [prompts data]
-  (reduce
-   (fn [m prompt-key]
-     (concat m
-             (:gen-vars (template/template-vars (get prompts prompt-key)))))
-   (vec (keys data))
-   (keys prompts)))
+  (u/flattenx
+   (concat
+    (keys data)
+    (w/prewalk
+     #(cond
+        (string? %) (:gen-vars (template/template-vars %))
+        ;; TODO; this is OAI specific, and not really a good place to do this
+        (#{:system :assistant :user} %) nil
+        :else %)
+     prompts))))
 
 (defn generate
   ([prompts] (generate prompts nil nil))
@@ -156,20 +157,45 @@
            (psm/smart-map inputs)
            (select-keys extraction-keys))))))
 
+(defn- complete*
+  [llm-provider-config gen-props
+   context input-data]
+  (let [extraction-keys (all-keys2 context input-data)]
+    (timbre/info "Resolving for: " extraction-keys)
+    (-> (prompt-indexes-2 llm-provider-config gen-props context)
+        (resolver-error-wrapper)
+        (psm/smart-map input-data)
+        (select-keys extraction-keys))))
+
+(defn- fill-converation-slots-2
+  [llm-provider-config gen-props context input]
+  (mapv
+   (fn [{content chat/content :as msg}]
+     (assoc msg
+            chat/content
+            (first (template/fill-slots-2 llm-provider-config gen-props
+                                          content
+                                          input))))
+   context))
+
+(defn- chat* [llm-provider-config gen-props context input]
+  (let [updated-context (fill-converation-slots-2 llm-provider-config gen-props context input)
+        service-config (get llm-provider-config (llm/service gen-props))
+        {:llm/keys [chat-fn]} service-config]
+    {:chat (chat-fn (dissoc service-config llm/gen-fn llm/chat-fn)
+                    (assoc gen-props :messages updated-context))}))
+
 (defn generate-2
-  [llm-provider-config
-   gen-props
-   context
-   input-data]
-  (if (string? context)
-    (let [[completed completion] (complete-template context input-data llm-provider-config)]
-      (merge completion input-data {:bosquet.gen/completed-prompt completed}))
-    (let [extraction-keys (all-keys2 context input-data)]
-      (timbre/info "Resolving for: " extraction-keys)
-      (-> (prompt-indexes-2 llm-provider-config gen-props context)
-          (resolver-error-wrapper)
-          (psm/smart-map input-data)
-          (select-keys extraction-keys)))))
+  [llm-provider-config gen-props context input-data]
+  (if (vector? context)
+    (chat* llm-provider-config gen-props (apply chat/converse context) input-data)
+    (complete* llm-provider-config gen-props
+               (if (string? context)
+                 ;; a single string template prompt, convert to map context
+                 ;; to be processed as completion
+                 {:string-template (template/ensure-gen-tag context)}
+                 context)
+               input-data)))
 
 (defn- fill-converation-slots
   "Fill all the Selmer slots in the conversation context. It will
@@ -206,7 +232,6 @@
                    llm/chat-fn   llm/handle-cohere-chat}
        :local2    {llm/complete-fn (fn [_system _options] "COMPLETE-LOCAL2")
                    llm/chat-fn     (fn [_system _options]
-                                     (prn "LOCAL")
                                      {bosquet.llm.llm/content
                                       {:completion
                                        {:content "CHAT-LOCAL2"}}})}})))
@@ -217,6 +242,8 @@
              :cache           true
              llm/model-params {:model :gpt-3.5-turbo}}
     :eval   {llm/service :local2}}
+   ;; just as in CHAT 'global' config should be supported
+   #_{llm/service :local2}
 
    {:question-answer "Question: {{question}}  Answer: {% gen2 answer %}"
     :self-eval       "{{answer}} Is this a correct answer? {% gen2 eval%}"}
@@ -225,41 +252,21 @@
 
   ;; CHAT
   (generator
-   {:answer {llm/service      llm/openai
-             llm/model-params {:temperature 0.4
-                               :model       :gpt-3.5-turbo}}
-    :eval   {llm/service :local2
-             :cache      true}}
+   {llm/service      llm/openai
+    llm/model-params {:temperature 0.4
+                      :model       :gpt-3.5-turbo}}
 
    [:system "You are a playwright. Given the play's title and genre write synopsis."
-    :user "Title: {{title}}; Genre: {{genre}}"
+    :user ["Title: {{title}}"
+           "Genre: {{genre}}"]
     :user "Playwright: This is a synopsis for the above play:"]
 
    {:title "Mr. X" :genre "crime"})
 
   ;; TEMPLATE
   (generator
-   {:answer {llm/service      llm/openai
-             llm/model-params {:temperature 0.4
-                               :model       :gpt-3.5-turbo}}
-    :eval   {llm/service :local2
-             :cache      true}}
-
-   "Question: {{question}}  Answer: {{answer}}"
-
-   {:question "What is the distance from Moon to Io?"})
-
-  (generate-2
-   {llm/openai {:api-key      (-> "config.edn" slurp read-string :openai-api-key)
-                :api-endpoint "https://api.openai.com/v1"}
-    :local     {llm/gen-fn (fn [_system options] {:eval (str "TODO-" (:gen options) "-TODO")})}}
-   {:answer {llm/service      llm/openai
-             llm/model-params {:temperature 0.4
-                               :model       :gpt-3.5-turbo}}
-    :eval   {llm/service :local
-             :cache      true}}
-   {:question-answer "Question: {{question}}  Answer: {% gen2 answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen2 eval %}"}
+   {:answer {llm/service llm/openai}}
+   "Question: {{question}}  Answer: {% gen2 answer %}"
    {:question "What is the distance from Moon to Io?"})
 
   (generate

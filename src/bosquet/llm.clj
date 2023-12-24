@@ -18,11 +18,12 @@
 (defn handle-openai-chat [service-config params]
   (openai/chat-completion params service-config))
 
-(defn handle-cohere-chat [arg1]
-  )
+(defn handle-openai-complete [service-config params]
+  (openai/chat-completion params service-config))
 
-(defn- handle-lm-studio-chat [arg1]
-  )
+(defn handle-cohere-chat [arg1])
+
+(defn- handle-lm-studio-chat [arg1])
 
 (def chat-handlers
   {openai    handle-openai-chat
@@ -38,15 +39,13 @@
      (handler llm-config
               (dissoc generation-props service)))))
 
-
 (def default-services
   {openai {:api-key      (-> "config.edn" slurp read-string :openai-api-key)
            :api-endpoint "https://api.openai.com/v1"
-           complete-fn   handle-openai-chat
+           complete-fn   handle-openai-complete
            chat-fn       handle-openai-chat}
    :local {complete-fn (fn [_system options] {:eval (str "TODO-" (:gen options) "-COMPLETE")})
            chat-fn     (fn [_system options] {:eval (str "TODO-" (:gen options) "-CHAT")})}})
-
 
 (comment
   (chat

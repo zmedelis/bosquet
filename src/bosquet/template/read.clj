@@ -35,7 +35,6 @@
 (def ^:private ^{:deprecated true} var-name ":var-name=")
 (def ^:prvate var-name2 ":var=")
 
-
 (def gen-tag-name "gen2")
 
 (defn has-gen-tag? [template]
@@ -103,17 +102,16 @@
   ([text ctx] (fill-slots text ctx nil))
   ([text ctx config]
    (without-escaping
-     (selmer/render-with-values
-      text
-      (assoc ctx wkk/llm-config config)))))
-
+    (selmer/render-with-values
+     text
+     (assoc ctx wkk/llm-config config)))))
 
 (defn fill-slots-2
   "Use Selmer to fill in `text` template `slots`"
   [llm-config properties prompt data]
   (without-escaping
-    (selmer/render-with-values
-     prompt
-     (merge data
-            {:service    llm-config
-             :properties properties}))))
+   (selmer/render-with-values
+    prompt
+    (merge data
+           {:service    llm-config
+            :properties properties}))))

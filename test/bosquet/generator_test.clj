@@ -2,7 +2,7 @@
   (:require
    [bosquet.complete :as complete]
    [bosquet.llm.chat :as llm.chat]
-   [bosquet.llm.generator :refer [all-keys chat generate]]
+   [bosquet.llm.generator :refer [all-keys chat generate all-keys2]]
    [bosquet.llm.llm :as llm]
    [bosquet.llm.openai :as openai]
    [bosquet.wkk :as wkk]
@@ -23,7 +23,27 @@
    :question-answer "Question: {{question}} Answer: {% gen var-name=answer model=galileo %}"
    :self-eval       "{{answer}}. Is this a correct answer? {% gen var-name=test model=hubble %}"})
 
+(def astronomy-prompt-2
+  {:role            "As a brilliant {{you-are}} answer the following question."
+   :question-answer "{{role}} Question: {{question}} Answer: {% gen2 answer %}"
+   :self-eval       "{{answer}}. Is this a correct answer? {% gen2 test %}"})
+
 (deftest keys-to-produce
+
+  (is (match? (m/in-any-order [:role :question :question-answer :self-eval :you-are :answer :test])
+              (all-keys2 astronomy-prompt-2 {:you-are "astronomer" :question "How far to X?"})))
+
+  (is (match? (m/in-any-order [:role :title :genre])
+
+              (all-keys2
+               [:system "You are a {{role}}. Given the play's title and genre write synopsis."
+                :user ["You sit down to write the following work."]
+                :user ["Title: {{title}}"
+                       "Genre: {{genre}}"]
+                :user "Playwright: This is a synopsis for the above play:"]
+
+               {:role "playwright" :title "The Tempest" :genre "comedy"})))
+
   (is (match? (m/in-any-order [:role :question :question-answer :self-eval :you-are :answer :test])
               (all-keys astronomy-prompt {:you-are "astronomer" :question "How far to X?"}))))
 

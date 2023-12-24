@@ -57,7 +57,7 @@
         llm-impl (get-in properties [target llm2/service])
         model-params  (dissoc (get-in properties [target llm2/model-params])
                               llm2/service)
-        {:llm/keys [chat-fn complete-fn] :as llm-config} (llm-impl service)
+        {:llm/keys [chat-fn complete-fn]} (llm-impl service)
         service-config (dissoc
                         (llm-impl service)
                         llm2/gen-fn

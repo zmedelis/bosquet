@@ -5,7 +5,6 @@
    [bosquet.llm.llm :as llm]
    [taoensso.timbre :as timbre]))
 
-
 (def ^:private gen-type :gen-type)
 
 (defn- ->completion
@@ -35,7 +34,6 @@
                            messages))
         call
         (->completion generation-type))))
-
 
 (comment
   (completion

@@ -48,3 +48,8 @@
   "Write JSON to a string"
   [s]
   (j/write-value-as-string s))
+
+(defn flattenx
+  "Flatten a nested collection"
+  [coll]
+  (remove nil? (flatten coll)))

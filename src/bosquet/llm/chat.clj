@@ -1,6 +1,7 @@
 (ns bosquet.llm.chat
   (:require
    [clojure.set :as set]
+   [clojure.string :as string]
    [malli.generator :as mg]))
 
 ;; ## ChatML
@@ -46,19 +47,19 @@
   {role (role-mapping (keyword r)) content c})
 
 (defn speak
-  "Helper function to create a chat message
+  "Helper function to create a chat message. If content is a collection
+   it will be joined with newlines.
 
   ```clojure
   {:role    :assistant
    :content \"Hello, I am your assistant\"
   ```"
-  {:malli/schema
-   [:function
-    [:=> [:cat roles :string] chat-ml]]
-   :malli/gen mg/generate}
   [speaker-role speaker-content]
   {role    speaker-role
-   content speaker-content})
+   content
+   (if (coll? speaker-content)
+     (string/join "\n" speaker-content)
+     speaker-content)})
 
 (defn converse
   "Helper function to create onversation sequence. Pass in conversation params:
