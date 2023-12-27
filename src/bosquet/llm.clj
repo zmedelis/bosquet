@@ -1,5 +1,6 @@
 (ns bosquet.llm
   (:require
+   [bosquet.env :as env]
    [bosquet.llm.chat :as chat]
    [bosquet.llm.openai :as openai]))
 
@@ -40,8 +41,9 @@
               (dissoc generation-props service)))))
 
 (def default-services
-  {openai {:api-key      (-> "config.edn" slurp read-string :openai-api-key)
-           :api-endpoint "https://api.openai.com/v1"
+  {openai {:api-key      (env/val :llm/openai :openai-api-key)
+           :api-endpoint (env/val :llm/openai :api-endpoint)
+           :impl         (env/val :llm/openai :impl)
            complete-fn   handle-openai-complete
            chat-fn       handle-openai-chat}
    :local {complete-fn (fn [_system options] {:eval (str "TODO-" (:gen options) "-COMPLETE")})
@@ -49,8 +51,7 @@
 
 (comment
   (chat
-   {:api-key      (-> "config.edn" slurp read-string :openai-api-key)
-    :api-endpoint "https://api.openai.com/v1"}
+   {:api-key      (env/val :llm/openai :openai-api-key)}
    {service       openai
     :model       :gpt-3.5-turbo
     :messages    (chat/converse chat/user "What is the distance from Moon to Io?")
