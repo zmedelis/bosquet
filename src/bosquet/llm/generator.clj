@@ -86,9 +86,10 @@
       ::pco/input   data-vars
       ::pco/resolve
       (fn [_env input]
-        (let [[completed completion] (template/fill-slots-2 llm-config properties template input)
-              completed              ((first gen-vars) completed)
-              completion             (:gen2 completion)]
+        (let [current-gen-var        (first gen-vars)
+              [completed completion] (template/fill-slots-2 llm-config properties template input)
+              completed              (current-gen-var completed)
+              completion             (:gen completion)]
           (merge {current-prompt completed} completion input)))})))
 
 (defn- resolver-error-wrapper
@@ -102,29 +103,11 @@
         (timbre/errorf "Resolver operation '%s' failed" op-name)
         (timbre/error error)))}))
 
-(defn- prompt-indexes [prompts opts]
-  (pci/register
-   (mapv
-    (fn [prompt-key]
-      (generation-resolver prompt-key (prompt-key prompts) opts))
-    (keys prompts))))
-
 (defn- prompt-indexes-2 [llm-config opts prompts]
   (pci/register
    (mapv
     (fn [prompt-key]
       (generation-resolver-2 llm-config opts prompt-key (prompt-key prompts)))
-    (keys prompts))))
-
-(defn all-keys
-  "Produce a list of all the data keys that will come out of the Pathom processing.
-  Whatever is refered in `prompts` and comes in via input `data`"
-  [prompts data]
-  (into
-   (vec (keys data))
-   (mapcat
-    (fn [prompt-key]
-      (output-keys prompt-key (get prompts prompt-key)))
     (keys prompts))))
 
 (defn all-keys2
@@ -140,26 +123,8 @@
         :else %)
      prompts))))
 
-(defn generate
-  ([prompts] (generate prompts nil nil))
-  ([prompts inputs] (generate prompts inputs nil))
-  ([prompts inputs config]
-   ;; If we get string for `prompts` then we assume it is a single prompt, send it to
-   ;; `complete-template` and return the result. Additionaly if the prompt does not have
-   ;; `gen` tag attach it to the end.
-   (if (string? prompts)
-     (let [[completed completion] (complete-template prompts inputs config)]
-       (merge completion inputs {:bosquet.gen/completed-prompt completed}))
-     (let [extraction-keys (all-keys prompts inputs)]
-       (timbre/info "Resolving for: " extraction-keys)
-       (-> (prompt-indexes prompts config)
-           (resolver-error-wrapper)
-           (psm/smart-map inputs)
-           (select-keys extraction-keys))))))
-
 (defn- complete*
-  [llm-provider-config gen-props
-   context input-data]
+  [llm-provider-config gen-props context input-data]
   (let [extraction-keys (all-keys2 context input-data)]
     (timbre/info "Resolving for: " extraction-keys)
     (-> (prompt-indexes-2 llm-provider-config gen-props context)
@@ -182,20 +147,11 @@
   (let [updated-context (fill-converation-slots-2 llm-provider-config gen-props context input)
         service-config (get llm-provider-config (llm/service gen-props))
         {:llm/keys [chat-fn]} service-config]
-    {:chat (chat-fn (dissoc service-config llm/gen-fn llm/chat-fn)
-                    (assoc gen-props :messages updated-context))}))
-
-(defn generate-2
-  [llm-provider-config gen-props context input-data]
-  (if (vector? context)
-    (chat* llm-provider-config gen-props (apply chat/converse context) input-data)
-    (complete* llm-provider-config gen-props
-               (if (string? context)
-                 ;; a single string template prompt, convert to map context
-                 ;; to be processed as completion
-                 {:string-template (template/ensure-gen-tag context)}
-                 context)
-               input-data)))
+    (->
+     (chat-fn (dissoc service-config llm/gen-fn llm/chat-fn)
+              (assoc gen-props :messages updated-context))
+     bosquet.llm.llm/content
+     :completion)))
 
 (defn- fill-converation-slots
   "Fill all the Selmer slots in the conversation context. It will
@@ -210,16 +166,37 @@
    messages))
 
 (defn chat
-  ([messages] (chat messages nil))
-  ([messages inputs] (chat messages inputs nil))
+  ([messages] (chat messages {}))
+  ([messages inputs] (chat messages inputs {}))
   ([messages inputs opts]
    (let [updated-context (fill-converation-slots messages inputs opts)]
      (complete/chat-completion updated-context opts))))
 
+(defn generate
+  ([context]
+   (generate {llm/service llm/openai} context))
+
+  ([gen-props context]
+   (generate gen-props context nil))
+
+  ([gen-props context input-data]
+   (generate llm/default-services gen-props context input-data))
+
+  ([llm-provider-config gen-props context input-data]
+   (if (vector? context)
+     (chat* llm-provider-config gen-props (apply chat/converse context) input-data)
+     (complete* llm-provider-config gen-props
+                (if (string? context)
+                  ;; a single string template prompt, convert to map context
+                  ;; to be processed as completion
+                  {:string-template (template/ensure-gen-tag context)}
+                  context)
+                input-data))))
+
 (defn ->completer
   [llm-services]
   (fn [parameters context data]
-    (generate-2 llm-services parameters context data)))
+    (generate llm-services parameters context data)))
 
 (comment
 
@@ -236,17 +213,24 @@
                                       {:completion
                                        {:content "CHAT-LOCAL2"}}})}})))
 
-  ;; COMPLETION
+  (generate
+   {llm/service llm/openai}
+   "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
+
+  (generate
+   {:ans {llm/service llm/openai}}
+   {:x "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? {% gen ans %}"}
+   {:age 10})
+
+;; COMPLETION
   (generator
    {:answer {llm/service      llm/openai
              :cache           true
              llm/model-params {:model :gpt-3.5-turbo}}
     :eval   {llm/service :local2}}
-   ;; just as in CHAT 'global' config should be supported
-   #_{llm/service :local2}
 
-   {:question-answer "Question: {{question}}  Answer: {% gen2 answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen2 eval%}"}
+   {:question-answer "Question: {{question}}  Answer: {% gen answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% gen eval%}"}
 
    {:question "What is the distance from Moon to Io?"})
 
@@ -266,14 +250,8 @@
   ;; TEMPLATE
   (generator
    {:answer {llm/service llm/openai}}
-   "Question: {{question}}  Answer: {% gen2 answer %}"
+   "Question: {{question}}  Answer: {% gen answer %}"
    {:question "What is the distance from Moon to Io?"})
-
-  (generate
-   {:question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"}
-   {:question "What is the distance from Moon to Io?"}
-   {:answer {wkk/service          :llm/openai
-             wkk/model-parameters {:max-tokens 100}}})
 
   (chat
    [(chat/speak chat/system "You are a brilliant {{role}}.")
@@ -287,16 +265,13 @@
                            :max-tokens  100}}})
 
   (generate
+   {:test   {llm/service :openai}
+    :answer {llm/service :openai}}
    {:role            "As a brilliant {{you-are}} answer the following question."
-    :question        "What is the distance between Io and Europa?"
-    :question-answer "{{role}} Question: {{question}}  Answer: {% gen var-name=answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test %}"}
+    :question-answer "Question: {{question}}  Answer: {% gen answer %}"
+    :self-eval       "{{answer}} Is this a correct answer? {% gen test %}"}
    {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"}
-   {:answer {wkk/service          :llm/cohere
-             wkk/model-parameters {:max-tokens 100}}
-    :test   {wkk/service          :llm/cohere
-             wkk/model-parameters {:max-tokens 100}}})
+    :question "What is the distance from Moon to Io?"})
 
   (generate
    "As a brilliant {{you-are}} list distances between planets and the Sun

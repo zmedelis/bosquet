@@ -4,11 +4,11 @@
    [bosquet.llm.chat :as chat]
    [bosquet.llm.openai :as openai]))
 
-(def openai ::openai)
+(def openai :openai)
 
-(def cohere ::cohere)
+(def cohere :cohere)
 
-(def lm-studio ::lm-studio)
+(def lm-studio :lm-studio)
 
 (def service :llm/service)
 (def model-params :llm/model-params)

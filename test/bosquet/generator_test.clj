@@ -2,36 +2,21 @@
   (:require
    [bosquet.complete :as complete]
    [bosquet.llm.chat :as llm.chat]
-   [bosquet.llm.generator :refer [all-keys chat generate all-keys2]]
-   [bosquet.llm.llm :as llm]
+   [bosquet.llm.generator :refer [chat generate all-keys2]]
+   [bosquet.llm :as llm]
    [bosquet.llm.openai :as openai]
-   [bosquet.wkk :as wkk]
    [clojure.test :refer [deftest is]]
    [matcher-combinators.matchers :as m]
    [matcher-combinators.test :refer [match?]]))
 
-(defn dummy-generator [_text {model :model} _opts]
-  {llm/content
-   {:completion
-    (condp = model
-      "galileo" "0.0017 AU"
-      "hubble"  "Yes"
-      (throw (ex-info (str "Unknown model: " model) {})))}})
-
 (def astronomy-prompt
   {:role            "As a brilliant {{you-are}} answer the following question."
-   :question-answer "Question: {{question}} Answer: {% gen var-name=answer model=galileo %}"
-   :self-eval       "{{answer}}. Is this a correct answer? {% gen var-name=test model=hubble %}"})
-
-(def astronomy-prompt-2
-  {:role            "As a brilliant {{you-are}} answer the following question."
-   :question-answer "{{role}} Question: {{question}} Answer: {% gen2 answer %}"
-   :self-eval       "{{answer}}. Is this a correct answer? {% gen2 test %}"})
+   :question-answer "Question: {{question}}  Answer: {% gen answer %}"
+   :self-eval       "{{answer}} Is this a correct answer? {% gen test %}"})
 
 (deftest keys-to-produce
-
   (is (match? (m/in-any-order [:role :question :question-answer :self-eval :you-are :answer :test])
-              (all-keys2 astronomy-prompt-2 {:you-are "astronomer" :question "How far to X?"})))
+              (all-keys2 astronomy-prompt {:you-are "astronomer" :question "How far to X?"})))
 
   (is (match? (m/in-any-order [:role :title :genre])
 
@@ -45,43 +30,49 @@
                {:role "playwright" :title "The Tempest" :genre "comedy"})))
 
   (is (match? (m/in-any-order [:role :question :question-answer :self-eval :you-are :answer :test])
-              (all-keys astronomy-prompt {:you-are "astronomer" :question "How far to X?"}))))
+              (all-keys2 astronomy-prompt {:you-are "astronomer" :question "How far to X?"}))))
+
+(def service-1-chat
+  (fn [_system {model :model}]
+    {bosquet.llm.llm/content
+     {:completion
+      {:content
+       (condp = model
+         "galileo" "0.0017 AU"
+         "hubble"  "Yes"
+         (throw (ex-info (str "Unknown model: " model) {})))}}}))
 
 (deftest generltion-with-different-models
   (is
    (match?
-    {:role            "As a brilliant astronomer answer the following question."
-     :question        "What is the distance from Moon to Io?"
-     :question-answer "Question: What is the distance from Moon to Io? Answer: 0.0017 AU"
-     :self-eval       "0.0017 AU. Is this a correct answer? Yes"
-     :test            "Yes"
-     :you-are         "astronomer"}
-    (with-redefs [openai/complete dummy-generator]
-      (generate astronomy-prompt
-                {:you-are  "astronomer"
-                 :question "What is the distance from Moon to Io?"}
-                {:test   {wkk/service          [:llm/openai :provider/openai]
-                          wkk/model-parameters {:model "hubble"}}
-                 :answer {wkk/service          [:llm/openai :provider/openai]
-                          wkk/model-parameters {:model "galileo"}}})))))
+    {:question "What is the distance from Moon to Io?"
+     :test     "Yes"
+     :you-are  "astronomer"}
+    (generate
+     {:service-1 {llm/chat-fn service-1-chat}}
+     {:test   {llm/service          :service-1
+               llm/model-params {:model "hubble"}}
+      :answer {llm/service      :service-1
+               llm/model-params {:model "galileo"}}}
+
+     astronomy-prompt
+
+     {:you-are  "astronomer"
+      :question "What is the distance from Moon to Io?"}))))
 
 (deftest fail-generation
   (is (match?
-       {:role            "As a brilliant astronomer answer the following question."
-        :question        "What is the distance from Moon to Io?"
-        :question-answer "Question: What is the distance from Moon to Io? Answer: 0.0017 AU"
-        :self-eval       nil
-        :test            nil
-        :you-are         "astronomer"}
-       (with-redefs [openai/complete dummy-generator]
-         (generate
-          astronomy-prompt
-          {:you-are  "astronomer"
-           :question "What is the distance from Moon to Io?"}
-          {:answer {wkk/service          [:llm/openai :provider/openai]
-                    wkk/model-parameters {:model "galileo"}}
-           :test   {wkk/service          [:llm/openai :provider/openai]
-                    wkk/model-parameters {:model "AGI"}}})))))
+       {:question "What is the distance from Moon to Io?"
+        :you-are  "astronomer"}
+       (generate
+        {:service-1 {llm/chat-fn service-1-chat}}
+        {:answer {llm/service      :service-1
+                  llm/model-params {:model "galileo"}}
+         :test   {llm/service      :service-1
+                  llm/model-params {:model "AGI"}}}
+        astronomy-prompt
+        {:you-are  "astronomer"
+         :question "What is the distance from Moon to Io?"}))))
 
 (deftest conversation-slot-filling
   (is (match?

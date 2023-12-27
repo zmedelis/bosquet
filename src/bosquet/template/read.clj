@@ -35,7 +35,7 @@
 (def ^:private ^{:deprecated true} var-name ":var-name=")
 (def ^:prvate var-name2 ":var=")
 
-(def gen-tag-name "gen2")
+(def gen-tag-name "gen")
 
 (defn has-gen-tag? [template]
   (re-find
@@ -69,7 +69,7 @@
   (set (map-indexed
         (fn [idx [_ var]]
           (if (string/blank? var)
-            (keyword "bosquet" (str "gen-" (inc idx)))
+            (keyword "bosquet" "gen" #_(str "gen-" (inc idx)))
             (keyword var)))
         (re-seq
          (re-pattern (str "\\{%\\s*" gen-tag-name "\\s*(.*?)\\s*%\\}")) template))))
