@@ -1,6 +1,7 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (ns papers.chain-of-density
   (:require
+   [bosquet.llm :as llm]
    [bosquet.llm.generator :as g]
    [bosquet.wkk :as wkk]
    [nextjournal.clerk :as clerk]))
@@ -78,13 +79,14 @@ are \"Missing-Entities\" and \"Denser-Summary\".")
 ;; - the `output-format` is a *Bosquet* parameter that will initiate result postprocessing and coerce the result into the specified format. Currently supported formats: EDN, JSON, and plain text.
 ;;
 
+^{:nextjournal.clerk/visibility {:result :hide}}
 (def result (g/generate
-              cod-prompt
-              {:ARTICLE article
-               :FORMAT  "JSON"}
-              {:gen {wkk/output-format    :json
-                     wkk/model-parameters {:model "gpt-4"}}}))
-
+             {llm/service       llm/openai
+              llm/output-format :json
+              llm/model-params  {:model :gpt-4}}
+             cod-prompt
+             {:ARTICLE article
+              :FORMAT  "JSON"}))
 ;;
 ;; CoT - as instructed - produces a list of 5 summaries, each summary is a map with `Missing-Entities` and `Denser-Summary` keys. Authors of the paper did human evaluation
 ;; of the produced summaries and found that humans usualy prefer 2-3rd summaries.
@@ -108,4 +110,4 @@ are \"Missing-Entities\" and \"Denser-Summary\".")
            [:div.flex
             [:div.flex-none.w-32.mr-4 [:em "Denser Summary:"]]
             [:div Denser-Summary]]])
-        (:gen result)))))
+        (:bosquet/gen result)))))

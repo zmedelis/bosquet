@@ -28,7 +28,7 @@
   (is (match?
        {:data-vars [:x]
         :gen-vars  (m/in-any-order [:bosquet/gen])}
-       (read/template-vars "{{x}} + {% gen %} = {% gen %}")))
+       (read/template-vars "{{x}} + {% gen %} =\n{% gen %}")))
   (is (match?
        {:data-vars [:x]
         :gen-vars  (m/in-any-order [:bosquet/gen :y])}

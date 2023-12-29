@@ -32,11 +32,12 @@
   (is (match? (m/in-any-order [:role :question :question-answer :self-eval :you-are :answer :test])
               (all-keys2 astronomy-prompt {:you-are "astronomer" :question "How far to X?"}))))
 
-(def service-1-chat
+(def astro-service-chat
   (fn [_system {model :model}]
     {bosquet.llm.llm/content
      {:completion
-      {:content
+      {:role :user
+       :content
        (condp = model
          "galileo" "0.0017 AU"
          "hubble"  "Yes"
@@ -49,7 +50,7 @@
      :test     "Yes"
      :you-are  "astronomer"}
     (generate
-     {:service-1 {llm/chat-fn service-1-chat}}
+     {:service-1 {llm/chat-fn astro-service-chat}}
      {:test   {llm/service          :service-1
                llm/model-params {:model "hubble"}}
       :answer {llm/service      :service-1
@@ -65,7 +66,7 @@
        {:question "What is the distance from Moon to Io?"
         :you-are  "astronomer"}
        (generate
-        {:service-1 {llm/chat-fn service-1-chat}}
+        {:service-1 {llm/chat-fn astro-service-chat}}
         {:answer {llm/service      :service-1
                   llm/model-params {:model "galileo"}}
          :test   {llm/service      :service-1

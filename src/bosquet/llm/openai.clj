@@ -51,10 +51,6 @@
       :finish-reason finish}
      usage)))
 
-;; TODO get rid of default system prompt
-(def default-system-prompt
-  {:role :system :content "You are a helpful assistant."})
-
 (defn create-chat-completion
   "Completion using Chat GPT model. This one is loosing the conversation
   aspect of the API. It will construct basic `system` for the
@@ -63,8 +59,7 @@
   (let [result (->completion
                 (api/create-chat-completion
                  (assoc params
-                        :messages [default-system-prompt
-                                   {:role :user :content prompt}])
+                        :messages [{:role :user :content prompt}])
                  opts))]
     ;; wrangle the resulting data structure into `completion` format
     (-> result

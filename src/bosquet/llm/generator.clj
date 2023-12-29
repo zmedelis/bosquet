@@ -7,6 +7,7 @@
    [bosquet.template.tag :as tag]
    [bosquet.utils :as u]
    [bosquet.wkk :as wkk]
+   [clojure.set :as set]
    [clojure.walk :as w]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
@@ -36,14 +37,11 @@
   ([template] (complete-template template nil nil))
   ([template slots] (complete-template template slots {}))
   ([template slots config]
-   (let [template (template/ensure-gen-tag template)]
-     (template/fill-slots-2
-      template
-      (assoc slots :the-key (first (template/generation-vars template))) ; only one `gen` is supported in template
-      config))))
-
-(defn output-keys [k template]
-  (cons k (template/generation-vars template)))
+   #_(let [template (template/ensure-gen-tag template)]
+       (template/fill-slots-2
+        template
+        (assoc slots :the-key (first (template/generation-vars template))) ; only one `gen` is supported in template
+        config))))
 
 (defn- generation-resolver
   "Build dynamic resolvers figuring out what each prompt tempalte needs
@@ -51,32 +49,12 @@
 
   For the output check if themplate is producing generated content
   anf if so add a key for it into the output"
-  [the-key template system-config]
-  (let [input  (vec (template/slots-required template))
-        output (into input (output-keys the-key template))]
-    (timbre/info "Resolver: " the-key)
-    (timbre/info "  Input: " input)
-    (timbre/info "  Output: " output)
-    (pco/resolver
-     {::pco/op-name (-> the-key .-sym (str "-gen") keyword symbol)
-      ::pco/output  output
-      ::pco/input   input
-      ::pco/resolve
-      (fn [_env input]
-        (let [[completed completion] (template/fill-slots template
-                                       ;; TODO refactor out `the-key`
-                                                          (assoc input :the-key the-key)
-                                                          system-config)]
-          (merge {the-key completed} completion input)))})))
-
-(defn- generation-resolver-2
-  "Build dynamic resolvers figuring out what each prompt tempalte needs
-  and set it as required inputs for the resolver.
-
-  For the output check if themplate is producing generated content
-  anf if so add a key for it into the output"
-  [llm-config properties current-prompt template]
-  (let [{:keys [data-vars gen-vars]} (template/template-vars template)]
+  [llm-config properties current-prompt data-input-vars template]
+  (let [{:keys [data-vars gen-vars]} (template/template-vars template)
+        ;; This set intersection is needed because some of the data vars might not be in
+        ;; supplied data map, values might be omited and come from specified defaults in
+        ;; Selmer template
+        data-vars                    (vec (set/intersection (set data-input-vars) (set data-vars)))]
     (timbre/info "Resolving: " current-prompt)
     (timbre/info "\tInput data: " data-vars)
     (timbre/info "\tGenerate for: " gen-vars)
@@ -103,11 +81,11 @@
         (timbre/errorf "Resolver operation '%s' failed" op-name)
         (timbre/error error)))}))
 
-(defn- prompt-indexes-2 [llm-config opts prompts]
+(defn- prompt-indexes-2 [llm-config opts data-vars prompts]
   (pci/register
    (mapv
     (fn [prompt-key]
-      (generation-resolver-2 llm-config opts prompt-key (prompt-key prompts)))
+      (generation-resolver llm-config opts prompt-key data-vars (prompt-key prompts)))
     (keys prompts))))
 
 (defn all-keys2
@@ -126,8 +104,7 @@
 (defn- complete*
   [llm-provider-config gen-props context input-data]
   (let [extraction-keys (all-keys2 context input-data)]
-    (timbre/info "Resolving for: " extraction-keys)
-    (-> (prompt-indexes-2 llm-provider-config gen-props context)
+    (-> (prompt-indexes-2 llm-provider-config gen-props (keys input-data) context)
         (resolver-error-wrapper)
         (psm/smart-map input-data)
         (select-keys extraction-keys))))
@@ -218,9 +195,9 @@
    "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
 
   (generate
-   {:ans {llm/service llm/openai}}
-   {:x "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? {% gen ans %}"}
-   {:age 10})
+   {llm/service llm/openai}
+   "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
+   {:age 13})
 
 ;; COMPLETION
   (generator
@@ -238,6 +215,7 @@
   (generator
    {llm/service      llm/openai
     llm/model-params {:temperature 0.4
+                      :max-tokens  120
                       :model       :gpt-3.5-turbo}}
 
    [:system "You are a playwright. Given the play's title and genre write synopsis."
@@ -249,8 +227,8 @@
 
   ;; TEMPLATE
   (generator
-   {:answer {llm/service llm/openai}}
-   "Question: {{question}}  Answer: {% gen answer %}"
+   {llm/service llm/openai}
+   "Question: {{question}}  Answer: {% gen %}"
    {:question "What is the distance from Moon to Io?"})
 
   (chat
