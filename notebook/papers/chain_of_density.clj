@@ -3,7 +3,6 @@
   (:require
    [bosquet.llm :as llm]
    [bosquet.llm.generator :as g]
-   [bosquet.wkk :as wkk]
    [nextjournal.clerk :as clerk]))
 
 ;; ## Chain of Density prompting
