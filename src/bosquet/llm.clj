@@ -14,6 +14,7 @@
 (def gen-fn :llm/gen-fn)
 (def chat-fn :llm/chat-fn)
 (def complete-fn :llm/complete-fn)
+(def var-name :llm/var-name)
 
 (def output-format
   "Type of generation output format: json, xml, text, etc"

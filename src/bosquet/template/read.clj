@@ -66,10 +66,10 @@
        (set)))
 
 (defn generation-vars2 [template]
-  (set (map-indexed
-        (fn [idx [_ var]]
+  (set (map
+        (fn [[_ var]]
           (if (string/blank? var)
-            (keyword "bosquet" "gen" #_(str "gen-" (inc idx)))
+            (keyword "bosquet" "gen")
             (keyword var)))
         (re-seq
          (re-pattern (str "\\{%\\s*" gen-tag-name "\\s*(.*?)\\s*%\\}")) template))))
@@ -97,21 +97,27 @@
     (fn [variable] (string/includes? (name variable) "="))
     (selmer/known-variables text))))
 
+(defn render [text ctx]
+  (without-escaping
+    (selmer/render-with-values text ctx)))
+
 (defn fill-slots
   "Use Selmer to fill in `text` template `slots`"
   ([text ctx] (fill-slots text ctx nil))
   ([text ctx config]
    (without-escaping
-    (selmer/render-with-values
-     text
-     (assoc ctx wkk/llm-config config)))))
+     (selmer/render-with-values
+      text
+      (assoc ctx wkk/llm-config config)))))
 
 (defn fill-slots-2
   "Use Selmer to fill in `text` template `slots`"
   [llm-config properties prompt data]
-  (without-escaping
-   (selmer/render-with-values
-    prompt
-    (merge data
-           {:service    llm-config
-            :properties properties}))))
+  (let [[full-text {gen :gen}]
+        (without-escaping
+         (selmer/render-with-values
+          prompt
+          (merge data
+                 {:service    llm-config
+                  :properties properties})))]
+    [full-text gen]))

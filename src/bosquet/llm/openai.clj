@@ -123,10 +123,9 @@
      (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
      (timbre/infof "\tConfig: '%s'" (dissoc opts :api-key))
      (try
-       (-> params
-           (assoc :messages messages)
-           (api/create-chat-completion opts)
-           ->completion)
+       (let [payload (assoc params :messages messages)
+             result (api/create-chat-completion payload opts)]
+         (->completion result))
        (catch Exception e
          (throw (->error e)))))))
 
