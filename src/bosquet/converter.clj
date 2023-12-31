@@ -61,7 +61,7 @@
       (read-string)))
 
 (defn coerce
-  [completion format]
+  [format completion]
   (condp = format
     :json (json-reader completion)
     :edn  (edn-reader completion)

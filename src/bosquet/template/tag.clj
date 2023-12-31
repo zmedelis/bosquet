@@ -47,14 +47,15 @@
                    (assoc model-params :messages (chat/converse chat/user prompt)))
           (catch Exception e
             (timbre/error e)))]
-
-    (timbre/infof "Finished generating for '%s'. Coerce to - %s" target (if format format "N/A"))
+    (timbre/infof
+      "Finished generating for '%s'. Coerce to - %s" target
+      (if format (name format) "N/A"))
     {(or target :bosquet/gen)
-     (-> result
-         llm/content
-         :completion
-         :content
-         (converter/coerce format))}))
+     (converter/coerce format
+                       (-> result
+                           llm/content
+                           :completion
+                           :content))}))
 
 (defn add-tags []
   (parser/add-tag! :gen gen-tag))

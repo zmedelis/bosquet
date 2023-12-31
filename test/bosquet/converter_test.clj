@@ -26,9 +26,9 @@
   (is (nil? (c/yes-no->bool "X"))))
 
 (deftest coerce-test
-  (is (= "Dogs are great!" (c/coerce "Dogs are great!" nil)))
-  (is (= "Dogs are great!" (c/coerce "Dogs are great!" :pdf)))
-  (is (= [{"x" 1.2 "y" 0.8}] (c/coerce "[{\"x\" : 1.2, \"y\" : 0.8}]" :json))))
+  (is (= "Dogs are great!" (c/coerce nil "Dogs are great!")))
+  (is (= "Dogs are great!" (c/coerce :pdf "Dogs are great!")))
+  (is (= [{"x" 1.2 "y" 0.8}] (c/coerce :json "[{\"x\" : 1.2, \"y\" : 0.8}]"))))
 
 (deftest reading-edn
   (is (= [1 2] (c/edn-reader "[1 2]")))
