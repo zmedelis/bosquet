@@ -53,3 +53,10 @@
   "Flatten a nested collection"
   [coll]
   (remove nil? (flatten coll)))
+
+(defn mergex
+  "Merge maps filtering nil keys"
+  [& maps]
+  (dissoc
+   (apply merge maps)
+   nil))

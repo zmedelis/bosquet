@@ -48,8 +48,8 @@
           (catch Exception e
             (timbre/error e)))]
     (timbre/infof
-      "Finished generating for '%s'. Coerce to - %s" target
-      (if format (name format) "N/A"))
+     "Finished generating for '%s'. Coerce to - %s" target
+     (if format (name format) "N/A"))
     {(or target :bosquet/gen)
      (converter/coerce format
                        (-> result
