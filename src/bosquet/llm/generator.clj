@@ -175,6 +175,7 @@
   (fn [parameters context data]
     (generate llm-services parameters context data)))
 
+
 (comment
 
   (def generator
@@ -221,9 +222,13 @@
    [:system "You are a playwright. Given the play's title and genre write synopsis."
     :user ["Title: {{title}}"
            "Genre: {{genre}}"]
-    :user "Playwright: This is a synopsis for the above play:"]
+    :user "Playwright: This is a synopsis for the above play:"
+    :asistant "{% gen play %}"
+    :user "Review from a Nice City Times play critic of the above synopsis:"
+    :assistant "{% gen review %}"]
 
-   {:title "Mr. X" :genre "crime"})
+   {:title "Mr. X"
+    :genre "Sci-Fi"})
 
   ;; TEMPLATE
   (generator
