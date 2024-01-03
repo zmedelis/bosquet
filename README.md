@@ -18,31 +18,55 @@ Bosquet provides instruments to work with those AI application concepts:
 
 ## Quick example
 
-An example of a composable prompt definition. It is a prompt to answer a question with a 'role assumption' pattern.
 
 Secrets and other local parameters are kept in `config.edn`. Make a copy of `config.edn.sample` and enter your account API KEYS from OpenAI, Cohere,
 or other providers.
 
+### Prompt completion
+
+Simple prompt completion can be done like this.
+
+```colojure
+(require '[bosquet.llm.generator :refer [generate]])
+
+(generate "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
+
+=> {:prompt 
+    "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?",
+    
+    :completion 
+    "When you were 6, your sister was half your age, which means she was 6 / 2 = 3 years old.\nSince then, there is a constant age difference of 3 years between you and your sister.\nNow that you are 70, your sister would be 70 - 6 = 64 years old."}
+```
+
+`
+
+### Graph completion
+
 
 ```clojure
-(require '[bosquet.llm.generator :as bg])
-
-(bg/generate
-   {:role            "As a brilliant {{you-are}} answer the following question."
-    :question        "What is the distance between Io and Europa?"
-    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen var-name=test model=text-curie-001 %}"}
-   {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"})
+(generate
+    llm/default-services
+    {:question-answer "Question: {{question}}  Answer:"
+        :answer          {llm/service llm/openai
+                        :context    :question-answer}
+        :self-eval       ["Question: {{question}}"
+                        "Answer: {{answer}}"
+                        ""
+                        "Is this a correct answer?"]
+        :test            {llm/service llm/openai
+                        :context    :self-eval}}
+    {:question "What is the distance from Moon to Io?"})
 =>
-{:you-are "astronomer",
- :question "What is the distance from Moon to Io?",
- :question-answer
- "Question: What is the distance from Moon to Io?  Answer: The distance from Earth to Io is about 93,000 miles.",
- :answer "The distance from Earth to Io is about 93,000 miles.",
+
+{:question-answer
+ "Question: What is the distance from Moon to Io?  Answer:",
+ :answer
+ "The distance from the Moon to Io varies, as both are orbiting different bodies. On average, the distance between the Moon and Io is approximately 760,000 kilometers (470,000 miles). However, this distance can change due to the elliptical nature of their orbits.",
  :self-eval
- "The distance from Earth to Io is about 93,000 miles. Is this a correct answer? The distance from Earth to Io is about 93,000 miles.",
- :test "The distance from Earth to Io is about 93,000 miles."}
+ "Question: What is the distance from Moon to Io?\nAnswer: The distance from the Moon to Io varies, as both are orbiting different bodies. On average, the distance between the Moon and Io is approximately 760,000 kilometers (470,000 miles). However, this distance can change due to the elliptical nature of their orbits.\n\nIs this a correct answer?",
+ :test
+ "No, the answer provided is incorrect. The Moon is Earth's natural satellite, while Io is one of Jupiter's moons. Therefore, the distance between the Moon and Io can vary significantly depending on their relative positions in their respective orbits around Earth and Jupiter."}
+
 ```
 
 ## Features

@@ -1,18 +1,17 @@
 (ns bosquet.llm.generator
   (:require
-   [bosquet.complete :as complete]
+   [bosquet.converter :as converter]
    [bosquet.llm :as llm]
    [bosquet.llm.chat :as chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
-   [bosquet.utils :as u]
    [bosquet.wkk :as wkk]
-   [clojure.set :as set]
-   [clojure.walk :as w]
+   [clojure.string :as string]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
    [com.wsscode.pathom3.interface.smart-map :as psm]
    [com.wsscode.pathom3.plugin :as p.plugin]
+   [selmer.parser :as selmer]
    [taoensso.timbre :as timbre]))
 
 (tag/add-tags)
@@ -43,7 +42,7 @@
         (assoc slots :the-key (first (template/generation-vars template))) ; only one `gen` is supported in template
         config))))
 
-(defn- generation-resolver
+#_(defn- generation-resolver
   "Build dynamic resolvers figuring out what each prompt tempalte needs
   and set it as required inputs for the resolver.
 
@@ -81,14 +80,14 @@
         (timbre/errorf "Resolver operation '%s' failed" op-name)
         (timbre/error error)))}))
 
-(defn- prompt-indexes-2 [llm-config opts data-vars prompts]
+#_(defn- prompt-indexes-2 [llm-config opts data-vars prompts]
   (pci/register
    (mapv
     (fn [prompt-key]
       (generation-resolver llm-config opts prompt-key data-vars (prompt-key prompts)))
     (keys prompts))))
 
-(defn all-keys2
+#_(defn all-keys2
   [prompts data]
   (u/flattenx
    (concat
@@ -101,7 +100,7 @@
         :else %)
      prompts))))
 
-(defn- complete*
+#_(defn- complete*
   [llm-provider-config gen-props context input-data]
   (let [extraction-keys (all-keys2 context input-data)]
     (-> (prompt-indexes-2 llm-provider-config gen-props (keys input-data) context)
@@ -109,7 +108,7 @@
         (psm/smart-map input-data)
         (select-keys extraction-keys))))
 
-(defn- fill-converation-slots-2
+#_(defn- fill-converation-slots-2
   [llm-provider-config gen-props context input]
   (mapv
    (fn [{content chat/content :as msg}]
@@ -120,7 +119,7 @@
                                           input))))
    context))
 
-(defn- chat* [llm-provider-config gen-props context input]
+#_(defn- chat* [llm-provider-config gen-props context input]
   (let [updated-context (fill-converation-slots-2 llm-provider-config gen-props context input)
         service-config (get llm-provider-config (llm/service gen-props))
         {:llm/keys [chat-fn]} service-config]
@@ -130,7 +129,7 @@
      bosquet.llm.llm/content
      :completion)))
 
-(defn- fill-converation-slots
+#_(defn- fill-converation-slots
   "Fill all the Selmer slots in the conversation context. It will
   check all roles and fill in `{{slots}}` from the `inputs` map."
   [messages inputs opts]
@@ -142,14 +141,14 @@
             (first (template/fill-slots content inputs opts))))
    messages))
 
-(defn chat
+#_(defn chat
   ([messages] (chat messages {}))
   ([messages inputs] (chat messages inputs {}))
   ([messages inputs opts]
    (let [updated-context (fill-converation-slots messages inputs opts)]
      (complete/chat-completion updated-context opts))))
 
-(defn generate
+#_(defn generate
   ([context]
    (generate {llm/service llm/openai} context))
 
@@ -170,46 +169,147 @@
                   context)
                 input-data))))
 
-(defn ->completer
+#_(defn ->completer
   [llm-services]
   (fn [parameters context data]
     (generate llm-services parameters context data)))
 
+;;  -- V3 --
+
+
+(defn ->chatml [messages]
+  (map
+   (fn [[role content]] {:role role :content content})
+   messages))
+
+(defn- call-llm [llm-config properties messages]
+  (if (map? properties)
+    (try
+      (let [llm-impl       (llm/service properties)
+            format         (partial converter/coerce (llm/output-format properties))
+            model-params   (llm/model-params properties)
+            chat-fn        (get-in llm-config [llm-impl llm/chat-fn])
+            service-config (dissoc (llm-impl llm-config) llm/gen-fn llm/chat-fn)
+            messages       (->chatml messages)
+            result         (chat-fn service-config (assoc model-params :messages messages))]
+        (format
+         (get-in result
+                 [:bosquet.llm.llm/content :completion :content])))
+      (catch Exception e
+        (timbre/error e)))
+    (timbre/warnf ":assistant instruction does not contain AI gen function spec")))
+
+(defn- join
+  [content]
+  (if (coll? content) (string/join "\n" content) content))
+
+(defn chat
+  [llm-config messages vars-map]
+  (loop [[role content & messages] messages
+         processed-messages          []
+         ctx                         vars-map]
+    (if (nil? role)
+      {:bosquet/content processed-messages
+       :bosquet/vars    ctx}
+      (if (= :assistant role)
+        (let [gen-result (call-llm llm-config content processed-messages)
+              var-name   (llm/var-name content)]
+          (recur messages
+                 (conj processed-messages [role gen-result])
+                 (assoc ctx var-name gen-result)))
+        (let [tpl-result (first (template/render (join content) vars-map))]
+          (recur messages
+                 (conj processed-messages [role tpl-result])
+                 ctx))))))
+
+(defn- generation-resolver
+  [llm-config message-key message-content]
+  (if (map? message-content)
+    (pco/resolver
+     {::pco/op-name (-> message-key .-sym (str "-ai-gen") keyword symbol)
+      ::pco/output  [message-key]
+      ::pco/input   [(:context message-content)]
+      ::pco/resolve
+      (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
+        (try
+          (let [full-text (get @entry-tree (:context message-content))
+                result    (call-llm llm-config message-content [[:user full-text]])]
+            {message-key result})
+          (catch Exception e
+            (timbre/error e))))})
+    ;; TEMPLATE
+    (let [message-content (join message-content)]
+      (pco/resolver
+       {::pco/op-name (-> message-key .-sym (str "-template") keyword symbol)
+        ::pco/output  [message-key]
+        ::pco/input   (vec (selmer/known-variables message-content))
+        ::pco/resolve
+        (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
+          {message-key (first (template/render message-content @entry-tree))})}))))
+
+(defn- prompt-indexes [llm-config messages]
+  (pci/register
+   (mapv
+    (fn [prompt-key]
+      (generation-resolver llm-config
+                           prompt-key
+                           (get messages prompt-key)))
+    (keys messages))))
+
+(defn complete
+  [llm-config messages vars-map]
+  (let [vars-map (merge vars-map {:bosquet/full-text (atom "")})
+        indexes (prompt-indexes llm-config messages)
+        sm (psm/smart-map indexes vars-map)]
+    (select-keys sm (keys messages))))
+
+(defn append-generation-instruction
+  [string-template]
+  {:prompt     string-template
+   :completion {llm/service llm/openai
+                :context    :prompt}})
+
+(defn generate
+  ([messages] (generate llm/default-services messages {}))
+  ([messages vars-map]
+   (generate llm/default-services messages vars-map))
+  ([llm-config messages vars-map]
+   (cond
+     (vector? messages) (chat llm-config messages vars-map)
+     (map? messages)    (complete llm-config messages vars-map)
+     (string? messages) (complete llm-config (append-generation-instruction messages) vars-map))))
+
 (comment
 
-  (def generator
-    (->completer
-     (merge
-      llm/default-services
-      {llm/cohere {:api-key      (-> "config.edn" slurp read-string :cohere-api-key)
-                   :api-endpoint "https://api.openai.com/v1"
-                   llm/chat-fn   llm/handle-cohere-chat}
-       :local2    {llm/complete-fn (fn [_system _options] "COMPLETE-LOCAL2")
-                   llm/chat-fn     (fn [_system _options]
-                                     {bosquet.llm.llm/content
-                                      {:completion
-                                       {:content "CHAT-LOCAL2"}}})}})))
+  (def services
+    (merge
+     llm/default-services
+     {:local2 {llm/complete-fn (fn [_system _options] "COMPLETE-LOCAL2")
+               llm/chat-fn     (fn [_system _options]
+                                 {bosquet.llm.llm/content
+                                  {:completion
+                                   {:content "CHAT-LOCAL2"}}})}}))
 
   (generate
-   {llm/service llm/openai}
    "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
 
   (generate
-   {llm/service llm/openai}
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
 
-;; COMPLETION
-  (generator
-   {:answer {llm/service      llm/openai
-             :cache           true
-             llm/model-params {:model :gpt-3.5-turbo}}
-    :eval   {llm/service :local2}}
-
-   {:question-answer "Question: {{question}}  Answer: {% gen answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen eval%}"}
-
-   {:question "What is the distance from Moon to Io?"})
+  ;; COMPLETION
+  (clojure.pprint/pprint (generate
+                          llm/default-services
+                          {:question-answer "Question: {{question}}  Answer:"
+                           :answer          {llm/service llm/openai
+                                             :context    :question-answer}
+                           :self-eval       ["Question: {{question}}"
+                                             "Answer: {{answer}}"
+                                             ""
+                                             "Is this a correct answer?"]
+                           :test            {llm/service llm/openai
+                                             :context    :self-eval}}
+                          {:question "What is the distance from Moon to Io?"}))
 
   ;; CHAT
   (generator
