@@ -13,6 +13,7 @@
 
 (ns text-splitting
   (:require
+   [bosquet.llm :as llm]
    [bosquet.llm.generator :as g]
    [bosquet.nlp.splitter :as split]
    [bosquet.wkk :as wkk]
@@ -148,11 +149,9 @@ TEXT: {{chunk}}")
 
 (defn analysis
   [chunks]
-  (mapv :gen
-        (map
-         #(g/generate extraction-prompt {:chunk %}
-                      {:gen {wkk/model-parameters {:model "gpt-4"}}})
-         chunks)))
+  (mapv
+   #(g/generate extraction-prompt {:chunk %})
+   chunks))
 
 ;; #### Per chunk results
 ;;
@@ -188,18 +187,21 @@ TEXT: {{chunk}}")
 ;; be done with another LLM request that gets all the per chunk detected emotions and aggregates
 ;; them into a single list.
 
-(def summarization-proompt
-  "You are provided with a list of expressions of emotions. Please aggregate them into
+(def summarization-prompt
+  {:prompt
+   "You are provided with a list of expressions of emotions. Please aggregate them into
 a single list of summarizing emotions. Omit any duplicates and skip 'no empotions expressed' entries.
 Respond with unnumbered bullet list and nothing else.
 
-EMOTIONS: {{emotions}}")
+EMOTIONS: {{emotions}}"
+   :summary (g/llm :openai
+                   llm/model-params {:model :gpt-4}
+                   llm/context :prompt)})
 
 (defn summarize [analysis]
-  (:gen
-   (g/generate summarization-proompt
-               {:emotions (string/join ", " analysis)}
-               {:gen {wkk/model-parameters {:model "gpt-4"}}})))
+  (:summary
+   (g/generate summarization-prompt
+               {:emotions (string/join ", " analysis)})))
 
 (clerk/table [["Character split" (clerk/md (summarize char-results))]
               ["Sentence split" (clerk/md (summarize sentence-results))]
