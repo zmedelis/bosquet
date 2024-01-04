@@ -178,7 +178,7 @@
 (defn ->chatml [messages]
   (map
    (fn [[role content]] {:role role :content content})
-   messages))
+   (partition 2 messages)))
 
 (defn- call-llm [llm-config properties messages]
   (if (map? properties)
@@ -213,28 +213,31 @@
         (let [gen-result (call-llm llm-config content processed-messages)
               var-name   (llm/var-name content)]
           (recur messages
-                 (conj processed-messages [role gen-result])
+                 (into processed-messages [role gen-result])
                  (assoc ctx var-name gen-result)))
         (let [tpl-result (first (template/render (join content) ctx))]
           (recur messages
-                 (conj processed-messages [role tpl-result])
+                 (into processed-messages [role tpl-result])
                  ctx))))))
 
 (defn- generation-resolver
-  [llm-config message-key message-content]
+  [llm-config message-key {ctx-var llm/context :as message-content}]
   (if (map? message-content)
-    (pco/resolver
-     {::pco/op-name (-> message-key .-sym (str "-ai-gen") keyword symbol)
-      ::pco/output  [message-key]
-      ::pco/input   [(llm/context message-content)]
-      ::pco/resolve
-      (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
-        (try
-          (let [full-text (get @entry-tree (llm/context message-content))
-                result    (call-llm llm-config message-content [[:user full-text]])]
-            {message-key result})
-          (catch Exception e
-            (timbre/error e))))})
+    (if ctx-var
+      (pco/resolver
+       {::pco/op-name (-> message-key .-sym (str "-ai-gen") keyword symbol)
+        ::pco/output  [message-key]
+        ::pco/input   [(llm/context message-content)]
+        ::pco/resolve
+        (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
+          (try
+            (let [full-text (get @entry-tree (llm/context message-content))
+                  result    (call-llm llm-config message-content [:user full-text])]
+              {message-key result})
+            (catch Exception e
+              (timbre/error e))))})
+      (timbre/warnf "Context var is not set in generation spec. Add 'llm/context' to '%s'" message-key)
+      )
     ;; TEMPLATE
     (let [message-content (join message-content)]
       (pco/resolver
@@ -298,22 +301,21 @@
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
 
-  (u/pp
-   (generate
-    [:system "You are an amazing writer."
-     :user ["Write a synopsis for the play:"
-            "Title: {{title}}"
-            "Genre: {{genre}}"
-            "Synopsis:"]
-     :assistant (llm :openai
-                     llm/model-params {:temperature 0.8 :max-tokens 120}
-                     llm/var-name :synopsis)
-     :user "Now write a critique of the above synopsis:"
-     :assistant (llm :openai
-                     llm/model-params {:temperature 0.2 :max-tokens 120}
-                     llm/var-name     :critique)]
-    {:title "Mr. X"
-     :genre "Sci-Fi"}))
+  (generate
+   [:system "You are an amazing writer."
+    :user ["Write a synopsis for the play:"
+           "Title: {{title}}"
+           "Genre: {{genre}}"
+           "Synopsis:"]
+    :assistant (llm :openai
+                    llm/model-params {:temperature 0.8 :max-tokens 120}
+                    llm/var-name :synopsis)
+    :user "Now write a critique of the above synopsis:"
+    :assistant (llm :openai
+                    llm/model-params {:temperature 0.2 :max-tokens 120}
+                    llm/var-name     :critique)]
+   {:title "Mr. X"
+    :genre "Sci-Fi"})
 
   (generate
    llm/default-services
@@ -335,15 +337,6 @@
     :answer    (llm :openai
                     llm/output-format :json
                     llm/context :astronomy)})
-
-  #_(def services
-      (merge
-       llm/default-services
-       {:local2 {llm/complete-fn (fn [_system _options] "COMPLETE-LOCAL2")
-                 llm/chat-fn     (fn [_system _options]
-                                   {bosquet.llm.llm/content
-                                    {:completion
-                                     {:content "CHAT-LOCAL2"}}})}}))
 
   #_(generate
      [(chat/speak chat/user "What's the weather like in San Francisco, Tokyo, and Paris?")]
