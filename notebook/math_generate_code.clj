@@ -1,7 +1,7 @@
 (ns math-generate-code
   (:require
+   [bosquet.llm :as llm]
    [bosquet.llm.generator :as g]
-   [bosquet.wkk :as wkk]
    [helpers :as h]
    [nextjournal.clerk :as c]))
 
@@ -45,11 +45,11 @@
 ;; that constructs the request to generate text in the following 'CODE:'.
 
 (def prompt {:few-shot few-shot
-             ;; :format   "Your are required to write the response in Clojure code as shown in the examples. Omit all other prose and explanations."
              :calc     (h/join
                         "{{few-shot}}"
                         "QUESTION: {{question}}"
-                        "CODE: {% gen var-name=answer %}")})
+                        "CODE:")
+             :answer   (g/llm :openai llm/context :calc)})
 
 ;;
 ;; Let's have two questions to generate code for.
@@ -69,13 +69,14 @@
 ;; #### Question 1 answer
 ;;
 (def q1-answer (g/generate prompt
-                           {:examples examples :question question1}
-                           {:answer {wkk/service :llm/lmstudio}}))
+                           {:examples examples :question question1}))
+
 ^{:nextjournal.clerk/visibility :fold}
-(let [{:keys [answer]} q1-answer]
-  (c/html [:div
-           [:div "Code:" [:pre answer]]
-           [:div "Eval:" [:pre (-> answer read-string eval)]]]))
+(let [{answer :answer} q1-answer]
+  (c/html
+   [:div
+    [:div "Code:" [:pre answer]]
+    [:div "Eval:" [:pre (-> answer read-string eval)]]]))
 
 ;;
 ;; #### Question 2 answer
@@ -92,11 +93,10 @@
 ;; > The prompt definition above using references is not strictly needed and is there to demonstrate such a possiblility. It would allow you to define different calc keys (say you want to instruct differently)
 ;; by reusing the same few-shot. To simplify it could be done without references like that
 ;;
-(def flat-template
-  (h/join
-    "{% for example in examples %}"
-    "QUESTION: {{example.question}}"
-    "CODE: {{example.code}}"
-    "{% endfor %}"
-    "QUESTION: {{question}}"
-    "CODE: {% gen var-name=answer %}"))
+(h/join
+ "{% for example in examples %}"
+ "QUESTION: {{example.question}}"
+ "CODE: {{example.code}}"
+ "{% endfor %}"
+ "QUESTION: {{question}}"
+ "CODE:")
