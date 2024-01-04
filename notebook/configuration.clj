@@ -1,109 +1,82 @@
 (ns configuration
   (:require
-    [bosquet.wkk :as wkk]
-    [bosquet.llm.generator :as g]
-    [bosquet.system :as system]))
+   [bosquet.llm :as llm]
+   [bosquet.llm.generator :as g]))
 
 ;; ## Bosquet Configuration
-
-;; *Bosquet* uses [Integrant](https://github.com/weavejester/integrant) to setup its components. Combining it with [Aero](https://github.com/juxt/aero) brings in some nice configuration
-;; options.
-
+;;
 ;; *Bosquet* configuration allows you to declare:
 ;; * LLM services
 ;; * Model parameters
 ;; * Model aliases
 ;; * Switch on caching
 ;; * Memory components
+;;
+;; ### Available components
+;;
+;; Bosquet supports and provides default configurations for a set of LLMs and memory components. Those are defined in `resources/env.edn` file. This
+;; file is used internaly to handle component loading. It is not necessary to change it if you will be declaring your own LLMs or other resources (see bellow on how to add those).
+;;
+;; Note that `env.edn` is not declaring secrets. Those are loadind from `config.edn` found in the root of the project. See `config.edn.sample`
+;;
+;; ### Configuring LLM calls
+;;
+;; Bosquet allows to separately declare how LLM call is to be made from the declared templates. It varies slightly depending on the
+;; generation mode.
+;;
+;; When generating using a prompt map, a LLM call is defined a node in the map.
 
-;; System components are listed in the *Integrant* `resources/system.edn` file. Using it together with *Areo* allows us to specify how externally defined properties are used, declaring alternative ways of loading them, and setting the defaults.
+(def prompt {:question-answer "Question: {{question}}  Answer:"
+             :answer          (g/llm :openai llm/context :question-answer)
+             :self-eval       ["Question: {{question}}"
+                               "Answer: {{answer}}"
+                               "Is this a correct answer?"]
+             :test            (g/llm :openai llm/context :self-eval)})
 
+;; `self-eval` and `test` nodes define LLM calls, both request `openai` to be used as the LLM service.
+;; `llm/context` specifies which map key holds a prompt to be used as the LLM context.
 ;;
-;; ### config.edn
+;; How the call is to be made to the LLM service is defined in service configuration. It will have `:openai` key where
+;; functions to make a call are defined. Bosquet provides default service implementations in - `bosquet.llm/default-services`.
 ;;
-;; ### Component properties
+;; For example `:openai` is defined like this:
 ;;
-;; Properties like API keys, passwords, or other secrets are not stored in the `system.edn` they go into the `config.edn` file. The `config.edn.sample` file shows available fields.
-;; It is not required to list all of them in your `config.edn`.
+;; ```clojure
 ;;
-;; ### Component loading properties
-;;
-;; `config.edn` also contains settings that controll how to load the various compoents.
-;;
- ;; * `:load-components` -  List of Integrant component keys to be loaded. If this key is *NOT* specified *ALL* components will be loaded
- ;; * `:default-llm` - LLM to use if LLM service is not specified when making completion calls
-
-;; ### Configuring LLM services
-
-;; LLM service components wrap access to the APIs provided by LLM vendors like *OpenAI*.
-;; Currently *Bosquet* supports *OpenAI* and *Cohere* LLM services. A new service can be integrated by implementing the `bosquet.llm.llm/LLM` protocol.
-
-;; Let's take the OpenAI model provided by OpenAI as an example. `system.edn` under `:llm/openai`
-;; the key defines it like this:
-;; ```edn
-;; {:api-key      #ref [:config :openai-api-key]
-;;  :api-endpoint #or [#env "OPENAI_API_ENDPOINT"
-;;                     #ref [:config :openai-api-endpoint]
-;;                     "https://api.openai.com/v1"]
-;;  :impl         :openai}
+;; {:openai {:api-key      (env/val :llm/openai :openai-api-key)
+;;           :api-endpoint (env/val :llm/openai :api-endpoint)
+;;           :impl         (env/val :llm/openai :impl)
+;;           complete-fn   handle-openai-complete
+;;           chat-fn       handle-openai-chat}}
 ;; ```
+;; It defines chat and complete functions. You can folow that implementation to add your own services
 
-;; `api-key` is loaded via *Aero* `#ref` construct. It allows loading values from the external configuration file (`config.edn`). Note the `api-endpoint` with `#or` construct, where the sequence of property lookup is defined: start with environment variables, then check the config file, and lastly, use the default value.
-
-;; You would hardly need to access LLM services from your code, but for some low-level tinkering, you can get the LLM Service like this:
-
-(def service (system/get-service :llm/openai))
-(.service-name service)
-
-;; LLM service declaration accepts the optional `model-name-mapping` parameter. This allows the use of a unified naming scheme for models provided by different vendors. The benefit of that is that you can declare prompt templates and their invocation parameters without having to
-;; tie them into specific model names like `gpt4`. Instead, you can use a  generic name like `smart` and map it to the model name in the `model-name-mapping` parameter. With that, you can switch between models without changing your prompt setup.
-;; See `:llm/cohere` config for an example of that, where *Cohere* models are mapped to OpenAI
-;; model names (subject to change).
+;; A call with this configuration:
 ;;
-;; ### Configuring LLM models
-;;
-;; Differently from LLM services, LLM models are not components. They are just a map of
-;; parameters that are passed to the LLM service when it is invoked. Importantly *Bosquet* allows the definition of different invocation parameters per individual template.
-;;
-;; For example, given the following `prompt` and `data`
+^{:nextjournal.clerk/auto-expand-results? true}
+(g/generate llm/default-services
+            prompt
+            {:question "What is the distance from Moon to Io?"})
 
-(def prompt
-  {:role "As a brilliant {{you-are}} answer the following question."
-   :question "What is the distance between Io and Europa?"
-   :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"
-   :self-eval "{{answer}} Is this a correct answer? {% gen var-name=test %}"})
-
-(def data
-  {:you-are "astronomer"
-   :question "What is the distance from Moon to Io?"})
-
-
-;; The `parameters` for generation can be defined in a map with configuration for each `gen` call in the template.
-;; So the `question-answer > answer` generation is done with the *OpenAI* `gpt-3.5-turbo` model. With the cache enabled.
-;;
-;; While `self-eval > test` generation is done with *Cohere* and a low `temperature` setting.
-;; Note:
-;; - the `gpt-4` model name in use, it gets mapped to Cohere's `command`
-;; - the `stop` parameter, Cohere uses `stop_sequences`, `stop` is used for all *Bosquet* based requests, renaming is done automaticaly.
-
-(def parameters
-  {:answer {wkk/service          [:llm/openai :provider/openai]
-            wkk/cache            true
-            wkk/model-parameters {:temperature 0.4
-                                  :model       "gpt-3.5-turbo"}}
-   :test   {wkk/service          :llm/cohere
-            wkk/model-parameters {:model       "gpt-4"
-                                  :stop        ["."]
-                                  :temperature 0.0}}})
-;;
-;; Available configuration parameters are:
-;; * `:bosquet.llm/service` - LLM service to use for generation
-;; * `:bosquet.llm/cache` - whether to cache the generation result
-;; * `:bosquet.llm/model-parameters` - LLM model parameters to use for generation
-;;   * all the parameters supported by the LLM service like `temperature`, `max-tokens`, etc. Different services support different parameters and name them differently, *Bosquet* uses the OpenAI naming scheme and normalizes others to it.
-;;
-
-;; An example of the generation with given parameters:
+;; Generating with chat mode is similar
 
 ^{:nextjournal.clerk/auto-expand-results? true}
-(g/generate prompt data parameters)
+(g/generate
+ [:system "You are an amazing writer."
+  :user ["Write a synopsis for the play:"
+         "Title: {{title}}"
+         "Genre: {{genre}}"
+         "Synopsis:"]
+  :assistant (g/llm :openai
+                    llm/model-params {:temperature 0.8 :max-tokens 120}
+                    llm/var-name :synopsis)
+  :user "Now write a critique of the above synopsis:"
+  :assistant (g/llm :openai
+                    llm/model-params {:temperature 0.2 :max-tokens 120}
+                    llm/var-name :critique)]
+ {:title "Mr. X"
+  :genre "Sci-Fi"})
+
+;; Importatn to note the difference from map based prompts. There we do not know the name of the generation node.
+;; Therefore, the need to declare `llm/var-name` so that Bosquet knows where to assign the generated text and allow
+;; it's use further in the conversation.

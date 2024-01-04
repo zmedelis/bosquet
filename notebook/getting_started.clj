@@ -16,9 +16,9 @@
 ;; Generating LLM completions is as simple as calling `generate` function with a prompt.
 ;; This will use the defaults: OpenAI with GPT-3.5 model to generate the completion.
 
-^{:nextjournal.clerk/visibility {:result :show}}
+^{:nextjournal.clerk/auto-expand-results? true}
 (g/generate
-  "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
+ "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
 
 ;; ### Prompt composition
 ;; A use case showing some of the basic Bouquet functionality is using linked prompt templates for text generation.
@@ -64,5 +64,5 @@
 
 ;; With the prerequisite data set, let's run the generation.
 
-^{:nextjournal.clerk/visibility {:result :show}}
+^{:nextjournal.clerk/auto-expand-results? true}
 (g/generate template {:title "City of Shadows" :genre "crime"})
