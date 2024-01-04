@@ -1,5 +1,8 @@
 (ns getting-started
-  (:require [bosquet.llm.generator :as g]))
+  (:require
+   [bosquet.llm :as llm]
+   [bosquet.llm.generator :as g]
+   [bosquet.utils :as u]))
 
 ;; ## Getting Started
 ;;
@@ -7,15 +10,19 @@
 ;; Find `config.edn.sample` at the root of the project, rename it to `config.edn`
 ;; and set necessary parameters. The `resources/env.edn` file shows how the config
 ;; is loaded and what defaults are available.
+;;
+;; ### Simple prompt
 
 ;; Generating LLM completions is as simple as calling `generate` function with a prompt.
-;; This will use the defaults: OpenAI with GPT-3.5 modelto generate the completion.
+;; This will use the defaults: OpenAI with GPT-3.5 model to generate the completion.
 
+^{:nextjournal.clerk/visibility {:result :show}}
 (g/generate
   "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
 
-;; The simplest use case showing some of the basic Bouquet functionality is using linked prompt templates for text generation.
-
+;; ### Prompt composition
+;; A use case showing some of the basic Bouquet functionality is using linked prompt templates for text generation.
+;;
 ;; Let's say we want AI to generate two texts:
 ;; 1. a synopsis of the play from `title` and `genre` inputs
 ;; 1. a synopsis review.
@@ -37,38 +44,25 @@
 ;; Linked templates are defined in a map, where the map key is a variable name that can be used to reference templates from each other.
 
 (def template
-  {:synopsis "You are a playwright. Given the play's title and it's genre
-              it is your job to write synopsis for that play.
-              Title: {{title}}
-              Genre: {{genre}}
-              {% gen play %}"
+  {:synopsis (u/join-nl "You are a playwright. Given the play's title and it's genre"
+                        "it is your job to write synopsis for that play."
+                        "Title: {{title}}"
+                        "Genre: {{genre}}")
+   :play     (g/llm :openai llm/context :synopsis)
    :critique "You are a play critic from the Moon City Times.
               Given the synopsis of play, it is your job to write a review for that play.
               Play Synopsis:
               {{play}}
-              Review from a New York Times play critic of the above play:
-              {% gen review %}"})
+              Review from a New York Times play critic of the above play:"
+   :review   (g/llm :openai llm/context :critique)})
 
 ;; Things to note:
-;; * `gen` template tag marks the place where AI-generated text will be inserted; the `gen` tag uses the text above as its generation content
-;; * `play` and `review` are the arguments to `gen` specifying the key in returned generation data holding the generation result
+;; * `play` and `review` define generation points, there you specify which LLM to use and which value from the map will be used as prompt context
 ;; * `{{title}}` (and other slots in that form) is where supplied inputs will be injected
 
 ;; *Bosquet* will be invoking *OpenAI API* thus make sure that `OPENAI_API_KEY` is present as the environment variable.
 
 ;; With the prerequisite data set, let's run the generation.
 
-(g/generate
- {:llm/service :openai}
- template
- {:title "City of Shadows" :genre "crime"})
-
-;; This demonstrates a more typical way of calling `generate` function with the following parameters:
-;; - first argument specifying the LLM service to use (see Configuration document for full details)
-;; - second argument is the template map
-;; - lastly the data to pass to the template
-
-;; The output contains the map with:
-;; * input data under `title` and `genre`
-;; * complete template filling results under `synopsis ` and `critique` including template text and AI generation result
-;; * AI generation only results under `gen` var name params
+^{:nextjournal.clerk/visibility {:result :show}}
+(g/generate template {:title "City of Shadows" :genre "crime"})
