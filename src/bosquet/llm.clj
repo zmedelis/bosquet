@@ -20,6 +20,10 @@
   "Type of generation output format: json, xml, text, etc"
   :llm/output-format)
 
+(def context
+  "When generating from a prompt map specify which key contains full context for generation."
+  :llm/context)
+
 (defn handle-openai-chat [service-config params]
   (openai/chat-completion params service-config))
 

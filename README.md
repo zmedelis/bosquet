@@ -16,8 +16,7 @@ Bosquet provides instruments to work with those AI application concepts:
 
 [Full project documentation](https://zmedelis.github.io/bosquet/) (WIP)
 
-## Quick example
-
+## Use
 
 Secrets and other local parameters are kept in `config.edn`. Make a copy of `config.edn.sample` and enter your account API KEYS from OpenAI, Cohere,
 or other providers.
@@ -40,21 +39,19 @@ Simple prompt completion can be done like this.
 
 `
 
-### Graph completion
+### Completion from prompt map
 
 
 ```clojure
 (generate
     llm/default-services
     {:question-answer "Question: {{question}}  Answer:"
-        :answer          {llm/service llm/openai
-                        :context    :question-answer}
-        :self-eval       ["Question: {{question}}"
-                        "Answer: {{answer}}"
-                        ""
-                        "Is this a correct answer?"]
-        :test            {llm/service llm/openai
-                        :context    :self-eval}}
+     :answer          (llm :openai :context :question-answer}
+     :self-eval       ["Question: {{question}}"
+                       "Answer: {{answer}}"
+                       ""
+                       "Is this a correct answer?"]
+     :test            (llm :openai :context :self-eval)}
     {:question "What is the distance from Moon to Io?"})
 =>
 
@@ -68,6 +65,45 @@ Simple prompt completion can be done like this.
  "No, the answer provided is incorrect. The Moon is Earth's natural satellite, while Io is one of Jupiter's moons. Therefore, the distance between the Moon and Io can vary significantly depending on their relative positions in their respective orbits around Earth and Jupiter."}
 
 ```
+
+### Chat
+
+``` clojure
+(generate
+    [:system "You are an amazing writer."
+    :user ["Write a synopsis for the play:"
+            "Title: {{title}}"
+            "Genre: {{genre}}"
+            "Synopsis:"]
+    :assistant (llm :openai
+                    llm/model-params {:temperature 0.8 :max-tokens 120}
+                    llm/var-name :synopsis)
+    :user "Now write a critique of the above synopsis:"
+    :assistant (llm :openai
+                    llm/model-params {:temperature 0.2 :max-tokens 120}
+                    llm/var-name     :critique)]
+    {:title "Mr. X"
+    :genre "Sci-Fi"})
+=>
+
+#:bosquet{:conversation
+          [[:system "You are an amazing writer."]
+           [:user
+            "Write a synopsis for the play:\nTitle: Mr. X\nGenre: Sci-Fi\nSynopsis:"]
+           [:assistant "In a futuristic world where technology ..."]
+           [:user "Now write a critique of the above synopsis:"]
+           [:assistant
+            "The synopsis for the play \"Mr. X\" presents an intriguing premise ..."]],
+          :completions
+          {:synopsis
+           "In a futuristic world where technology has ...",
+           :critique
+           "The synopsis for the play \"Mr. X\" presents an intriguing premise set ..."}}
+```
+
+Note that chat returns `:bosquet/conversation` listing full chat with generated parts filled in, and `:bosquet/completions` containing only generated data
+
+`
 
 ## Features
 

@@ -2,10 +2,9 @@
   (:require
    [bosquet.converter :as converter]
    [bosquet.llm :as llm]
-   [bosquet.llm.chat :as chat]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
-   [bosquet.wkk :as wkk]
+   [bosquet.utils :as u]
    [clojure.string :as string]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
@@ -43,31 +42,31 @@
         config))))
 
 #_(defn- generation-resolver
-  "Build dynamic resolvers figuring out what each prompt tempalte needs
+    "Build dynamic resolvers figuring out what each prompt tempalte needs
   and set it as required inputs for the resolver.
 
   For the output check if themplate is producing generated content
   anf if so add a key for it into the output"
-  [llm-config properties current-prompt data-input-vars template]
-  (let [{:keys [data-vars gen-vars]} (template/template-vars template)
+    [llm-config properties current-prompt data-input-vars template]
+    (let [{:keys [data-vars gen-vars]} (template/template-vars template)
         ;; This set intersection is needed because some of the data vars might not be in
         ;; supplied data map, values might be omited and come from specified defaults in
         ;; Selmer template
-        data-vars                    (vec (set/intersection (set data-input-vars) (set data-vars)))]
-    (timbre/info "Resolving: " current-prompt)
-    (timbre/info "\tInput data: " data-vars)
-    (timbre/info "\tGenerate for: " gen-vars)
-    (pco/resolver
-     {::pco/op-name (-> current-prompt .-sym (str "-gen") keyword symbol)
-      ::pco/output  gen-vars
-      ::pco/input   data-vars
-      ::pco/resolve
-      (fn [_env input]
-        (let [current-gen-var        (first gen-vars)
-              [completed completion] (template/fill-slots-2 llm-config properties template input)
-              completed              (current-gen-var completed)
-              completion             (:gen completion)]
-          (merge {current-prompt completed} completion input)))})))
+          data-vars                    (vec (set/intersection (set data-input-vars) (set data-vars)))]
+      (timbre/info "Resolving: " current-prompt)
+      (timbre/info "\tInput data: " data-vars)
+      (timbre/info "\tGenerate for: " gen-vars)
+      (pco/resolver
+       {::pco/op-name (-> current-prompt .-sym (str "-gen") keyword symbol)
+        ::pco/output  gen-vars
+        ::pco/input   data-vars
+        ::pco/resolve
+        (fn [_env input]
+          (let [current-gen-var        (first gen-vars)
+                [completed completion] (template/fill-slots-2 llm-config properties template input)
+                completed              (current-gen-var completed)
+                completion             (:gen completion)]
+            (merge {current-prompt completed} completion input)))})))
 
 (defn- resolver-error-wrapper
   [env]
@@ -81,101 +80,100 @@
         (timbre/error error)))}))
 
 #_(defn- prompt-indexes-2 [llm-config opts data-vars prompts]
-  (pci/register
-   (mapv
-    (fn [prompt-key]
-      (generation-resolver llm-config opts prompt-key data-vars (prompt-key prompts)))
-    (keys prompts))))
+    (pci/register
+     (mapv
+      (fn [prompt-key]
+        (generation-resolver llm-config opts prompt-key data-vars (prompt-key prompts)))
+      (keys prompts))))
 
 #_(defn all-keys2
-  [prompts data]
-  (u/flattenx
-   (concat
-    (keys data)
-    (w/prewalk
-     #(cond
-        (string? %) (:gen-vars (template/template-vars %))
+    [prompts data]
+    (u/flattenx
+     (concat
+      (keys data)
+      (w/prewalk
+       #(cond
+          (string? %) (:gen-vars (template/template-vars %))
         ;; TODO; this is OAI specific, and not really a good place to do this
-        (#{:system :assistant :user} %) nil
-        :else %)
-     prompts))))
+          (#{:system :assistant :user} %) nil
+          :else %)
+       prompts))))
 
 #_(defn- complete*
-  [llm-provider-config gen-props context input-data]
-  (let [extraction-keys (all-keys2 context input-data)]
-    (-> (prompt-indexes-2 llm-provider-config gen-props (keys input-data) context)
-        (resolver-error-wrapper)
-        (psm/smart-map input-data)
-        (select-keys extraction-keys))))
+    [llm-provider-config gen-props context input-data]
+    (let [extraction-keys (all-keys2 context input-data)]
+      (-> (prompt-indexes-2 llm-provider-config gen-props (keys input-data) context)
+          (resolver-error-wrapper)
+          (psm/smart-map input-data)
+          (select-keys extraction-keys))))
 
 #_(defn- fill-converation-slots-2
-  [llm-provider-config gen-props context input]
-  (mapv
-   (fn [{content chat/content :as msg}]
-     (assoc msg
-            chat/content
-            (first (template/fill-slots-2 llm-provider-config gen-props
-                                          content
-                                          input))))
-   context))
+    [llm-provider-config gen-props context input]
+    (mapv
+     (fn [{content chat/content :as msg}]
+       (assoc msg
+              chat/content
+              (first (template/fill-slots-2 llm-provider-config gen-props
+                                            content
+                                            input))))
+     context))
 
 #_(defn- chat* [llm-provider-config gen-props context input]
-  (let [updated-context (fill-converation-slots-2 llm-provider-config gen-props context input)
-        service-config (get llm-provider-config (llm/service gen-props))
-        {:llm/keys [chat-fn]} service-config]
-    (->
-     (chat-fn (dissoc service-config llm/gen-fn llm/chat-fn)
-              (assoc gen-props :messages updated-context))
-     bosquet.llm.llm/content
-     :completion)))
+    (let [updated-context (fill-converation-slots-2 llm-provider-config gen-props context input)
+          service-config (get llm-provider-config (llm/service gen-props))
+          {:llm/keys [chat-fn]} service-config]
+      (->
+       (chat-fn (dissoc service-config llm/gen-fn llm/chat-fn)
+                (assoc gen-props :messages updated-context))
+       bosquet.llm.llm/content
+       :completion)))
 
 #_(defn- fill-converation-slots
-  "Fill all the Selmer slots in the conversation context. It will
+    "Fill all the Selmer slots in the conversation context. It will
   check all roles and fill in `{{slots}}` from the `inputs` map."
-  [messages inputs opts]
+    [messages inputs opts]
   ;; TODO run `generate` over all the conversation-context to fill in the slots
-  (mapv
-   (fn [{content chat/content :as msg}]
-     (assoc msg
-            chat/content
-            (first (template/fill-slots content inputs opts))))
-   messages))
+    (mapv
+     (fn [{content chat/content :as msg}]
+       (assoc msg
+              chat/content
+              (first (template/fill-slots content inputs opts))))
+     messages))
 
 #_(defn chat
-  ([messages] (chat messages {}))
-  ([messages inputs] (chat messages inputs {}))
-  ([messages inputs opts]
-   (let [updated-context (fill-converation-slots messages inputs opts)]
-     (complete/chat-completion updated-context opts))))
+    ([messages] (chat messages {}))
+    ([messages inputs] (chat messages inputs {}))
+    ([messages inputs opts]
+     (let [updated-context (fill-converation-slots messages inputs opts)]
+       (complete/chat-completion updated-context opts))))
 
 #_(defn generate
-  ([context]
-   (generate {llm/service llm/openai} context))
+    ([context]
+     (generate {llm/service llm/openai} context))
 
-  ([gen-props context]
-   (generate gen-props context nil))
+    ([gen-props context]
+     (generate gen-props context nil))
 
-  ([gen-props context input-data]
-   (generate llm/default-services gen-props context input-data))
+    ([gen-props context input-data]
+     (generate llm/default-services gen-props context input-data))
 
-  ([llm-provider-config gen-props context input-data]
-   (if (vector? context)
-     (chat* llm-provider-config gen-props (apply chat/converse context) input-data)
-     (complete* llm-provider-config gen-props
-                (if (string? context)
+    ([llm-provider-config gen-props context input-data]
+     (if (vector? context)
+       (chat* llm-provider-config gen-props (apply chat/converse context) input-data)
+       (complete* llm-provider-config gen-props
+                  (if (string? context)
                   ;; a single string template prompt, convert to map context
                   ;; to be processed as completion
-                  {:string-template (template/ensure-gen-tag context)}
-                  context)
-                input-data))))
+                    {:string-template (template/ensure-gen-tag context)}
+                    context)
+                  input-data))))
 
 #_(defn ->completer
-  [llm-services]
-  (fn [parameters context data]
-    (generate llm-services parameters context data)))
+    [llm-services]
+    (fn [parameters context data]
+      (generate llm-services parameters context data)))
 
 ;;  -- V3 --
-
 
 (defn ->chatml [messages]
   (map
@@ -206,18 +204,18 @@
 (defn chat
   [llm-config messages vars-map]
   (loop [[role content & messages] messages
-         processed-messages          []
-         ctx                         vars-map]
+         processed-messages        []
+         ctx                       vars-map]
     (if (nil? role)
-      {:bosquet/content processed-messages
-       :bosquet/vars    ctx}
+      {:bosquet/conversation    processed-messages
+       :bosquet/completions (apply dissoc ctx (keys vars-map))}
       (if (= :assistant role)
         (let [gen-result (call-llm llm-config content processed-messages)
               var-name   (llm/var-name content)]
           (recur messages
                  (conj processed-messages [role gen-result])
                  (assoc ctx var-name gen-result)))
-        (let [tpl-result (first (template/render (join content) vars-map))]
+        (let [tpl-result (first (template/render (join content) ctx))]
           (recur messages
                  (conj processed-messages [role tpl-result])
                  ctx))))))
@@ -228,11 +226,11 @@
     (pco/resolver
      {::pco/op-name (-> message-key .-sym (str "-ai-gen") keyword symbol)
       ::pco/output  [message-key]
-      ::pco/input   [(:context message-content)]
+      ::pco/input   [(llm/context message-content)]
       ::pco/resolve
       (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
         (try
-          (let [full-text (get @entry-tree (:context message-content))
+          (let [full-text (get @entry-tree (llm/context message-content))
                 result    (call-llm llm-config message-content [[:user full-text]])]
             {message-key result})
           (catch Exception e
@@ -266,8 +264,8 @@
 (defn append-generation-instruction
   [string-template]
   {:prompt     string-template
-   :completion {llm/service llm/openai
-                :context    :prompt}})
+   :completion {llm/service :openai
+                llm/context :prompt}})
 
 (defn generate
   ([messages] (generate llm/default-services messages {}))
@@ -277,18 +275,21 @@
    (cond
      (vector? messages) (chat llm-config messages vars-map)
      (map? messages)    (complete llm-config messages vars-map)
-     (string? messages) (complete llm-config (append-generation-instruction messages) vars-map))))
+     (string? messages) (:completion (complete llm-config (append-generation-instruction messages) vars-map)))))
+
+(defn llm
+  "A helper function to create LLM spec for calls during the generation process.
+  It comes back with a map constructed from `service` and `args`:
+
+  ```
+  {:llm/service      service
+   :llm/
+   :llm/model-params params}
+  ```"
+  [service & args]
+  (assoc (apply hash-map args) llm/service service))
 
 (comment
-
-  (def services
-    (merge
-     llm/default-services
-     {:local2 {llm/complete-fn (fn [_system _options] "COMPLETE-LOCAL2")
-               llm/chat-fn     (fn [_system _options]
-                                 {bosquet.llm.llm/content
-                                  {:completion
-                                   {:content "CHAT-LOCAL2"}}})}}))
 
   (generate
    "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
@@ -297,129 +298,71 @@
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
 
-  ;; COMPLETION
-  (clojure.pprint/pprint (generate
-                          llm/default-services
-                          {:question-answer "Question: {{question}}  Answer:"
-                           :answer          {llm/service llm/openai
-                                             :context    :question-answer}
-                           :self-eval       ["Question: {{question}}"
-                                             "Answer: {{answer}}"
-                                             ""
-                                             "Is this a correct answer?"]
-                           :test            {llm/service llm/openai
-                                             :context    :self-eval}}
-                          {:question "What is the distance from Moon to Io?"}))
+  (u/pp
+   (generate
+    [:system "You are an amazing writer."
+     :user ["Write a synopsis for the play:"
+            "Title: {{title}}"
+            "Genre: {{genre}}"
+            "Synopsis:"]
+     :assistant (llm :openai
+                     llm/model-params {:temperature 0.8 :max-tokens 120}
+                     llm/var-name :synopsis)
+     :user "Now write a critique of the above synopsis:"
+     :assistant (llm :openai
+                     llm/model-params {:temperature 0.2 :max-tokens 120}
+                     llm/var-name     :critique)]
+    {:title "Mr. X"
+     :genre "Sci-Fi"}))
 
-  ;; CHAT
-  (generator
-   {llm/service      llm/openai
-    llm/model-params {:temperature 0.4
-                      :max-tokens  120
-                      :model       :gpt-3.5-turbo}}
-
-   [:system "You are a playwright. Given the play's title and genre write synopsis."
-    :user ["Title: {{title}}"
-           "Genre: {{genre}}"]
-    :user "Playwright: This is a synopsis for the above play:"
-    :asistant "{% gen play %}"
-    :user "Review from a Nice City Times play critic of the above synopsis:"
-    :assistant "{% gen review %}"]
-
-   {:title "Mr. X"
-    :genre "Sci-Fi"})
-
-  ;; TEMPLATE
-  (generator
-   {llm/service llm/openai}
-   "Question: {{question}}  Answer: {% gen %}"
+  (generate
+   llm/default-services
+   {:question-answer "Question: {{question}}  Answer:"
+    :answer          (llm :openai llm/context :question-answer)
+    :self-eval       ["Question: {{question}}"
+                      "Answer: {{answer}}"
+                      ""
+                      "Is this a correct answer?"]
+    :test            (llm :openai llm/context :self-eval)}
    {:question "What is the distance from Moon to Io?"})
 
-  (chat
-   [(chat/speak chat/system "You are a brilliant {{role}}.")
-    (chat/speak chat/user "What is a good {{meal}}?")
-    (chat/speak chat/assistant "Good {{meal}} is a {{meal}} that is good.")
-    (chat/speak chat/user "Help me to learn the ways of a good {{meal}}.")]
-   {:role "cook" :meal "cake"}
-   {chat/conversation
-    {wkk/service          :llm/cohere
-     wkk/model-parameters {:temperature 0
-                           :max-tokens  100}}})
-
   (generate
-   {:test   {llm/service :openai}
-    :answer {llm/service :openai}}
-   {:role            "As a brilliant {{you-are}} answer the following question."
-    :question-answer "Question: {{question}}  Answer: {% gen answer %}"
-    :self-eval       "{{answer}} Is this a correct answer? {% gen test %}"}
-   {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"})
+   {:astronomy (u/join-nl
+                "As a brilliant astronomer, list distances between planets and the Sun"
+                "in the Solar System. Provide the answer in JSON map where the key is the"
+                "planet name and the value is the string distance in millions of kilometers."
+                "Generate only JSON omit any other prose and explanations.")
+    :answer    (llm :openai
+                    llm/output-format :json
+                    llm/context :astronomy)})
 
-  (generate
-   "As a brilliant {{you-are}} list distances between planets and the Sun
-in the Solar System. Provide the answer in JSON map where the key is the
-planet name and the value is the string distance in millions of kilometers. Generate only JSON
-omit any other prose and explanations."
-   {:you-are "astronomer"}
-   {:gen {wkk/output-format :json}})
+  #_(def services
+      (merge
+       llm/default-services
+       {:local2 {llm/complete-fn (fn [_system _options] "COMPLETE-LOCAL2")
+                 llm/chat-fn     (fn [_system _options]
+                                   {bosquet.llm.llm/content
+                                    {:completion
+                                     {:content "CHAT-LOCAL2"}}})}}))
 
-  (generate
-   {:role            "As a brilliant {{you-are}} answer the following question."
-    :question-answer "Question: {{question}}  Answer: {% gen var-name=answer %}"}
-   {:you-are  "astronomer"
-    :question "What is the distance from Moon to Io?"}
-   {:answer {wkk/service          :llm/openai
-             wkk/cache            true
-             wkk/model-parameters {:temperature 0.4 :model "gpt-3.5-turbo"}}})
+  #_(generate
+     [(chat/speak chat/user "What's the weather like in San Francisco, Tokyo, and Paris?")]
+     {}
+     {chat/conversation
+      {wkk/service [:llm/openai :provider/openai]
+       wkk/model-parameters
+       {:temperature 0
+        :tools       [{:type "function"
+                       :function
+                       {:name       "get-current-weather"
+                        :decription "Get the current weather in a given location"
+                        :parameters {:type       "object"
+                                     :required   [:location]
+                                     :properties {:location {:type        "string"
+                                                             :description "The city and state, e.g. San Francisco, CA"}
+                                                  :unit     {:type "string"
+                                                             :enum ["celsius" "fahrenheit"]}}}}}]
 
-  (chat
-   (chat/converse
-    chat/system "You are a playwright. Given the play's title and genre write synopsis."
-    chat/user "Title: {{title}}; Genre: {{genre}}"
-    chat/user "Playwright: This is a synopsis for the above play:")
-   {:title "Mr. X" :genre "crime"}
-   {chat/conversation
-    {wkk/service          :llm/lmstudio
-     wkk/model-parameters {:temperature 0.0 :max-tokens 100}}})
-
-  (complete-template
-   "You are a playwright. Given the play's title and it's genre write synopsis for that play.
-     Title: {{title}}
-     Genre: {{genre}}
-     Playwright: This is a synopsis for the above play: {% gen var-name=text %}"
-   {:title "Mr. X" :genre "crime"}
-   {:text {wkk/service          wkk/oai-service
-           wkk/cache            false
-           wkk/model-parameters {:temperature 0.0 :max-tokens 100 :model "gpt-3.5-turbo-1106"}}})
-
-  (generate
-   "As a brilliant {{you-are}} list distances between planets and the Sun
-      in the Solar System. Provide the answer in JSON map where the key is the
-      planet name and the value is the string distance in millions of kilometers.
-      Generate only JSON omit any other prose and explanations."
-   {:you-are "astronomer"}
-   {:gen {wkk/service       :llm/lmstudio
-          wkk/output-format :json
-          :api-endpoint     "http://localhost:1235/v1"}})
-
-  (chat
-   [(chat/speak chat/user "What's the weather like in San Francisco, Tokyo, and Paris?")]
-   {}
-   {chat/conversation
-    {wkk/service [:llm/openai :provider/openai]
-     wkk/model-parameters
-     {:temperature 0
-      :tools       [{:type "function"
-                     :function
-                     {:name       "get-current-weather"
-                      :decription "Get the current weather in a given location"
-                      :parameters {:type       "object"
-                                   :required   [:location]
-                                   :properties {:location {:type        "string"
-                                                           :description "The city and state, e.g. San Francisco, CA"}
-                                                :unit     {:type "string"
-                                                           :enum ["celsius" "fahrenheit"]}}}}}]
-
-      :model "gpt-3.5-turbo"}}})
+        :model "gpt-3.5-turbo"}}})
 
   #__)
