@@ -6,7 +6,7 @@
 
 ;; ## Getting Started
 ;;
-;; Firt, you need to provide configuration parameters to make LLM service calls.
+;; First, you need to provide configuration parameters to make LLM service calls.
 ;; Find `config.edn.sample` at the root of the project, rename it to `config.edn`
 ;; and set necessary parameters. The `resources/env.edn` file shows how the config
 ;; is loaded and what defaults are available.
