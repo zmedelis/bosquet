@@ -15,3 +15,8 @@
 
 (defn val [& key]
   (get-in config key))
+
+(defn default-llm
+  "Get default LLM service as defiened in config.edn or env.edn"
+  []
+  (val :llm/default))

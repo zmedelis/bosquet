@@ -3,11 +3,11 @@
    [bosquet.env :as env]
    [bosquet.llm.openai :as openai]))
 
-(def openai :openai)
+(def openai :llm/openai)
 
-(def cohere :cohere)
+(def cohere :llm/cohere)
 
-(def lm-studio :lm-studio)
+(def lm-studio :llm/lm-studio)
 
 (def service :llm/service)
 (def model-params :llm/model-params)

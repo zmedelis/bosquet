@@ -1,16 +1,8 @@
-{;; ## Component configuration properties
- ;; Those are use when initializing components
- :azure-openai-api-key      "<AZURE OPENAI API KEY>"
- :azure-openai-api-endpoint nil
- :openai-api-key            "<OPENAI API KEY>"
- :openai-api-endpoint       nil
- :cohere-api-key            "<COHERE API KEY>"
+;; See `resources/env.edn` it shows how the defaults are handled, and
+;; this config is merged with system env
 
- ;; ## Component load configration
- ;; List of Integrant component keys to be loaded
- ;; If this key is *NOT* specified *ALL* components will be loaded
- :load-components [:llm/openai :memory/long-term-embeddings]
-
- ;; LLM to use if LLM service is not specified when making completion calls
- :default-llm :llm/openai
- }
+{:openai  {:api-key "<YOUR KEY>"
+           :api-endpoint "<GENERATION API URL>"
+           :any-other-config ""}
+ :cohere  {:api-key "<YOUR KEY>"}
+ :mistral {:api-key "<YOUR KEY"}}

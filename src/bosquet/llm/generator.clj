@@ -1,6 +1,7 @@
 (ns bosquet.llm.generator
   (:require
    [bosquet.converter :as converter]
+   [bosquet.env :as env]
    [bosquet.llm :as llm]
    [bosquet.template.read :as template]
    [bosquet.template.tag :as tag]
@@ -260,14 +261,15 @@
 (defn complete
   [llm-config messages vars-map]
   (let [vars-map (merge vars-map {:bosquet/full-text (atom "")})
-        indexes (prompt-indexes llm-config messages)
-        sm (psm/smart-map indexes vars-map)]
+        indexes  (prompt-indexes llm-config messages)
+        sm       (psm/smart-map indexes vars-map)]
     (select-keys sm (keys messages))))
 
 (defn append-generation-instruction
+  "If template does not specify generation function append the default one."
   [string-template]
   {:prompt     string-template
-   :completion {llm/service :openai
+   :completion {llm/service (env/default-llm)
                 llm/context :prompt}})
 
 (defn generate
@@ -307,11 +309,11 @@
            "Title: {{title}}"
            "Genre: {{genre}}"
            "Synopsis:"]
-    :assistant (llm :openai
+    :assistant (llm llm/openai
                     llm/model-params {:temperature 0.8 :max-tokens 120}
                     llm/var-name :synopsis)
     :user "Now write a critique of the above synopsis:"
-    :assistant (llm :openai
+    :assistant (llm llm/openai
                     llm/model-params {:temperature 0.2 :max-tokens 120}
                     llm/var-name     :critique)]
    {:title "Mr. X"
@@ -320,12 +322,12 @@
   (generate
    llm/default-services
    {:question-answer "Question: {{question}}  Answer:"
-    :answer          (llm :openai llm/context :question-answer)
+    :answer          (llm llm/openai llm/context :question-answer)
     :self-eval       ["Question: {{question}}"
                       "Answer: {{answer}}"
                       ""
                       "Is this a correct answer?"]
-    :test            (llm :openai llm/context :self-eval)}
+    :test            (llm llm/openai llm/context :self-eval)}
    {:question "What is the distance from Moon to Io?"})
 
   (generate

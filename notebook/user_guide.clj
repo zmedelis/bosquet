@@ -1,7 +1,8 @@
 (ns user-guide
-  (:require [bosquet.llm.generator :as bg]
-            [bosquet.system :as system]
-            [nextjournal.clerk :as clerk]))
+  (:require
+   [bosquet.llm :as llm]
+   [bosquet.llm.generator :refer [generate llm]]
+   [nextjournal.clerk :as clerk]))
 
 ;; # Bosquet Tutorial
 ;;
@@ -11,184 +12,104 @@
 ;; - resolve *dependencies* between prompts
 ;; - produce AI *completions*.
 ;;
-;; ## System Configuration
+;; ## Configuration
 ;;
-;; *Bosquet* uses [Integrant](https://github.com/weavejester/integrant) to setup its
-;; components. With [Aero](https://github.com/juxt/aero) brining in some nice configuration
-;; setup features to make it easier to declare and use configuration.
+;; ### config.edn
 ;;
-;; Prensently *Bosquet* defines two types of components:
-;; 1. LLM services
-;; 2. Tools for the Agnets to use
+;; In order to use the library all you need is to specify your LLM service configuration. This is done in `config.edn` file.
+;; The file is not part of the repository. See `config.edn.sample` for configuration sample. Rename it to `config.edn` and fill in the values.
 ;;
-;; ### LLM services
+;; Your config can be as simple as:
+
+{:llm/openai {:openai-api-key "..."}}
+
+;; `config.edn` is loaded from the root of the project. You can overide this with `BOSQUET_CONFIG` environment variable.
 ;;
-;; LLM service componens wrap access to the APIs provided by the likes of *OpenAI*, *Cohere*,
-;; maybe localy deployed llamas.
+;; ### resources/env.edn
 ;;
-;; Let's take as an example OpenAI model access on MS Azure
+;; `env.edn` defines how configuration is loaded for various Bosquet components: LLMs, mempry, etc.
 ;;
-;;```edn
-;;[:llm/openai :provider/azure]
-;;{:api-key      #ref [:config :azure-openai-api-key]
-;; :api-endpoint #or [#env "AZURE_OPENAI_API_ENDPOINT"
-;;                    #ref [:config :azure-openai-api-endpoint]]
-;; :impl         :azure}
+;; It uses [Aero](https://github.com/juxt/aero) library to declare how different config options are merged together.
+;;
+;; This is how OpenAI service config is declared:
+;; ```clojure
+;; {:llm/openai {:api-endpoint #or [#env "OPENAI_API_ENDPOINT"
+;;                                  "https://api.openai.com/v1"]
+;;               :impl         :openai}}
 ;; ```
+;; `:api-endpoint` will take its value from `OPENAI_API_ENDPOINT` environment variable or use
+;; the default value of `https://api.openai.com/v1`. Since config map in `env.edn` merges with
+;; a config map declared in `config.edn`, you can override the value in `config.edn` file.
 ;;
-;; As per *Integrant* setup `[:llm/openai :provider/azure]` is the key to the component, the
-;; value specifies all the properties needed to start it up. Note the `#or` construct coming
-;; from *Aero* which allows to take values either from environment variables or from the
-;; config file.
+;; Note that *Bosquet* be default is not reading secrets from [environment variables.](https://github.com/juxt/aero?tab=readme-ov-file#hide-passwords-in-local-private-files)
 ;;
-;; See the text generation examples bellow on how to use LLM components to generate text.
-;; *Bosquet* allows you to change the LLM in use while processing the chained prompts.
+;; ## Generation
 ;;
-;; ## A simple single template case
+;; ### Prompt string completion
 ;;
-;; Let's say we want to generate a synopsis of the play, based only on the `title` and `genre` we want this play to be in.
-;; Something like this:
+;; Simpliest case of using the library is to generate a completion from a prompt.
 
-^{:nextjournal.clerk/visibility {:code :hide}}
-(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm
-             "Title:
-The Fifth Man
+^{:nextjournal.clerk/auto-expand-results? true}
+(generate "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
 
-Genre:
-Crime Drama
+;; Differently from other more complex cases, this returns only completion string and uses
+;; default LLM service and model. The dafault of the default is *OpenAI* with *GPT-3.5*.
+;;
+;; Default LLM is specified in `:llm/default` config key.
+;;
+;; ### Prompt graph completion
+;;
+;; A more involved use case is to use linked prompt templates for text generation.
+;;
 
-Synopsys:
-The Fifth Man is a suspenseful crime drama set in a small town in the USA. Five childhood friends, now in their mid-twenties, have grown up together and are as close as brothers. One evening, the group is out at a nightclub wherein the lead of the group, John, finds an envelope stuffed with hundreds of thousands of dollars. Despite their better judgment, John and his friends decide to keep the money and use it to fund a life of pleasure and excitement."])
+^{:nextjournal.clerk/auto-expand-results? true}
+(generate
+ llm/default-services
+ {:question-answer "Question: {{question}}  Answer:"
+  :answer          (llm llm/openai
+                        llm/model-params {:temperature 0.8 :max-tokens 120}
+                        llm/context :question-answer)
+  :self-eval       ["Question: {{question}}"
+                    "Answer: {{answer}}"
+                    ""
+                    "Is this a correct answer?"]
+  :test            (llm llm/openai
+                        llm/context :self-eval
+                        llm/model-params {:temperature 0.2 :max-tokens 120})}
+ {:question "What is the distance from Moon to Io?"})
 
-;; For this we will need to define a template with prompt and slots for data insertion.
+;; This shows how to use `generate` with all the parameters:
+;; - `services` is a map of LLM services to use for generation. Default services can be replaced with your own LLM call implementations.
+;; - `prompts` is a map of prompt templates. The map key is a variable name that can be used to reference templates from each other.
+;; - `data` to be filled in in the prompt slots.
+;;
+;; ### Chat completion
+;;
+;; Bosquet also supports chat completion.
+^{:nextjournal.clerk/auto-expand-results? true}
+(generate
+ [:system "You are an amazing writer."
+  :user ["Write a synopsis for the play:"
+         "Title: {{title}}"
+         "Genre: {{genre}}"
+         "Synopsis:"]
+  :assistant (llm llm/openai
+                  llm/model-params {:temperature 0.8 :max-tokens 120}
+                  llm/var-name :synopsis)
+  :user "Now write a critique of the above synopsis:"
+  :assistant (llm llm/openai
+                  llm/model-params {:temperature 0.2 :max-tokens 120}
+                  llm/var-name     :critique)]
+ {:title "Mr. X"
+  :genre "Sci-Fi"})
+
 ;;
 ;; ### Selmer templating language
-;;
-;; Prompt template definition is done with [Selmer](https://github.com/zmedelis/Selmer) templating library.
-;; It uses `{{DATA}}` syntax to specify where data needs to be injected.
-;;
-;; *Bosquet* adds to *Selmer* a specification of where AI generation calls should
-;; happen. This is indicated with the `{% gen %}` [tag](https://github.com/zmedelis/Selmer#tags).
-;;
-;; Generation is done with the following *Bosquet* features:
-;; - `gen` will recieve all the text preceeding it with already filled in template slots. This text
-;; is used as the prompt to be sent to the competion API.
-;; - `system` defines completion components implementing API call to LLM provider
-;;
-;; ### Synopsis template
-
-(def synopsis-template
-  "You are a playwright. Given the play's title and it's genre
-it is your job to write synopsis for that play.
-
-Title: {{title}}
-Genre: {{genre}}
-
-Playwright: This is a synopsis for the above play:
-{% gen model=gpt-3.5 var-name=play %}")
-
-
-;; Note the optional `var-name` parameter. This is the name of the var to hold
-;; generation generation result and it can an be used as a reference in other templates
-;; or the same template further down. If `var-name` is  not specified `gen` will be
-;; used as the name.
-
-;; ### Generation
-;;
-;; Bosquet will be invoking *OpenAI API* thus make sure that `OPENAI_API_KEY`
-;; is present as the environment variable.
-;;
-;; `gen` call to the *OpenAI* will use configuration parameters specfied
-;; in that tag and reflect parameters specified by [Open AI API](https://beta.openai.com/docs/api-reference/completions).
-;; The tag uses the same names. If config parameters are not used, then defaults
-;; are used. Note that default model is *Ada*, in production *Davinci* would be a
-;; nautural choice.
-;;
-;; ```clojure
-;; {model             ada
-;;  temperature       0.6
-;;  max-tokens        80
-;;  presence-penalty  0.4
-;;  frequence-penalty 0.2
-;;  top-p             1
-;;  n                 1}
-;; ```
-;;
-;; The call to generation function takes in:
-;; - `template` defined above
-;; - `data` is the data to fill in the template slots (`title` and `genre`)
-
-;; The generation comes back with a tuple where the *first* member will contain all
-;; the text which got its slots filled in and generated completion.
-;; The *second* member of the tuple will contain only the AI-completed part.
-(def synopsis
-  (bg/complete-template
-   synopsis-template
-   {:title "Mr. X" :genre "crime"}))
-
-;; #### Full *Bosquet* produced text
-^{::clerk/visibility {:code :hide}}
-(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm  (first synopsis)])
-
-;; #### Just the AI completion part
-^{::clerk/visibility {:code :hide}}
-(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm  (-> synopsis second :play)])
-
-;; ## Generating from templates with dependencies
-;;
-;; With the play synopsis generated, we want to add a review of that play.
-;; The review prompt template will depend on synopsis generation. With *Bosquet* we
-;; do not need to worry about resolving the dependencies it will
-;; be done automatically (powered by [Pathom](https://pathom3.wsscode.com/)).
-
-;; ### Review prompt
-
-(def review-template
-  "You are a play critic from the New York Times.
-Given the synopsis of play, it is your job to write a review for that play.
-
-Play Synopsis:
-{{play}}
-
-Review from a New York Times play critic of the above play:
-{% gen model=gpt-3.5 var-name=review %}")
-
-;; Both templates need to be added to a map to be jointly processed by *Bosquet*.
-
-(def play-review
-  {:synopsis  synopsis-template
-   :evrything review-template})
-
-;; The review prompt template contains familiar call to generation function and
-;; a reference - `{{play}}` - to generated text for the synopsis.
-;;
-;; To process this more advanced case of templates in the dependency graph,
-;; *Bosquet* provides the `gen/complete` function taking:
-;; * `prompts` map defined above
-;; * `data` to fill in fixed slots (Selmer templating)
-
-(def review (bg/generate
-              play-review
-              {:title "Mr. X" :genre "crime"}
-              {:synopsis  (system/openai)
-               :evrything (system/openai)}))
-
-;; ### Fully generated review
-^{::clerk/visibility {:code :hide}}
-(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm (:evrything review)])
-
-
-;; ### Just a review part for the generated play synopsis
-^{::clerk/visibility {:code :hide}}
-(clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm  (:review review)])
-
-
-;; ## Advanced templating with Selmer
 ;;
 ;; [*Selmer*](https://github.com/yogthos/Selmer) provides lots of great templating
 ;; functionality. An example of some of those features.
 ;;
-;; ### Tweet sentiment batch processing
+;; #### Tweet sentiment batch processing
 ;;
 ;; Lets say we want to get a batch sentiment processor for Tweets.
 ;;
@@ -200,8 +121,7 @@ Review from a New York Times play critic of the above play:
 * {{t}}
 {% endfor %}
 
-Sentiments:
-{% gen model=gpt-3.5 %}")
+Sentiments:")
 
 ;; First, *Selmer* provides [for tag](https://github.com/yogthos/Selmer#for)
 ;; to process collections of data.
@@ -215,12 +135,10 @@ Sentiments:
     "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
     "The biggest disappointment of my life came a year ago."])
 
-(def sentiments (bg/complete-template sentimental
-                  {:text-type "tweets" :tweets tweets}
-                  ;; It is the same as in `review` example, just not using
-                  ;; `system/openai` helper
-                  {:gen [:llm/openai :provider/openai]}))
+(def sentiments (generate
+                 sentimental
+                 {:text-type "tweets" :tweets tweets}))
 
 ;; Generation results in the same order as `tweets`
 ^{::clerk/visibility {:code :hide}}
-(clerk/html [:pre (-> sentiments second :gen)])
+(clerk/html [:pre sentiments])

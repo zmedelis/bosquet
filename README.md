@@ -26,33 +26,31 @@ or other providers.
 Simple prompt completion can be done like this.
 
 ```colojure
-(require '[bosquet.llm.generator :refer [generate]])
+(require '[bosquet.llm.generator :refer [generate llm]])
 
 (generate "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
-
-=> {:prompt 
-    "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?",
-    
-    :completion 
-    "When you were 6, your sister was half your age, which means she was 6 / 2 = 3 years old.\nSince then, there is a constant age difference of 3 years between you and your sister.\nNow that you are 70, your sister would be 70 - 6 = 64 years old."}
+=>
+"When you were 6, your sister was half your age, which means she was 6 / 2 = 3 years old.\nSince then, there is a constant age difference of 3 years between you and your sister.\nNow that you are 70, your sister would be 70 - 6 = 64 years old."}
 ```
 
-`
 
 ### Completion from prompt map
 
 
 ```clojure
+(require '[bosquet.llm :as llm])
+(require '[bosquet.llm.generator :refer [generate llm]])
+
 (generate
-    llm/default-services
-    {:question-answer "Question: {{question}}  Answer:"
-     :answer          (llm :openai :context :question-answer}
-     :self-eval       ["Question: {{question}}"
-                       "Answer: {{answer}}"
-                       ""
-                       "Is this a correct answer?"]
-     :test            (llm :openai :context :self-eval)}
-    {:question "What is the distance from Moon to Io?"})
+ llm/default-services
+ {:question-answer "Question: {{question}}  Answer:"
+  :answer          (llm llm/openai llm/context :question-answer)
+  :self-eval       ["Question: {{question}}"
+                    "Answer: {{answer}}"
+                    ""
+                    "Is this a correct answer?"]
+  :test            (llm llm/openai llm/context :self-eval)}
+ {:question "What is the distance from Moon to Io?"})
 =>
 
 {:question-answer
