@@ -27,11 +27,11 @@
 ;; When generating using a prompt map, a LLM call is defined a node in the map.
 
 (def prompt {:question-answer "Question: {{question}}  Answer:"
-             :answer          (g/llm :openai llm/context :question-answer)
+             :answer          (g/llm llm/openai llm/context :question-answer)
              :self-eval       ["Question: {{question}}"
                                "Answer: {{answer}}"
                                "Is this a correct answer?"]
-             :test            (g/llm :openai llm/context :self-eval)})
+             :test            (g/llm llm/openai llm/context :self-eval)})
 
 ;; `self-eval` and `test` nodes define LLM calls, both request `openai` to be used as the LLM service.
 ;; `llm/context` specifies which map key holds a prompt to be used as the LLM context.
@@ -67,11 +67,11 @@
          "Title: {{title}}"
          "Genre: {{genre}}"
          "Synopsis:"]
-  :assistant (g/llm :openai
+  :assistant (g/llm llm/openai
                     llm/model-params {:temperature 0.8 :max-tokens 120}
                     llm/var-name :synopsis)
   :user "Now write a critique of the above synopsis:"
-  :assistant (g/llm :openai
+  :assistant (g/llm llm/openai
                     llm/model-params {:temperature 0.2 :max-tokens 120}
                     llm/var-name :critique)]
  {:title "Mr. X"

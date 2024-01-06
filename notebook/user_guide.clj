@@ -21,7 +21,7 @@
 ;;
 ;; Your config can be as simple as:
 
-{:llm/openai {:openai-api-key "..."}}
+{:llm/openai {:api-key "..."}}
 
 ;; `config.edn` is loaded from the root of the project. You can overide this with `BOSQUET_CONFIG` environment variable.
 ;;

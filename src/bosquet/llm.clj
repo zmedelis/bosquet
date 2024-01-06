@@ -1,6 +1,7 @@
 (ns bosquet.llm
   (:require
    [bosquet.env :as env]
+   [bosquet.llm.cohere :as cohere]
    [bosquet.llm.openai :as openai]))
 
 (def openai :llm/openai)
@@ -30,15 +31,19 @@
 (defn handle-openai-complete [service-config params]
   (openai/chat-completion params service-config))
 
-(defn handle-cohere-chat [arg1])
+(defn handle-cohere-chat [service-config params])
+
+(defn handle-cohere-complete [service-config params]
+  (cohere/complete params service-config))
 
 (defn- handle-lm-studio-chat [arg1])
 
 (def default-services
-  {openai {:api-key      (env/val :llm/openai :openai-api-key)
-           :api-endpoint (env/val :llm/openai :api-endpoint)
-           :impl         (env/val :llm/openai :impl)
-           complete-fn   handle-openai-complete
-           chat-fn       handle-openai-chat}
+  {openai (merge (env/val openai)
+                 {complete-fn handle-openai-complete
+                  chat-fn     handle-openai-chat})
+   cohere (merge (env/val cohere)
+                 {complete-fn handle-cohere-complete
+                  chat-fn     handle-cohere-chat})
    :local {complete-fn (fn [_system options] {:eval (str "TODO-" (:gen options) "-COMPLETE")})
            chat-fn     (fn [_system options] {:eval (str "TODO-" (:gen options) "-CHAT")})}})
