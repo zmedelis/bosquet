@@ -4,7 +4,6 @@
    [bosquet.env :as env]
    [bosquet.llm :as llm]
    [bosquet.template.read :as template]
-   [bosquet.template.tag :as tag]
    [bosquet.utils :as u]
    [clojure.string :as string]
    [com.wsscode.pathom3.connect.indexes :as pci]
@@ -13,61 +12,6 @@
    [com.wsscode.pathom3.plugin :as p.plugin]
    [selmer.parser :as selmer]
    [taoensso.timbre :as timbre]))
-
-(tag/add-tags)
-
-(defn complete-template
-  "Fill in `template` `slots` with Selmer and call generation function
-  (if present) to complete the text.
-
-  This is a sole template based generation bypasing Pathom resolver figuring out
-  the sequence of multiple template gen calls. Hence the parameter is not
-  a map with multiple templates but a single template string.
-
-  If `template` has no `gen` tag, then it will be added to the end of the template.
-
-  Likely to be refactored away in the future versions in favour of a single
-  `complete` entry point.
-
-  Note that `template` can have only one `gen` call.
-
-  OK : 'Generate a joke about {{topic}}. {% gen var-name=joke %}'
-  BAD: 'Generate a joke about {{topic}}. {% gen var-name=joke %} and {% gen var-name=another-joke %'"
-  ([template] (complete-template template nil nil))
-  ([template slots] (complete-template template slots {}))
-  ([template slots config]
-   #_(let [template (template/ensure-gen-tag template)]
-       (template/fill-slots-2
-        template
-        (assoc slots :the-key (first (template/generation-vars template))) ; only one `gen` is supported in template
-        config))))
-
-#_(defn- generation-resolver
-    "Build dynamic resolvers figuring out what each prompt tempalte needs
-  and set it as required inputs for the resolver.
-
-  For the output check if themplate is producing generated content
-  anf if so add a key for it into the output"
-    [llm-config properties current-prompt data-input-vars template]
-    (let [{:keys [data-vars gen-vars]} (template/template-vars template)
-        ;; This set intersection is needed because some of the data vars might not be in
-        ;; supplied data map, values might be omited and come from specified defaults in
-        ;; Selmer template
-          data-vars                    (vec (set/intersection (set data-input-vars) (set data-vars)))]
-      (timbre/info "Resolving: " current-prompt)
-      (timbre/info "\tInput data: " data-vars)
-      (timbre/info "\tGenerate for: " gen-vars)
-      (pco/resolver
-       {::pco/op-name (-> current-prompt .-sym (str "-gen") keyword symbol)
-        ::pco/output  gen-vars
-        ::pco/input   data-vars
-        ::pco/resolve
-        (fn [_env input]
-          (let [current-gen-var        (first gen-vars)
-                [completed completion] (template/fill-slots-2 llm-config properties template input)
-                completed              (current-gen-var completed)
-                completion             (:gen completion)]
-            (merge {current-prompt completed} completion input)))})))
 
 (defn- resolver-error-wrapper
   [env]
@@ -80,101 +24,6 @@
         (timbre/errorf "Resolver operation '%s' failed" op-name)
         (timbre/error error)))}))
 
-#_(defn- prompt-indexes-2 [llm-config opts data-vars prompts]
-    (pci/register
-     (mapv
-      (fn [prompt-key]
-        (generation-resolver llm-config opts prompt-key data-vars (prompt-key prompts)))
-      (keys prompts))))
-
-#_(defn all-keys2
-    [prompts data]
-    (u/flattenx
-     (concat
-      (keys data)
-      (w/prewalk
-       #(cond
-          (string? %) (:gen-vars (template/template-vars %))
-        ;; TODO; this is OAI specific, and not really a good place to do this
-          (#{:system :assistant :user} %) nil
-          :else %)
-       prompts))))
-
-#_(defn- complete*
-    [llm-provider-config gen-props context input-data]
-    (let [extraction-keys (all-keys2 context input-data)]
-      (-> (prompt-indexes-2 llm-provider-config gen-props (keys input-data) context)
-          (resolver-error-wrapper)
-          (psm/smart-map input-data)
-          (select-keys extraction-keys))))
-
-#_(defn- fill-converation-slots-2
-    [llm-provider-config gen-props context input]
-    (mapv
-     (fn [{content chat/content :as msg}]
-       (assoc msg
-              chat/content
-              (first (template/fill-slots-2 llm-provider-config gen-props
-                                            content
-                                            input))))
-     context))
-
-#_(defn- chat* [llm-provider-config gen-props context input]
-    (let [updated-context (fill-converation-slots-2 llm-provider-config gen-props context input)
-          service-config (get llm-provider-config (llm/service gen-props))
-          {:llm/keys [chat-fn]} service-config]
-      (->
-       (chat-fn (dissoc service-config llm/gen-fn llm/chat-fn)
-                (assoc gen-props :messages updated-context))
-       bosquet.llm.llm/content
-       :completion)))
-
-#_(defn- fill-converation-slots
-    "Fill all the Selmer slots in the conversation context. It will
-  check all roles and fill in `{{slots}}` from the `inputs` map."
-    [messages inputs opts]
-  ;; TODO run `generate` over all the conversation-context to fill in the slots
-    (mapv
-     (fn [{content chat/content :as msg}]
-       (assoc msg
-              chat/content
-              (first (template/fill-slots content inputs opts))))
-     messages))
-
-#_(defn chat
-    ([messages] (chat messages {}))
-    ([messages inputs] (chat messages inputs {}))
-    ([messages inputs opts]
-     (let [updated-context (fill-converation-slots messages inputs opts)]
-       (complete/chat-completion updated-context opts))))
-
-#_(defn generate
-    ([context]
-     (generate {llm/service llm/openai} context))
-
-    ([gen-props context]
-     (generate gen-props context nil))
-
-    ([gen-props context input-data]
-     (generate llm/default-services gen-props context input-data))
-
-    ([llm-provider-config gen-props context input-data]
-     (if (vector? context)
-       (chat* llm-provider-config gen-props (apply chat/converse context) input-data)
-       (complete* llm-provider-config gen-props
-                  (if (string? context)
-                  ;; a single string template prompt, convert to map context
-                  ;; to be processed as completion
-                    {:string-template (template/ensure-gen-tag context)}
-                    context)
-                  input-data))))
-
-#_(defn ->completer
-    [llm-services]
-    (fn [parameters context data]
-      (generate llm-services parameters context data)))
-
-;;  -- V3 --
 
 (defn ->chatml [messages]
   (map
@@ -237,8 +86,7 @@
               {message-key result})
             (catch Exception e
               (timbre/error e))))})
-      (timbre/warnf "Context var is not set in generation spec. Add 'llm/context' to '%s'" message-key)
-      )
+      (timbre/warnf "Context var is not set in generation spec. Add 'llm/context' to '%s'" message-key))
     ;; TEMPLATE
     (let [message-content (join message-content)]
       (pco/resolver
@@ -262,8 +110,9 @@
   [llm-config messages vars-map]
   (let [vars-map (merge vars-map {:bosquet/full-text (atom "")})
         indexes  (prompt-indexes llm-config messages)
-        sm       (psm/smart-map indexes vars-map)]
-    (select-keys sm (keys messages))))
+        sm       (psm/smart-map indexes vars-map)
+        resolver (resolver-error-wrapper sm)]
+    (select-keys resolver (keys messages))))
 
 (defn append-generation-instruction
   "If template does not specify generation function append the default one."
