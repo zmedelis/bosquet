@@ -1,17 +1,12 @@
 (ns user
   #_{:clj-kondo/ignore [:unused-namespace]}
   (:require
-   [bosquet.system :as system]
    [clojure.string :as string]
-   [clojure.tools.namespace.repl :refer [set-refresh-dirs]]
    [integrant.core :as ig]
    [integrant.repl :as ir]
    [nextjournal.clerk :as clerk]
    [portal.api :as p]
    [taoensso.timbre :as timbre]))
-
-(ir/set-prep! #(ig/prep system/sys-config))
-(set-refresh-dirs "src")
 
 (defn log-output-fn
   [data]
