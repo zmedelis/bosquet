@@ -3,7 +3,6 @@
    [bosquet.llm.generator :as gen]
    [bosquet.nlp.splitter :as splitter]
    [bosquet.read.document :as document]
-   [bosquet.system :as sys]
    [bosquet.utils :as u]
    [bosquet.wkk :as wkk]
    [taoensso.timbre :as timbre])
@@ -75,7 +74,7 @@
 ;; TODO this does not belong here
 (defn remember-knowledge
   [{:keys [storage encoder collection-name] :as opts} knowledge]
-  (let [storage (sys/get-service storage)
+  (let [storage nil #_(sys/get-service storage)
         memory  (LongTermMemory.
                  storage
                  (sys/get-service encoder))
@@ -92,10 +91,11 @@
 (defn query
   [{:keys [storage encoder] :as opts}
    query]
-  (let [storage (sys/get-service storage)
+  (let [storage nil #_(sys/get-service storage)
         memory  (LongTermMemory.
                  storage
-                 (sys/get-service encoder))]
+                 nil
+                 #_(sys/get-service encoder))]
     (->
      (.cue-recall memory query opts)
      first :payload :text)))

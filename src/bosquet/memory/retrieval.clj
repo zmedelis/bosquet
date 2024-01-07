@@ -1,6 +1,6 @@
 (ns bosquet.memory.retrieval
   (:require
-   [bosquet.llm.llm :as llm]
+   [bosquet.llm.wkk :as wkk]
    [bosquet.llm.openai :as openai]
    [bosquet.llm.openai-tokens :as oai.tokenizer]
    [taoensso.timbre :as timbre]))
@@ -26,7 +26,7 @@
 (defmulti memory-object-size (fn [_memory-object _model llm] llm))
 
 (defmethod memory-object-size
-  openai/openai
+  wkk/openai
   [memory-object model _llm]
   (oai.tokenizer/token-count memory-object model))
 
@@ -65,8 +65,8 @@
   [{object-limit memory-objects-limit
     token-limit  memory-tokens-limit
     content-fn   memory-content-fn
-    model        llm/model
-    llm          llm/service
+    model        wkk/model
+    llm          wkk/service
     :or          {object-limit 100
                   token-limit  4000
                   content-fn   identity}}

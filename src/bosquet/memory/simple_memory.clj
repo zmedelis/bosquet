@@ -1,7 +1,6 @@
 (ns bosquet.memory.simple-memory
   (:require
-   [bosquet.llm.llm :as llm]
-   [bosquet.llm.openai :as openai]
+   [bosquet.llm.wkk :as wkk]
    [bosquet.memory.memory :as mem]
    [bosquet.memory.retrieval :as r]
    [bosquet.nlp.similarity :as nlp]))
@@ -18,8 +17,8 @@
   (cond->> memories
     object-limit (take-last object-limit)
     token-limit  (r/take-while-tokens
-                  (merge {llm/model   "gpt-3.5-turbo"
-                          llm/service openai/openai}
+                  (merge {wkk/model   "gpt-3.5-turbo"
+                          wkk/service wkk/openai}
                          params))))
 
 (deftype

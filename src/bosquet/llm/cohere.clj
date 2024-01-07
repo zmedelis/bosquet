@@ -1,7 +1,6 @@
 (ns bosquet.llm.cohere
-  (:require [bosquet.llm.llm :as llm]
-            [cohere.client :as client]
-            [taoensso.timbre :as timbre]))
+  (:require [bosquet.llm.wkk :as wkk]
+            [cohere.client :as client]))
 
 (defn- props->cohere
   "Convert general LLM model properties to Cohere specific ones."
@@ -13,14 +12,14 @@
 
 (defn ->completion
   [text]
-  {llm/generation-type :completion
-   llm/content        {:completion text}
+  {wkk/generation-type :completion
+   wkk/content         {:completion text}
    ;; TODO
-   llm/usage           {}})
+   wkk/usage           {}})
 
 (defn complete
   ([prompt opts]
-   (-> (client/generate (assoc opts :prompt prompt))
+   (-> (client/generate (props->cohere (assoc opts :prompt prompt)))
        :generations
        first
        :text
@@ -28,28 +27,8 @@
   ([prompt]
    (complete prompt {})))
 
-(def cohere
-  "Service name to refernece Cohere"
-  ::cohere)
-
-(deftype Cohere
-         [config]
-  llm/LLM
-  (service-name [_this] cohere)
-  (generate [_this prompt props]
-    (let [props (props->cohere props)]
-      (timbre/infof "Calling Cohere with:")
-      (timbre/infof "\tParms: '%s'" (dissoc props :prompt))
-      (timbre/infof "\tConfig: '%s'" (dissoc config :api-key))
-      (complete prompt (merge config
-                              (assoc
-                               props
-                               :model (llm/model-mapping config (keyword (:model props))))))))
-  (chat     [_this _conversation _props]))
-
 (comment
-  (.generate
-   (bosquet.system/cohere)
+  (complete
    "A party is about to begin."
    {:model "command"
     :n 2

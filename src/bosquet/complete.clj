@@ -3,7 +3,6 @@
    [bosquet.converter :as converter]
    [bosquet.llm.chat :as llm.chat]
    [bosquet.llm.llm :as llm]
-   [bosquet.system :as sys]
    [bosquet.wkk :as wkk]
    [clojure.core.cache.wrapped :as w]))
 
@@ -36,25 +35,25 @@
 
 (defn complete
   [prompt {gen-var wkk/gen-var-name :as opts}]
-  (let [{service       wkk/service
-         params        wkk/model-parameters
-         cache         wkk/cache
-         output-format wkk/output-format :as gen-opts}
-        (get-in opts [wkk/llm-config (or gen-var wkk/default-gen-var-name)])
+  #_(let [{service       wkk/service
+           params        wkk/model-parameters
+           cache         wkk/cache
+           output-format wkk/output-format :as gen-opts}
+          (get-in opts [wkk/llm-config (or gen-var wkk/default-gen-var-name)])
 
-        llm       (sys/get-service service)
-        _         (when-not llm (throw (ex-info "LLM service is not configured" {:service service})))
-        generator (fn [prompt params] (.generate llm prompt (merge gen-opts params)))
+          llm       (sys/get-service service)
+          _         (when-not llm (throw (ex-info "LLM service is not configured" {:service service})))
+          generator (fn [prompt params] (.generate llm prompt (merge gen-opts params)))
 
-        {{completion :completion} llm/content :as generation}
-        (generate-with-cache cache generator prompt params)]
+          {{completion :completion} llm/content :as generation}
+          (generate-with-cache cache generator prompt params)]
 
-    (assoc-in generation [llm/content :completion]
-              (converter/coerce completion output-format))))
+      (assoc-in generation [llm/content :completion]
+                (converter/coerce completion output-format))))
 
 (defn chat-completion [messages
                        {{service      wkk/service
                          model-params wkk/model-parameters} llm.chat/conversation}]
-  (let [llm        (sys/get-service service)
-        completion (.chat llm messages model-params)]
-    completion))
+  #_(let [llm        (sys/get-service service)
+          completion (.chat llm messages model-params)]
+      completion))

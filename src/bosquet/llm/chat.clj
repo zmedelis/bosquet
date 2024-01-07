@@ -24,14 +24,6 @@
   "Key to reference `assistant` role in ChatML format"
   :assistant)
 
-(def roles [:enum system user assistant])
-
-(def chat-ml
-  "Schema defining ChatML response format"
-  [:map
-   [:role roles]
-   [:content string?]])
-
 (def ^:private role-mapping
   (let [roles {system    :system
                user      :user

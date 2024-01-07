@@ -2,6 +2,7 @@
   (:require
    [bosquet.converter :as converter]
    [bosquet.env :as env]
+   [bosquet.llm.wkk :as wkk]
    [bosquet.llm :as llm]
    [bosquet.template.read :as template]
    [bosquet.utils :as u]
@@ -24,7 +25,6 @@
         (timbre/errorf "Resolver operation '%s' failed" op-name)
         (timbre/error error)))}))
 
-
 (defn ->chatml [messages]
   (map
    (fn [[role content]] {:role role :content content})
@@ -33,16 +33,17 @@
 (defn- call-llm [llm-config properties messages]
   (if (map? properties)
     (try
-      (let [llm-impl       (llm/service properties)
-            format         (partial converter/coerce (llm/output-format properties))
-            model-params   (llm/model-params properties)
-            chat-fn        (get-in llm-config [llm-impl llm/chat-fn])
-            service-config (dissoc (llm-impl llm-config) llm/gen-fn llm/chat-fn)
+      (let [llm-impl       (wkk/service properties)
+            format         (partial converter/coerce (wkk/output-format properties))
+            model-params   (wkk/model-params properties)
+            chat-fn        (get-in llm-config [llm-impl wkk/chat-fn])
+            service-config (dissoc (llm-impl llm-config) wkk/gen-fn wkk/chat-fn)
             messages       (->chatml messages)
             result         (chat-fn service-config (assoc model-params :messages messages))]
+        (tap> result)
         (format
          (get-in result
-                 [:bosquet.llm.llm/content :completion :content])))
+                 [wkk/content :content])))
       (catch Exception e
         (timbre/error e)))
     (timbre/warnf ":assistant instruction does not contain AI gen function spec")))
@@ -51,17 +52,25 @@
   [content]
   (if (coll? content) (string/join "\n" content) content))
 
+(def conversation
+  "Result map key holding full chat conversation including generated parts"
+  :bosquet/conversation)
+
+(def completions
+  "Result map key holding LLM generated parts"
+  :bosquet/completions)
+
 (defn chat
   [llm-config messages vars-map]
   (loop [[role content & messages] messages
          processed-messages        []
          ctx                       vars-map]
     (if (nil? role)
-      {:bosquet/conversation    processed-messages
-       :bosquet/completions (apply dissoc ctx (keys vars-map))}
+      {conversation processed-messages
+       completions  (apply dissoc ctx (keys vars-map))}
       (if (= :assistant role)
         (let [gen-result (call-llm llm-config content processed-messages)
-              var-name   (llm/var-name content)]
+              var-name   (wkk/var-name content)]
           (recur messages
                  (into processed-messages [role gen-result])
                  (assoc ctx var-name gen-result)))
@@ -71,17 +80,17 @@
                  ctx))))))
 
 (defn- generation-resolver
-  [llm-config message-key {ctx-var llm/context :as message-content}]
+  [llm-config message-key {ctx-var wkk/context :as message-content}]
   (if (map? message-content)
     (if ctx-var
       (pco/resolver
        {::pco/op-name (-> message-key .-sym (str "-ai-gen") keyword symbol)
         ::pco/output  [message-key]
-        ::pco/input   [(llm/context message-content)]
+        ::pco/input   [(wkk/context message-content)]
         ::pco/resolve
         (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
           (try
-            (let [full-text (get @entry-tree (llm/context message-content))
+            (let [full-text (get @entry-tree (wkk/context message-content))
                   result    (call-llm llm-config message-content [:user full-text])]
               {message-key result})
             (catch Exception e
@@ -118,8 +127,8 @@
   "If template does not specify generation function append the default one."
   [string-template]
   {:prompt     string-template
-   :completion {llm/service (env/default-llm)
-                llm/context :prompt}})
+   :completion {wkk/service (env/default-llm)
+                wkk/context :prompt}})
 
 (defn generate
   ([messages] (generate llm/default-services messages {}))
@@ -141,7 +150,7 @@
    :llm/model-params params}
   ```"
   [service & args]
-  (assoc (apply hash-map args) llm/service service))
+  (assoc (apply hash-map args) wkk/service service))
 
 (comment
 
@@ -152,32 +161,34 @@
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
 
-  (generate
-   [:system "You are an amazing writer."
-    :user ["Write a synopsis for the play:"
-           "Title: {{title}}"
-           "Genre: {{genre}}"
-           "Synopsis:"]
-    :assistant (llm llm/openai
-                    llm/model-params {:temperature 0.8 :max-tokens 120}
-                    llm/var-name :synopsis)
-    :user "Now write a critique of the above synopsis:"
-    :assistant (llm llm/openai
-                    llm/model-params {:temperature 0.2 :max-tokens 120}
-                    llm/var-name     :critique)]
-   {:title "Mr. X"
-    :genre "Sci-Fi"})
+  (tap>
+   (generate
+    [:system "You are an amazing writer."
+     :user ["Write a synopsis for the play:"
+            "Title: {{title}}"
+            "Genre: {{genre}}"
+            "Synopsis:"]
+     :assistant (llm wkk/openai
+                     wkk/model-params {:temperature 0.8 :max-tokens 120}
+                     wkk/var-name :synopsis)
+     :user "Now write a critique of the above synopsis:"
+     :assistant (llm wkk/openai
+                     wkk/model-params {:temperature 0.2 :max-tokens 120}
+                     wkk/var-name     :critique)]
+    {:title "Mr. X"
+     :genre "Sci-Fi"}))
 
-  (generate
-   llm/default-services
-   {:question-answer "Question: {{question}}  Answer:"
-    :answer          (llm llm/openai llm/context :question-answer)
-    :self-eval       ["Question: {{question}}"
-                      "Answer: {{answer}}"
-                      ""
-                      "Is this a correct answer?"]
-    :test            (llm llm/openai llm/context :self-eval)}
-   {:question "What is the distance from Moon to Io?"})
+  (tap>
+   (generate
+    llm/default-services
+    {:question-answer "Question: {{question}}  Answer:"
+     :answer          (llm wkk/openai wkk/context :question-answer)
+     :self-eval       ["Question: {{question}}"
+                       "Answer: {{answer}}"
+                       ""
+                       "Is this a correct answer?"]
+     :test            (llm wkk/openai wkk/context :self-eval)}
+    {:question "What is the distance from Moon to Io?"}))
 
   (generate
    {:astronomy (u/join-nl
@@ -186,8 +197,8 @@
                 "planet name and the value is the string distance in millions of kilometers."
                 "Generate only JSON omit any other prose and explanations.")
     :answer    (llm :openai
-                    llm/output-format :json
-                    llm/context :astronomy)})
+                    wkk/output-format :json
+                    wkk/context :astronomy)})
 
   #_(generate
      [(chat/speak chat/user "What's the weather like in San Francisco, Tokyo, and Paris?")]

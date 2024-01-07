@@ -17,7 +17,4 @@
            (tpl/slots-required "{% debug var-name=test x=y %} {{x}}"))))
   (testing "slots in for loops"
     (is (= #{:x :text}
-           (tpl/slots-required "{{x}} {% for t in text %} {% endfor %}"))))
-  (testing "generation var name extraction"
-    (is (= #{:test1 :test2}
-           (tpl/generation-vars "{% gen var-name=test1 param=none%} {% gen var-name=test2 %}")))))
+           (tpl/slots-required "{{x}} {% for t in text %} {% endfor %}")))))

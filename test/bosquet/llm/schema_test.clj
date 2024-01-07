@@ -1,7 +1,7 @@
-(ns bosquet.llm.llm-test
+(ns bosquet.llm.schema-test
   (:require
    [clojure.test :refer [deftest is]]
-   [bosquet.llm.llm :refer [model-mapping]]))
+   [bosquet.llm.schema :refer [model-mapping]]))
 
 (deftest test-model-mapping
   (is (= :y (model-mapping {:model-name-mapping {:x :y}} :x)))

@@ -1,14 +1,15 @@
 (ns bosquet.memory.retrieval-test
   (:require
-   [bosquet.llm.openai :as openai]
+   [bosquet.memory.simple-memory]
+   [bosquet.llm.wkk :as wkk]
    [bosquet.memory.retrieval :as r]
    [clojure.test :refer [deftest is]])
   (:import
    [bosquet.memory.simple_memory SimpleMemory]))
 
 (deftest memory-object-size-test
-  (is (= 1 (r/memory-object-size "A" "gpt-4" openai/openai)))
-  (is (= 6 (r/memory-object-size "Call me Ishmael." "gpt-3.5-turbo" openai/openai))))
+  (is (= 1 (r/memory-object-size "A" "gpt-4" wkk/openai)))
+  (is (= 6 (r/memory-object-size "Call me Ishmael." "gpt-3.5-turbo" wkk/openai))))
 
 (defn- ->memory []
   (let [mem (SimpleMemory. (atom []))]
