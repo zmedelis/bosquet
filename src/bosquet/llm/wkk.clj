@@ -30,3 +30,6 @@
 (def context
   "When generating from a prompt map specify which key contains full context for generation."
   :llm/context)
+
+(def cache
+  :llm/cache)

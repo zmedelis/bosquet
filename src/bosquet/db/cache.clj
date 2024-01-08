@@ -1,0 +1,21 @@
+(ns bosquet.db.cache
+  (:require
+   [clojure.core.cache.wrapped :as w]))
+
+(defn ->cache []
+  (w/fifo-cache-factory {}))
+
+(def cache (->cache))
+
+(defn evict [properties]
+  (w/evict cache properties))
+
+(defn lookup-or-call
+  "Call `gen-fn` function with `properties` that are used as
+  a key for cache. Same props (model params and context) will hit
+  the cache"
+  [gen-fn properties]
+  (w/lookup-or-miss
+   cache
+   properties
+   (fn [_item] (gen-fn properties))))

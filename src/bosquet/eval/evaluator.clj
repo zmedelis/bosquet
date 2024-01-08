@@ -5,6 +5,7 @@
    [bosquet.read.document :as document]
    [bosquet.utils :as u]
    [bosquet.wkk :as wkk]
+   [bosquet.memory.long-term-memory]
    [taoensso.timbre :as timbre])
   (:import
    [bosquet.memory.long_term_memory LongTermMemory]))
@@ -77,7 +78,8 @@
   (let [storage nil #_(sys/get-service storage)
         memory  (LongTermMemory.
                  storage
-                 (sys/get-service encoder))
+                 nil
+                 #_(sys/get-service encoder))
         chunks  (splitter/text-splitter
                  {splitter/chunk-size 20 splitter/split-unit splitter/sentence}
                  knowledge)

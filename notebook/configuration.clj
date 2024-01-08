@@ -1,7 +1,9 @@
 (ns configuration
+  {:nextjournal.clerk/toc true}
   (:require
    [bosquet.llm :as llm]
-   [bosquet.llm.generator :as g]))
+   [bosquet.llm.generator :as g]
+   [bosquet.llm.wkk :as wkk]))
 
 ;; ## Bosquet Configuration
 ;;
@@ -27,11 +29,11 @@
 ;; When generating using a prompt map, a LLM call is defined a node in the map.
 
 (def prompt {:question-answer "Question: {{question}}  Answer:"
-             :answer          (g/llm llm/openai llm/context :question-answer)
+             :answer          (g/llm wkk/openai wkk/context :question-answer)
              :self-eval       ["Question: {{question}}"
                                "Answer: {{answer}}"
                                "Is this a correct answer?"]
-             :test            (g/llm llm/openai llm/context :self-eval)})
+             :test            (g/llm wkk/openai wkk/context :self-eval)})
 
 ;; `self-eval` and `test` nodes define LLM calls, both request `openai` to be used as the LLM service.
 ;; `llm/context` specifies which map key holds a prompt to be used as the LLM context.
@@ -67,16 +69,52 @@
          "Title: {{title}}"
          "Genre: {{genre}}"
          "Synopsis:"]
-  :assistant (g/llm llm/openai
-                    llm/model-params {:temperature 0.8 :max-tokens 120}
-                    llm/var-name :synopsis)
+  :assistant (g/llm wkk/openai
+                    wkk/model-params {:temperature 0.8 :max-tokens 120}
+                    wkk/var-name :synopsis)
   :user "Now write a critique of the above synopsis:"
-  :assistant (g/llm llm/openai
-                    llm/model-params {:temperature 0.2 :max-tokens 120}
-                    llm/var-name :critique)]
+  :assistant (g/llm wkk/openai
+                    wkk/model-params {:temperature 0.2 :max-tokens 120}
+                    wkk/var-name :critique)]
  {:title "Mr. X"
   :genre "Sci-Fi"})
 
-;; Importatn to note the difference from map based prompts. There we do not know the name of the generation node.
-;; Therefore, the need to declare `llm/var-name` so that Bosquet knows where to assign the generated text and allow
-;; it's use further in the conversation.
+;; Important to note the difference between map-based prompts. There we do not know the name of
+;; the generation node. Therefore, the a need to declare `llm/var-name` so that Bosquet knows
+;; where to assign the generated text and allow its use further in the conversation.
+
+;; ### Oter LLM Call parameters
+;;
+;; #### Cache
+;; When an LLM call is configured with the `:llm/cache true` parameter, calls will be cached
+;; and if a call is made with the same model params and the same prompt, the generation will
+;; be returned from the cache. The call to LLM service will not be made.
+
+(g/generate llm/default-services
+            {:qna    "Question: {{question}}  Answer:"
+             :answer (g/llm wkk/openai
+                            wkk/context :qna
+                            wkk/cache true)}
+            {:question "What is the distance from Moon to Io?"})
+
+;; Second call with exactly the same context will return fast and with exact same response
+;; as above
+
+^{:nextjournal.clerk/auto-expand-results? true}
+(g/generate llm/default-services
+            {:qna    "Question: {{question}}  Answer:"
+             :answer (g/llm wkk/openai
+                            wkk/context :qna
+                            wkk/cache true)}
+            {:question "What is the distance from Moon to Io?"})
+
+;; Once more with different model parameters, and cache lookup misses forcing a fresh call to LLM.
+
+^{:nextjournal.clerk/auto-expand-results? true}
+(g/generate llm/default-services
+            {:qna    "Question: {{question}}  Answer:"
+             :answer (g/llm wkk/openai
+                            wkk/context :qna
+                            wkk/model-params {:temperature 1}
+                            wkk/cache true)}
+            {:question "What is the distance from Moon to Io?"})

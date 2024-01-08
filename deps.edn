@@ -28,7 +28,7 @@
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
                                       criterium/criterium         {:mvn/version "0.4.6"}
-                                      djblue/portal               {:mvn/version "0.51.0"}
+                                      djblue/portal               {:mvn/version "0.51.1"}
                                       integrant/repl              {:mvn/version "0.3.3"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "v2023.11.21"}}

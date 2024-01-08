@@ -1,9 +1,10 @@
 (ns bosquet.llm.generator
   (:require
    [bosquet.converter :as converter]
+   [bosquet.db.cache :as cache]
    [bosquet.env :as env]
-   [bosquet.llm.wkk :as wkk]
    [bosquet.llm :as llm]
+   [bosquet.llm.wkk :as wkk]
    [bosquet.template.read :as template]
    [bosquet.utils :as u]
    [clojure.string :as string]
@@ -30,20 +31,28 @@
    (fn [[role content]] {:role role :content content})
    (partition 2 messages)))
 
-(defn- call-llm [llm-config properties messages]
+(defn- call-llm
+  "Make a call to the LLM service.
+  - `llm-config` provides a map containing LLM service configurations, the
+     LLM to call is specified in
+  - `properties` providing model parameters and other details of LLM invocation
+  - `messages` contains the context/prompt to be supplied to LLM."
+  [llm-config
+   {llm-impl     wkk/service
+    model-params wkk/model-params
+    use-cache    wkk/cache
+    :as          properties}
+   messages]
   (if (map? properties)
     (try
-      (let [llm-impl       (wkk/service properties)
-            format         (partial converter/coerce (wkk/output-format properties))
-            model-params   (wkk/model-params properties)
-            chat-fn        (get-in llm-config [llm-impl wkk/chat-fn])
+      (let [format-fn      (partial converter/coerce (wkk/output-format properties))
             service-config (dissoc (llm-impl llm-config) wkk/gen-fn wkk/chat-fn)
-            messages       (->chatml messages)
-            result         (chat-fn service-config (assoc model-params :messages messages))]
-        (tap> result)
-        (format
-         (get-in result
-                 [wkk/content :content])))
+            chat-fn        (partial (get-in llm-config [llm-impl wkk/chat-fn]) service-config)
+            params         (assoc model-params :messages (->chatml messages))
+            result         (if use-cache
+                             (cache/lookup-or-call chat-fn params)
+                             (chat-fn params))]
+        (format-fn (get-in result [wkk/content :content])))
       (catch Exception e
         (timbre/error e)))
     (timbre/warnf ":assistant instruction does not contain AI gen function spec")))
@@ -182,7 +191,9 @@
    (generate
     llm/default-services
     {:question-answer "Question: {{question}}  Answer:"
-     :answer          (llm wkk/openai wkk/context :question-answer)
+     :answer          (llm wkk/openai
+                           wkk/context :question-answer
+                           wkk/cache true)
      :self-eval       ["Question: {{question}}"
                        "Answer: {{answer}}"
                        ""
