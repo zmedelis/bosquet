@@ -34,22 +34,23 @@ Simple prompt completion can be done like this.
 ```
 
 
-### Completion from prompt map
+### Completion from the prompt map
 
 
 ```clojure
+(require '[bosquet.llm.wkk :as wkk])
 (require '[bosquet.llm :as llm])
 (require '[bosquet.llm.generator :refer [generate llm]])
 
 (generate
  llm/default-services
  {:question-answer "Question: {{question}}  Answer:"
-  :answer          (llm llm/openai llm/context :question-answer)
+  :answer          (llm wkk/openai wkk/context :question-answer)
   :self-eval       ["Question: {{question}}"
                     "Answer: {{answer}}"
                     ""
                     "Is this a correct answer?"]
-  :test            (llm llm/openai llm/context :self-eval)}
+  :test            (llm wkk/openai wkk/context :self-eval)}
  {:question "What is the distance from Moon to Io?"})
 =>
 
@@ -74,8 +75,8 @@ Simple prompt completion can be done like this.
             "Genre: {{genre}}"
             "Synopsis:"]
     :assistant (llm :openai
-                    llm/model-params {:temperature 0.8 :max-tokens 120}
-                    llm/var-name :synopsis)
+                    wkk/model-params {:temperature 0.8 :max-tokens 120}
+                    wkk/var-name :synopsis)
     :user "Now write a critique of the above synopsis:"
     :assistant (llm :openai
                     llm/model-params {:temperature 0.2 :max-tokens 120}
@@ -114,7 +115,7 @@ Composability allows focusing on prompt language and logic, not worrying about r
 
 In this prompt definition, *Bosquet* will ensure the following sequence of execution:
 
-1. First data needs to be filled in: *title* - "The Parade" and *style* - "horror"
+1. First data needs to be filled in: *title* - "The Parade" and *style* - "Horror"
 1. These are all the dependencies needed for *synopsis* generation, and at the place specified with `((bosquet.openai/complete))` an OpenAI API is called to get the results.
 1. Once the *synopsis* is completed, the *review* can be done. The *synopsis/completion* dependency is automatically fulfilled and the *review* prompt `((bosquet.openai/complete))` will be called to produce the review 
 1. Generated text for review will go under *review/completion* key.
