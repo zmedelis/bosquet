@@ -147,9 +147,28 @@
                 wkk/context :prompt}})
 
 (defn generate
+  "
+  Generate completions for various modes. Generation mode is determined
+  by the type of the `messages`:
+
+  - Vector of tuples, triggers `chat` mode completion
+    ```
+     [[:system \"You are ...\"]
+      [:user \"Please, ...\"]
+      [:assistant {...}]]
+    ```
+  - A map, triggers `graph` mode completion
+    ```
+    {:question-answer \"Question: {{question}}\"
+     :answer          {...}}
+    ```
+  - A `string` results in a `template` completion mode
+
+  `llm-config` holds configuration to make LLM calls and `inputs` has a data map
+  for template slot filling."
   ([messages] (generate llm/default-services messages {}))
-  ([messages vars-map]
-   (generate llm/default-services messages vars-map))
+  ([messages inputs]
+   (generate llm/default-services messages inputs))
   ([llm-config messages vars-map]
    (cond
      (vector? messages) (chat llm-config messages vars-map)
