@@ -69,18 +69,18 @@ Simple prompt completion can be done like this.
 
 ``` clojure
 (generate
-    [:system "You are an amazing writer."
-    :user ["Write a synopsis for the play:"
-            "Title: {{title}}"
-            "Genre: {{genre}}"
-            "Synopsis:"]
-    :assistant (llm :openai
+    [[:system "You are an amazing writer."]
+     [:user ["Write a synopsis for the play:"
+             "Title: {{title}}"
+             "Genre: {{genre}}"
+             "Synopsis:"]]
+     [:assistant (llm wkk/openai
                     wkk/model-params {:temperature 0.8 :max-tokens 120}
-                    wkk/var-name :synopsis)
-    :user "Now write a critique of the above synopsis:"
-    :assistant (llm :openai
-                    llm/model-params {:temperature 0.2 :max-tokens 120}
-                    llm/var-name     :critique)]
+                    wkk/var-name :synopsis)]
+     [:user "Now write a critique of the above synopsis:"]
+     [:assistant (llm wkk/openai
+                    wkk/model-params {:temperature 0.2 :max-tokens 120}
+                    wkk/var-name     :critique)]]
     {:title "Mr. X"
     :genre "Sci-Fi"})
 =>
@@ -100,7 +100,7 @@ Simple prompt completion can be done like this.
            "The synopsis for the play \"Mr. X\" presents an intriguing premise set ..."}}
 ```
 
-Note that chat returns `:bosquet/conversation` listing full chat with generated parts filled in, and `:bosquet/completions` containing only generated data
+Generation returns `:bosquet/conversation` listing full chat with generated parts filled in, and `:bosquet/completions` containing only generated data
 
 `
 

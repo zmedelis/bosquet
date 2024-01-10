@@ -18,24 +18,24 @@
      {:role :assistant :content (-> msg first :content)}}))
 
 (deftest chat-generation
-  (is (= {:bosquet/conversation [:system "You are a brilliant writer."
-                                 :user (u/join-nl
-                                        "Write a synopsis for the play:"
-                                        "Title: Mr. O")
-                                 :assistant "You are a brilliant writer."
-                                 :user "Now write a critique of the above synopsis:"
-                                 :assistant "Now write a critique of the above synopsis:"]
+  (is (= {:bosquet/conversation [[:system "You are a brilliant writer."]
+                                 [:user (u/join-nl
+                                         "Write a synopsis for the play:"
+                                         "Title: Mr. O")]
+                                 [:assistant "You are a brilliant writer."]
+                                 [:user "Now write a critique of the above synopsis:"]
+                                 [:assistant "Now write a critique of the above synopsis:"]]
           :bosquet/completions  {:synopsis "You are a brilliant writer."
                                  :critique "Now write a critique of the above synopsis:"}}
          (gen/generate
           {:service-last  {wkk/chat-fn echo-service-chat-last}
            :service-first {wkk/chat-fn echo-service-chat-first}}
-          [:system "You are a brilliant writer."
-           :user ["Write a synopsis for the play:"
-                  "Title: {{title}}"]
-           :assistant (gen/llm :service-first wkk/var-name :synopsis)
-           :user "Now write a critique of the above synopsis:"
-           :assistant (gen/llm :service-last wkk/var-name :critique)]
+          [[:system "You are a brilliant writer."]
+           [:user ["Write a synopsis for the play:"
+                   "Title: {{title}}"]]
+           [:assistant (gen/llm :service-first wkk/var-name :synopsis)]
+           [:user "Now write a critique of the above synopsis:"]
+           [:assistant (gen/llm :service-last wkk/var-name :critique)]]
           {:title "Mr. O"}))))
 
 (deftest map-generation

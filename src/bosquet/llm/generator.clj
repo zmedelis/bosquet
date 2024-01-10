@@ -29,7 +29,7 @@
 (defn ->chatml [messages]
   (map
    (fn [[role content]] {:role role :content content})
-   (partition 2 messages)))
+   messages))
 
 (defn- call-llm
   "Make a call to the LLM service.
@@ -70,22 +70,29 @@
   :bosquet/completions)
 
 (defn chat
-  [llm-config messages vars-map]
-  (loop [[role content & messages] messages
-         processed-messages        []
-         ctx                       vars-map]
+  "Chat completion using
+  - `llm-config` holding LLM service configuration
+  - `messages` chat message tuples
+               [[:system \"You are ...\"]
+                [:user \"Please, ...\"]
+                [:assistant {...}]]
+  - `inputs` data map to fill the tempalte slots"
+  [llm-config messages inputs]
+  (loop [[[role content] & messages] messages
+         processed-messages          []
+         ctx                         inputs]
     (if (nil? role)
       {conversation processed-messages
-       completions  (apply dissoc ctx (keys vars-map))}
+       completions  (apply dissoc ctx (keys inputs))}
       (if (= :assistant role)
         (let [gen-result (call-llm llm-config content processed-messages)
               var-name   (wkk/var-name content)]
           (recur messages
-                 (into processed-messages [role gen-result])
+                 (conj processed-messages [role gen-result])
                  (assoc ctx var-name gen-result)))
         (let [tpl-result (first (template/render (join content) ctx))]
           (recur messages
-                 (into processed-messages [role tpl-result])
+                 (conj processed-messages [role tpl-result])
                  ctx))))))
 
 (defn- generation-resolver
@@ -100,7 +107,7 @@
         (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
           (try
             (let [full-text (get @entry-tree (wkk/context message-content))
-                  result    (call-llm llm-config message-content [:user full-text])]
+                  result    (call-llm llm-config message-content [[:user full-text]])]
               {message-key result})
             (catch Exception e
               (timbre/error e))))})
@@ -155,7 +162,7 @@
 
   ```
   {:llm/service      service
-   :llm/
+   :llm/cache        true
    :llm/model-params params}
   ```"
   [service & args]
@@ -170,36 +177,34 @@
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
 
-  (tap>
-   (generate
-    [:system "You are an amazing writer."
-     :user ["Write a synopsis for the play:"
+  (generate
+   [[:system "You are an amazing writer."]
+    [:user ["Write a synopsis for the play:"
             "Title: {{title}}"
             "Genre: {{genre}}"
-            "Synopsis:"]
-     :assistant (llm wkk/openai
+            "Synopsis:"]]
+    [:assistant (llm wkk/openai
                      wkk/model-params {:temperature 0.8 :max-tokens 120}
-                     wkk/var-name :synopsis)
-     :user "Now write a critique of the above synopsis:"
-     :assistant (llm wkk/openai
+                     wkk/var-name :synopsis)]
+    [:user "Now write a critique of the above synopsis:"]
+    [:assistant (llm wkk/openai
                      wkk/model-params {:temperature 0.2 :max-tokens 120}
-                     wkk/var-name     :critique)]
-    {:title "Mr. X"
-     :genre "Sci-Fi"}))
+                     wkk/var-name     :critique)]]
+   {:title "Mr. X"
+    :genre "Sci-Fi"})
 
-  (tap>
-   (generate
-    llm/default-services
-    {:question-answer "Question: {{question}}  Answer:"
-     :answer          (llm wkk/openai
-                           wkk/context :question-answer
-                           wkk/cache true)
-     :self-eval       ["Question: {{question}}"
-                       "Answer: {{answer}}"
-                       ""
-                       "Is this a correct answer?"]
-     :test            (llm wkk/openai wkk/context :self-eval)}
-    {:question "What is the distance from Moon to Io?"}))
+  (generate
+   llm/default-services
+   {:question-answer "Question: {{question}}  Answer:"
+    :answer          (llm wkk/openai
+                          wkk/context :question-answer
+                          wkk/cache true)
+    :self-eval       ["Question: {{question}}"
+                      "Answer: {{answer}}"
+                      ""
+                      "Is this a correct answer?"]
+    :test            (llm wkk/openai wkk/context :self-eval)}
+   {:question "What is the distance from Moon to Io?"})
 
   (generate
    {:astronomy (u/join-nl
@@ -207,7 +212,7 @@
                 "in the Solar System. Provide the answer in JSON map where the key is the"
                 "planet name and the value is the string distance in millions of kilometers."
                 "Generate only JSON omit any other prose and explanations.")
-    :answer    (llm :openai
+    :answer    (llm wkk/openai
                     wkk/output-format :json
                     wkk/context :astronomy)})
 

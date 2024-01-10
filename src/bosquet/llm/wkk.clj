@@ -1,5 +1,7 @@
 (ns bosquet.llm.wkk)
 
+;; # Well Known Keys
+
 (def model :llm/model)
 
 (def service :llm/service)
