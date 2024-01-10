@@ -48,13 +48,13 @@
                         "it is your job to write synopsis for that play."
                         "Title: {{title}}"
                         "Genre: {{genre}}")
-   :play     (g/llm :openai llm/context :synopsis)
+   :play     (g/llm :llm/openai :llm/context :synopsis)
    :critique "You are a play critic from the Moon City Times.
               Given the synopsis of play, it is your job to write a review for that play.
               Play Synopsis:
               {{play}}
               Review from a New York Times play critic of the above play:"
-   :review   (g/llm :openai llm/context :critique)})
+   :review   (g/llm :llm/openai :llm/context :critique)})
 
 ;; Things to note:
 ;; * `play` and `review` define generation points, there you specify which LLM to use and which value from the map will be used as prompt context

@@ -52,7 +52,8 @@
             result         (if use-cache
                              (cache/lookup-or-call chat-fn params)
                              (chat-fn params))]
-        (format-fn (get-in result [wkk/content :content])))
+        (update-in result [wkk/content :content] format-fn)
+        #_(format-fn (get-in result [wkk/content :content])))
       (catch Exception e
         (timbre/error e)))
     (timbre/warnf ":assistant instruction does not contain AI gen function spec")))
@@ -67,6 +68,10 @@
 
 (def completions
   "Result map key holding LLM generated parts"
+  :bosquet/completions)
+
+(def usage
+  "Result map key holding LLM token usage data"
   :bosquet/completions)
 
 (defn chat
@@ -85,7 +90,7 @@
       {conversation processed-messages
        completions  (apply dissoc ctx (keys inputs))}
       (if (= :assistant role)
-        (let [gen-result (call-llm llm-config content processed-messages)
+        (let [{{gen-result :content} wkk/content} (call-llm llm-config content processed-messages)
               var-name   (wkk/var-name content)]
           (recur messages
                  (conj processed-messages [role gen-result])
@@ -106,8 +111,9 @@
         ::pco/resolve
         (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
           (try
-            (let [full-text (get @entry-tree (wkk/context message-content))
-                  result    (call-llm llm-config message-content [[:user full-text]])]
+            (let [full-text (get @entry-tree ctx-var)
+                  gen-res   (call-llm llm-config message-content [[:user full-text]])
+                  result    (get-in gen-res [wkk/content :content])]
               {message-key result})
             (catch Exception e
               (timbre/error e))))})
@@ -133,8 +139,7 @@
 
 (defn complete
   [llm-config messages vars-map]
-  (let [vars-map (merge vars-map {:bosquet/full-text (atom "")})
-        indexes  (prompt-indexes llm-config messages)
+  (let [indexes  (prompt-indexes llm-config messages)
         sm       (psm/smart-map indexes vars-map)
         resolver (resolver-error-wrapper sm)]
     (select-keys resolver (keys messages))))

@@ -64,18 +64,18 @@
 
 ^{:nextjournal.clerk/auto-expand-results? true}
 (g/generate
- [:system "You are an amazing writer."
-  :user ["Write a synopsis for the play:"
-         "Title: {{title}}"
-         "Genre: {{genre}}"
-         "Synopsis:"]
-  :assistant (g/llm wkk/openai
-                    wkk/model-params {:temperature 0.8 :max-tokens 120}
-                    wkk/var-name :synopsis)
-  :user "Now write a critique of the above synopsis:"
-  :assistant (g/llm wkk/openai
-                    wkk/model-params {:temperature 0.2 :max-tokens 120}
-                    wkk/var-name :critique)]
+ [[:system "You are an amazing writer."]
+  [:user ["Write a synopsis for the play:"
+          "Title: {{title}}"
+          "Genre: {{genre}}"
+          "Synopsis:"]]
+  [:assistant (g/llm wkk/openai
+                     wkk/model-params {:temperature 0.8 :max-tokens 120}
+                     wkk/var-name :synopsis)]
+  [:user "Now write a critique of the above synopsis:"]
+  [:assistant (g/llm wkk/openai
+                     wkk/model-params {:temperature 0.2 :max-tokens 120}
+                     wkk/var-name :critique)]]
  {:title "Mr. X"
   :genre "Sci-Fi"})
 
