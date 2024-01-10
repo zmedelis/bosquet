@@ -72,7 +72,23 @@
 
 (def usage
   "Result map key holding LLM token usage data"
-  :bosquet/completions)
+  :bosquet/usage)
+
+(defn total-usage
+  [usages]
+  (reduce-kv
+   (fn [{:keys [prompt completion total]
+         :or   {prompt 0 completion 0 total 0}
+         :as   aggr}
+        _k
+        {p :prompt c :completion t :total
+         :or {p 0 c 0 t 0}}]
+     (assoc aggr
+            :prompt (+ p prompt)
+            :completion (+ c completion)
+            :total (+ t total)))
+   {}
+   usages))
 
 (defn chat
   "Chat completion using
@@ -85,19 +101,25 @@
   [llm-config messages inputs]
   (loop [[[role content] & messages] messages
          processed-messages          []
+         accumulated-usage           {}
          ctx                         inputs]
     (if (nil? role)
       {conversation processed-messages
-       completions  (apply dissoc ctx (keys inputs))}
+       completions  (apply dissoc ctx (keys inputs))
+       usage        (assoc accumulated-usage
+                           :bosquet/total (total-usage accumulated-usage))}
       (if (= :assistant role)
-        (let [{{gen-result :content} wkk/content} (call-llm llm-config content processed-messages)
-              var-name   (wkk/var-name content)]
+        (let [{{gen-result :content} wkk/content
+               usage                 wkk/usage} (call-llm llm-config content processed-messages)
+              var-name                          (wkk/var-name content)]
           (recur messages
                  (conj processed-messages [role gen-result])
+                 (assoc accumulated-usage var-name usage)
                  (assoc ctx var-name gen-result)))
         (let [tpl-result (first (template/render (join content) ctx))]
           (recur messages
                  (conj processed-messages [role tpl-result])
+                 accumulated-usage
                  ctx))))))
 
 (defn- generation-resolver

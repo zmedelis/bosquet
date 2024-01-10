@@ -1,7 +1,7 @@
 (ns bosquet.generator-test
   (:require
-   [bosquet.llm.wkk :as wkk]
    [bosquet.llm.generator :as gen]
+   [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
    [clojure.test :refer [deftest is]]))
 
@@ -26,7 +26,10 @@
                                  [:user "Now write a critique of the above synopsis:"]
                                  [:assistant "Now write a critique of the above synopsis:"]]
           :bosquet/completions  {:synopsis "You are a brilliant writer."
-                                 :critique "Now write a critique of the above synopsis:"}}
+                                 :critique "Now write a critique of the above synopsis:"}
+          :bosquet/usage {:synopsis      nil
+                          :critique      nil
+                          :bosquet/total {:prompt 0 :completion 0 :total 0}}}
          (gen/generate
           {:service-last  {wkk/chat-fn echo-service-chat-last}
            :service-first {wkk/chat-fn echo-service-chat-first}}
@@ -71,3 +74,9 @@
                        wkk/context :prompt}}
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
+
+(deftest usage-aggregation
+  (is (= {:total 15 :completion 12 :prompt 3}
+         (gen/total-usage
+          {:x {:total 10 :completion 8 :prompt 2}
+           :y {:total 5 :completion 4 :prompt 1}}))))
