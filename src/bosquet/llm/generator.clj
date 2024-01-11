@@ -52,15 +52,10 @@
             result         (if use-cache
                              (cache/lookup-or-call chat-fn params)
                              (chat-fn params))]
-        (update-in result [wkk/content :content] format-fn)
-        #_(format-fn (get-in result [wkk/content :content])))
+        (update-in result [wkk/content :content] format-fn))
       (catch Exception e
         (timbre/error e)))
     (timbre/warnf ":assistant instruction does not contain AI gen function spec")))
-
-(defn- join
-  [content]
-  (if (coll? content) (string/join "\n" content) content))
 
 (def conversation
   "Result map key holding full chat conversation including generated parts"
@@ -116,39 +111,39 @@
                  (conj processed-messages [role gen-result])
                  (assoc accumulated-usage var-name usage)
                  (assoc ctx var-name gen-result)))
-        (let [tpl-result (first (template/render (join content) ctx))]
+        (let [tpl-result (first (template/render (u/join-coll content) ctx))]
           (recur messages
                  (conj processed-messages [role tpl-result])
                  accumulated-usage
                  ctx))))))
 
+(defn- ->resolver
+  [name-sufix message-key input resolve-fn]
+  (pco/resolver
+   {::pco/op-name (-> message-key .-sym (str "-" name-sufix) symbol)
+    ::pco/output  [message-key]
+    ::pco/input   input
+    ::pco/resolve resolve-fn}))
+
 (defn- generation-resolver
   [llm-config message-key {ctx-var wkk/context :as message-content}]
   (if (map? message-content)
     (if ctx-var
-      (pco/resolver
-       {::pco/op-name (-> message-key .-sym (str "-ai-gen") keyword symbol)
-        ::pco/output  [message-key]
-        ::pco/input   [(wkk/context message-content)]
-        ::pco/resolve
-        (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
-          (try
-            (let [full-text (get @entry-tree ctx-var)
-                  gen-res   (call-llm llm-config message-content [[:user full-text]])
-                  result    (get-in gen-res [wkk/content :content])]
-              {message-key result})
-            (catch Exception e
-              (timbre/error e))))})
+      (->resolver "ai-gen" message-key [(wkk/context message-content)]
+       (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
+         (try
+           (let [full-text (get @entry-tree ctx-var)
+                 gen-res   (call-llm llm-config message-content [[:user full-text]])
+                 result    (get-in gen-res [wkk/content :content])]
+             {message-key result})
+           (catch Exception e
+             (timbre/error e)))))
       (timbre/warnf "Context var is not set in generation spec. Add 'llm/context' to '%s'" message-key))
     ;; TEMPLATE
-    (let [message-content (join message-content)]
-      (pco/resolver
-       {::pco/op-name (-> message-key .-sym (str "-template") keyword symbol)
-        ::pco/output  [message-key]
-        ::pco/input   (vec (selmer/known-variables message-content))
-        ::pco/resolve
-        (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
-          {message-key (first (template/render message-content @entry-tree))})}))))
+    (let [message-content (u/join-coll message-content)]
+      (->resolver "template" message-key (vec (selmer/known-variables message-content))
+       (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
+            {message-key (first (template/render message-content @entry-tree))})))))
 
 (defn- prompt-indexes [llm-config messages]
   (pci/register

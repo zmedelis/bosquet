@@ -1,5 +1,6 @@
 (ns bosquet.utils
   (:require
+   [clojure.string :as string]
    [jsonista.core :as j]
    [me.flowthing.pp :as pp])
   (:import
@@ -34,6 +35,9 @@
 
 (defn join-nl [& lines]
   (apply str (interpose "\n" lines)))
+
+(defn join-coll [content]
+  (if (coll? content) (string/join "\n" content) content))
 
 (def separator
   "A separator to be used in prompts to indicate data bloks."
