@@ -7,7 +7,6 @@
    [bosquet.llm.wkk :as wkk]
    [bosquet.template.read :as template]
    [bosquet.utils :as u]
-   [clojure.string :as string]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
    [com.wsscode.pathom3.interface.smart-map :as psm]
@@ -161,12 +160,26 @@
         resolver (resolver-error-wrapper sm)]
     (select-keys resolver (keys messages))))
 
+(def default-template-prompt
+  "Simple string template generation case does not create var names for the completions,
+  compared to Map generation where map keys are the var names.
+
+  This is a key for prompt entry"
+  ::prompt)
+(def default-template-completion
+  "Simple string template generation case does not create var names for the completions,
+  compared to Map generation where map keys are the var names.
+
+  This is a key for completion entry"
+  ::completion)
+
+
 (defn append-generation-instruction
   "If template does not specify generation function append the default one."
   [string-template]
-  {:prompt     string-template
-   :completion {wkk/service (env/default-llm)
-                wkk/context :prompt}})
+  {default-template-prompt     string-template
+   default-template-completion {wkk/service (env/default-llm)
+                                wkk/context default-template-prompt}})
 
 (defn generate
   "
@@ -195,7 +208,8 @@
    (cond
      (vector? messages) (chat llm-config messages vars-map)
      (map? messages)    (complete llm-config messages vars-map)
-     (string? messages) (:completion (complete llm-config (append-generation-instruction messages) vars-map)))))
+     (string? messages) (default-template-completion
+                         (complete llm-config (append-generation-instruction messages) vars-map)))))
 
 (defn llm
   "A helper function to create LLM spec for calls during the generation process.

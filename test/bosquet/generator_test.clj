@@ -60,18 +60,17 @@
           {:question "What is the distance from Moon to Io?"}))))
 
 (deftest fail-generation
-  (is (= {:prompt     "How are you?"
-          ;; TODO returning nil on error is not the best choice
-          :completion nil}
+  (is (= {:in  "How are you?"
+          :out nil}
          (gen/generate
-          {:prompt     "How are you?"
-           :completion (gen/llm :non-existing-service wkk/context :prompt)}
+          {:in  "How are you?"
+           :out (gen/llm :non-existing-service wkk/context :in)}
           {}))))
 
 (deftest appending-gen-instruction
-  (is (= {:prompt     "What is the distance from Moon to Io?"
-          :completion {wkk/service wkk/openai
-                       wkk/context :prompt}}
+  (is (= {gen/default-template-prompt     "What is the distance from Moon to Io?"
+          gen/default-template-completion {wkk/service wkk/openai
+                                           wkk/context gen/default-template-prompt }}
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
 
