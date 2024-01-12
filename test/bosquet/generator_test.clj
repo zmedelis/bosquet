@@ -42,15 +42,20 @@
           {:title "Mr. O"}))))
 
 (deftest map-generation
-  (is (= {:question-answer "Question: What is the distance from Moon to Io?  Answer:"
-          :answer          "!!!"
-          :self-eval       (u/join-nl
-                            "Question: What is the distance from Moon to Io?"
-                            "Answer: !!!"
-                            "Is this a correct answer?")
-          :test            "!!!"}
+  (is (= {gen/completions {:question-answer "Question: What is the distance from Moon to Io?  Answer:"
+                           :answer          "!!!"
+                           :self-eval       (u/join-nl
+                                             "Question: What is the distance from Moon to Io?"
+                                             "Answer: !!!"
+                                             "Is this a correct answer?")
+                           :test            "!!!"}
+          gen/usage       {:answer        {:prompt 1 :completion 3 :total 4}
+                           :test          {:prompt 1 :completion 3 :total 4}
+                           :bosquet/total {:prompt 2 :completion 6 :total 8}}}
          (gen/generate
-          {:service-const {wkk/chat-fn (fn [_ _] {wkk/content {:content "!!!" :role :assistant}})}}
+          {:service-const {wkk/chat-fn (fn [_ _]
+                                         {wkk/content {:content "!!!" :role :assistant}
+                                          wkk/usage   {:prompt 1 :completion 3 :total 4}})}}
           {:question-answer "Question: {{question}}  Answer:"
            :answer          (gen/llm :service-const wkk/context :question-answer)
            :self-eval       ["Question: {{question}}"
@@ -60,8 +65,9 @@
           {:question "What is the distance from Moon to Io?"}))))
 
 (deftest fail-generation
-  (is (= {:in  "How are you?"
-          :out nil}
+  (is (= {gen/completions {:in  "How are you?"
+                           :out nil}
+          gen/usage       {}}
          (gen/generate
           {:in  "How are you?"
            :out (gen/llm :non-existing-service wkk/context :in)}
@@ -70,7 +76,7 @@
 (deftest appending-gen-instruction
   (is (= {gen/default-template-prompt     "What is the distance from Moon to Io?"
           gen/default-template-completion {wkk/service wkk/openai
-                                           wkk/context gen/default-template-prompt }}
+                                           wkk/context gen/default-template-prompt}}
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
 

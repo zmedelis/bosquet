@@ -43,17 +43,14 @@
     :as          properties}
    messages]
   (if (map? properties)
-    (try
-      (let [format-fn      (partial converter/coerce (wkk/output-format properties))
-            service-config (dissoc (llm-impl llm-config) wkk/gen-fn wkk/chat-fn)
-            chat-fn        (partial (get-in llm-config [llm-impl wkk/chat-fn]) service-config)
-            params         (assoc model-params :messages (->chatml messages))
-            result         (if use-cache
-                             (cache/lookup-or-call chat-fn params)
-                             (chat-fn params))]
-        (update-in result [wkk/content :content] format-fn))
-      (catch Exception e
-        (timbre/error e)))
+    (let [format-fn      (partial converter/coerce (wkk/output-format properties))
+          service-config (dissoc (llm-impl llm-config) wkk/gen-fn wkk/chat-fn)
+          chat-fn        (partial (get-in llm-config [llm-impl wkk/chat-fn]) service-config)
+          params         (assoc model-params :messages (->chatml messages))
+          result         (if use-cache
+                           (cache/lookup-or-call chat-fn params)
+                           (chat-fn params))]
+      (update-in result [wkk/content :content] format-fn))
     (timbre/warnf ":assistant instruction does not contain AI gen function spec")))
 
 (def conversation
@@ -127,22 +124,31 @@
 (defn- generation-resolver
   [llm-config message-key {ctx-var wkk/context :as message-content}]
   (if (map? message-content)
+    ;; Generation node
     (if ctx-var
       (->resolver "ai-gen" message-key [(wkk/context message-content)]
-       (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
-         (try
-           (let [full-text (get @entry-tree ctx-var)
-                 gen-res   (call-llm llm-config message-content [[:user full-text]])
-                 result    (get-in gen-res [wkk/content :content])]
-             {message-key result})
-           (catch Exception e
-             (timbre/error e)))))
+                  (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
+                    (try
+                      (let [full-text (get @entry-tree ctx-var)
+                            gen-res   (call-llm llm-config message-content [[:user full-text]])
+                            result    (get-in gen-res [wkk/content :content])
+                            gen-usage (wkk/usage gen-res)]
+                        {message-key
+                         {completions result
+                          usage       gen-usage}})
+                      (catch Exception e
+                        (timbre/error e)))))
       (timbre/warnf "Context var is not set in generation spec. Add 'llm/context' to '%s'" message-key))
-    ;; TEMPLATE
+    ;; Template node
     (let [message-content (u/join-coll message-content)]
       (->resolver "template" message-key (vec (selmer/known-variables message-content))
-       (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
-            {message-key (first (template/render message-content @entry-tree))})))))
+                  (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
+                    {message-key
+                     (first (template/render message-content
+                                             (reduce-kv (fn [m k v]
+                                                          (assoc m k (if (map? v) (completions v) v)))
+                                                        {}
+                                                        @entry-tree)))})))))
 
 (defn- prompt-indexes [llm-config messages]
   (pci/register
@@ -172,7 +178,6 @@
 
   This is a key for completion entry"
   ::completion)
-
 
 (defn append-generation-instruction
   "If template does not specify generation function append the default one."
@@ -207,9 +212,23 @@
   ([llm-config messages vars-map]
    (cond
      (vector? messages) (chat llm-config messages vars-map)
-     (map? messages)    (complete llm-config messages vars-map)
-     (string? messages) (default-template-completion
-                         (complete llm-config (append-generation-instruction messages) vars-map)))))
+     (map? messages)
+     (let [gen-result  (complete llm-config messages vars-map)
+           gen-usage   (reduce-kv (fn [m k v]
+                                    (if (map? v) (assoc m k (usage v)) m))
+                                  {}
+                                  gen-result)
+           total-usage (total-usage gen-usage)]
+       {completions (reduce-kv (fn [m k v]
+                                 (assoc m k (if (map? v) (completions v) v)))
+                               {}
+                               gen-result)
+        usage       (if (empty? total-usage)
+                      {}
+                      (assoc gen-usage :bosquet/total total-usage))})
+     (string? messages)
+     (completions (default-template-completion
+                   (complete llm-config (append-generation-instruction messages) vars-map))))))
 
 (defn llm
   "A helper function to create LLM spec for calls during the generation process.
