@@ -12,7 +12,7 @@
   (openai/chat-completion params service-config))
 
 (defn handle-cohere-chat [service-config params]
-  (cohere/complete params service-config))
+  (cohere/chat params service-config))
 
 (defn handle-cohere-complete [service-config params]
   (cohere/complete params service-config))

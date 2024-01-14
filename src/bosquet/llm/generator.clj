@@ -270,14 +270,14 @@
   (generate
    llm/default-services
    {:question-answer "Question: {{question}}  Answer:"
-    :answer          (llm wkk/openai
+    :answer          (llm wkk/cohere
                           wkk/context :question-answer
                           wkk/cache true)
     :self-eval       ["Question: {{question}}"
                       "Answer: {{answer}}"
                       ""
                       "Is this a correct answer?"]
-    :test            (llm wkk/openai wkk/context :self-eval)}
+    :test            (llm wkk/cohere wkk/context :self-eval)}
    {:question "What is the distance from Moon to Io?"})
 
   (generate
@@ -286,9 +286,18 @@
                 "in the Solar System. Provide the answer in JSON map where the key is the"
                 "planet name and the value is the string distance in millions of kilometers."
                 "Generate only JSON omit any other prose and explanations.")
-    :answer    (llm wkk/openai
+    :answer    (llm wkk/cohere
                     wkk/output-format :json
                     wkk/context :astronomy)})
+
+  ;; ----
+
+  (generate
+   [[:system "You are a calculator."]
+    [:user "2-2="]
+    [:assistant (llm wkk/cohere
+                     wkk/model-params {:temperature 0.0 :max-tokens 10}
+                     wkk/var-name :calc)]])
 
   #_(generate
      [(chat/speak chat/user "What's the weather like in San Francisco, Tokyo, and Paris?")]

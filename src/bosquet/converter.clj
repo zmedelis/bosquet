@@ -35,7 +35,7 @@
     nil))
 
 (defn json-reader
-  "GPT-3.5-* tends to wrap response with Makrdown code
+  "Some models (GPT-3.5-*, Cohere) tend to wrap response with Makrdown code
   ```json
   GOOD JSON CONTENT
   ```
@@ -43,8 +43,8 @@
   "
   [completion]
   (-> completion
-      (s/replace #"(?m)^```json" "")
-      (s/replace #"(?m)```$" "")
+      (s/replace #"(?ms).*?```json" "")
+      (s/replace #"(?ms)```" "")
       (j/read-value)))
 
 (defn edn-reader
@@ -56,8 +56,8 @@
   "
   [completion]
   (-> completion
-      (s/replace #"(?m)^```(edn|clojure)" "")
-      (s/replace #"(?m)```$" "")
+      (s/replace #"(?ms)^```(edn|clojure)" "")
+      (s/replace #"(?ms)```$" "")
       (read-string)))
 
 (defn coerce

@@ -1,15 +1,18 @@
 (ns bosquet.llm.cohere
-  (:require [bosquet.llm.wkk :as wkk]
-            [bosquet.llm.schema :as schema]
-            [cohere.client :as client]))
+  (:require
+   [bosquet.llm.schema :as schema]
+   [bosquet.llm.wkk :as wkk]
+   [bosquet.utils :as u]
+   [cohere.client :as client]))
 
 (defn- props->cohere
   "Convert general LLM model properties to Cohere specific ones."
-  [{:keys [n stop] :as props}]
-  (merge
-   (dissoc  props :n :stop)
-   (when n {:num_generations n})
-   (when stop {:stop_sequences stop})))
+  [{:keys [n stop max-tokens] :as props}]
+  (u/mergex
+   (dissoc  props :n :stop :max-tokens)
+   {:max_tokens max-tokens}
+   {:num_generations n}
+   {:stop_sequences stop}))
 
 (defn usage->canonical
   [{:keys [input_tokens output_tokens]}]
@@ -27,7 +30,42 @@
   ([prompt]
    (complete prompt {})))
 
+(defn chatml->cohere
+  "Transform ChatML messages to the message data shape required by Cohere API"
+  [messages]
+  (mapv
+   (fn [{:keys [role content]}]
+     {:user_name role :text content})
+   messages))
+
+(defn chat
+  ([messages] (chat {:messages messages} nil))
+  ([{messages :messages :as params} _opts]
+   (let [params   (dissoc params :messages)
+         messages (chatml->cohere messages)
+         message  (-> messages last :text)
+         history  (butlast messages)
+         {{usage :billed_units} :meta text :text}
+         (client/chat
+          (props->cohere (assoc params
+                                :message message
+                                :chat_history history)))]
+     {wkk/generation-type :chat
+      wkk/content         {:role :assistant :content text}
+      wkk/usage           (usage->canonical usage)})))
+
 (comment
+  (def messages [{:role :user :content "Let's do some calculations!"}
+                 {:role :chatbot :content "Certainly, I am happy to calculate"}
+                 {:role :user :content "4+4="}])
+
+  (chat messages)
+
+  (client/chat
+   :chat_history (chatml->cohere [{:role :user :content "Let's do some calculations!"}
+                                  {:role :chatbot :content "Certainly, I am happy to calculate"}])
+   :message "2+2=")
+
   (client/generate (props->cohere
                     {:model          "command"
                      :prompt  "Today is a"
