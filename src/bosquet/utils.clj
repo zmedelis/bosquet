@@ -1,6 +1,8 @@
 (ns bosquet.utils
   (:require
    [clojure.string :as string]
+   [camel-snake-kebab.extras :as cske]
+   [camel-snake-kebab.core :as csk]
    [jsonista.core :as j]
    [me.flowthing.pp :as pp])
   (:import
@@ -59,8 +61,17 @@
   (remove nil? (flatten coll)))
 
 (defn mergex
-  "Merge maps filtering nil keys"
+  "Merge maps filtering nil values"
   [& maps]
-  (dissoc
-   (apply merge maps)
-   nil))
+  (apply
+   merge
+   (map (fn [a-map]
+          (reduce-kv
+           (fn [m k v] (if (nil? v) m (assoc m k v)))
+           {}
+           a-map))
+        maps)))
+
+(defn snake_case
+  [m]
+  (cske/transform-keys csk/->snake_case_keyword m))

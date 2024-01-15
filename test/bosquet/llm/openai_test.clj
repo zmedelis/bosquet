@@ -5,20 +5,6 @@
    [bosquet.llm.openai :as openai]
    [clojure.test :refer [deftest is]]))
 
-(defn create-chat-completion
-  [prompt _params _opts]
-  (str "chat:" prompt))
-
-(defn create-completion
-  [prompt _params _opts]
-  (str "completion:" prompt))
-
-(deftest complete-test
-  (with-redefs [openai/create-chat-completion create-chat-completion
-                openai/create-completion      create-completion]
-    (is (= "completion:Fox" (openai/complete "Fox" {:model "text-ada-001"})))
-    (is (= "chat:Fox" (openai/complete "Fox" {:model "gpt-4"})))))
-
 (deftest completion-normalization
   (let [txt       "Hello there, how may I assist you today?"
         usage-in  {:prompt_tokens 5 :completion_tokens 7 :total_tokens 12}

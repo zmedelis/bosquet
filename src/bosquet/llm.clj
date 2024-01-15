@@ -1,30 +1,20 @@
 (ns bosquet.llm
   (:require
-   [bosquet.llm.wkk :as wkk]
    [bosquet.env :as env]
    [bosquet.llm.cohere :as cohere]
-   [bosquet.llm.openai :as openai]))
-
-(defn handle-openai-chat [service-config params]
-  (openai/chat-completion params service-config))
-
-(defn handle-openai-complete [service-config params]
-  (openai/chat-completion params service-config))
-
-(defn handle-cohere-chat [service-config params]
-  (cohere/chat params service-config))
-
-(defn handle-cohere-complete [service-config params]
-  (cohere/complete params service-config))
-
-(defn- handle-lm-studio-chat [arg1])
+   [bosquet.llm.lmstudio :as lmstudio]
+   [bosquet.llm.openai :as openai]
+   [bosquet.llm.wkk :as wkk]))
 
 (def default-services
-  {wkk/openai (merge (env/val wkk/openai)
-                     {wkk/complete-fn handle-openai-complete
-                      wkk/chat-fn     handle-openai-chat})
-   wkk/cohere (merge (env/val wkk/cohere)
-                     {wkk/complete-fn handle-cohere-complete
-                      wkk/chat-fn     handle-cohere-chat})
-   :local     {wkk/complete-fn (fn [_system options] {:eval (str "TODO-" (:gen options) "-COMPLETE")})
-               wkk/chat-fn     (fn [_system options] {:eval (str "TODO-" (:gen options) "-CHAT")})}})
+  {wkk/lmstudio (merge (env/val wkk/lmstudio)
+                       {wkk/complete-fn lmstudio/complete
+                        wkk/chat-fn     lmstudio/chat})
+   wkk/openai   (merge (env/val wkk/openai)
+                       {wkk/complete-fn openai/complete
+                        wkk/chat-fn     openai/chat})
+   wkk/cohere   (merge (env/val wkk/cohere)
+                       {wkk/complete-fn cohere/complete
+                        wkk/chat-fn     cohere/chat})
+   :local       {wkk/complete-fn (fn [_system options] {:eval (str "TODO-" (:gen options) "-COMPLETE")})
+                 wkk/chat-fn     (fn [_system options] {:eval (str "TODO-" (:gen options) "-CHAT")})}})

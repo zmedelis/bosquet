@@ -257,11 +257,11 @@
             "Title: {{title}}"
             "Genre: {{genre}}"
             "Synopsis:"]]
-    [:assistant (llm wkk/openai
+    [:assistant (llm wkk/lmstudio
                      wkk/model-params {:temperature 0.8 :max-tokens 120}
                      wkk/var-name :synopsis)]
     [:user "Now write a critique of the above synopsis:"]
-    [:assistant (llm wkk/openai
+    [:assistant (llm wkk/lmstudio
                      wkk/model-params {:temperature 0.2 :max-tokens 120}
                      wkk/var-name     :critique)]]
    {:title "Mr. X"
@@ -270,14 +270,14 @@
   (generate
    llm/default-services
    {:question-answer "Question: {{question}}  Answer:"
-    :answer          (llm wkk/cohere
+    :answer          (llm wkk/lmstudio
                           wkk/context :question-answer
                           wkk/cache true)
     :self-eval       ["Question: {{question}}"
                       "Answer: {{answer}}"
                       ""
                       "Is this a correct answer?"]
-    :test            (llm wkk/cohere wkk/context :self-eval)}
+    :test            (llm wkk/lmstudio wkk/context :self-eval)}
    {:question "What is the distance from Moon to Io?"})
 
   (generate
@@ -286,8 +286,9 @@
                 "in the Solar System. Provide the answer in JSON map where the key is the"
                 "planet name and the value is the string distance in millions of kilometers."
                 "Generate only JSON omit any other prose and explanations.")
-    :answer    (llm wkk/cohere
+    :answer    (llm wkk/lmstudio
                     wkk/output-format :json
+                    wkk/max-tokens 300
                     wkk/context :astronomy)})
 
   ;; ----

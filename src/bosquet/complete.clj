@@ -1,8 +1,6 @@
 (ns bosquet.complete
   (:require
-   [bosquet.converter :as converter]
    [bosquet.llm.chat :as llm.chat]
-   [bosquet.llm.llm :as llm]
    [bosquet.wkk :as wkk]
    [clojure.core.cache.wrapped :as w]))
 

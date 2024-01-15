@@ -1,8 +1,9 @@
 (ns bosquet.llm.lmstudio
   (:require
    [bosquet.llm.chat :as chat]
-   [bosquet.llm.llm :as llm]
    [bosquet.llm.http :as http]
+   [bosquet.llm.wkk :as wkk]
+   [bosquet.utils :as u]
    [taoensso.timbre :as timbre]))
 
 (defn- ->completion
@@ -11,48 +12,48 @@
                       total_tokens      :total_tokens} :usage}
    generation-type]
   (let [result (-> choices first :message chat/chatml->bosquet)]
-    {llm/generation-type generation-type
-     llm/content         (if (= :chat generation-type)
-                           result
-                           {:completion (:content result)})
-     llm/usage           {:prompt     prompt_tokens
+    {wkk/generation-type generation-type
+     wkk/content         result
+     wkk/usage           {:prompt     prompt_tokens
                           :completion completion_tokens
                           :total      total_tokens}}))
 
-(def ^:private gen-type :gen-type)
+(defn chat
+  ([params] (chat nil params))
+  ([{api-endpoint :api-endpoint :as service-cfg}
+    {messages :messages :as params}]
+   (timbre/infof "💬 Calling LM Studio with:")
+   (timbre/infof "\tParams: '%s'" (dissoc params :messages))
+   (timbre/infof "\tConfig: '%s'" (dissoc service-cfg :api-key))
+   (let [lm-call (partial http/post (str api-endpoint "/chat/completions"))]
+     (-> params
+         (assoc :messages messages)
+         u/snake_case
+         lm-call
+         (->completion :chat)))))
 
-(defn- chat-completion
-  [messages {generation-type gen-type
-             api-endpoint    :api-endpoint
-             :as             params}]
-  (timbre/infof "💬 Calling LM Studio with:")
-  (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
-  (let [call (partial http/post (str api-endpoint "/chat/completions"))]
-    (-> params
-        (assoc :messages (if (string? messages)
-                           [(chat/speak chat/user messages)]
-                           messages))
-        call
-        (->completion generation-type))))
-
-(deftype LMStudio
-         [opts]
-  llm/LLM
-  (service-name [_this] ::lm-studio)
-  (generate [_this prompt params]
-    (chat-completion prompt
-                     (merge opts
-                            (assoc params gen-type :complete))))
-  (chat     [_this conversation params]
-    (chat-completion conversation
-                     (merge opts
-                            (assoc params gen-type :chat)))))
+(defn complete
+  ([params] (chat nil params))
+  ([{api-endpoint :api-endpoint :as service-cfg}
+    {prompt :prompt :as params}]
+   (timbre/infof "💬 Calling LM studio completion with:")
+   (timbre/infof "\t* Params: '%s'" (dissoc params :prompt))
+   (timbre/infof "\t* Options: '%s'" (dissoc service-cfg :api-key))
+   (let [lm-call (partial http/post (str api-endpoint "/chat/completions"))
+         params (-> params
+                    (dissoc :prompt)
+                    (assoc :messages [{:role :user :content prompt}]))]
+     (-> params
+         u/snake_case
+         lm-call
+         (->completion :completion)))))
 
 (comment
-  (def llm (LMStudio.
-            {:api-endpoint "http://localhost:1234/v1"}))
-  (.chat llm
-         (chat/converse chat/system "You are good at maths."
-                        chat/user "1 + 2 =")
-         {})
+  (complete
+   {:api-endpoint "http://localhost:1234/v1"}
+   {:prompt "2+2="})
+  (chat
+   {:api-endpoint "http://localhost:1234/v1"}
+   {:messages [{:role :system :content "You are a calculator. You only converse in this format: expression = answer"}
+               {:role :user :content "2-2="}]})
   #__)

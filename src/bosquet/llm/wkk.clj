@@ -16,7 +16,7 @@
 
 (def cohere :llm/cohere)
 
-(def lm-studio :llm/lm-studio)
+(def lmstudio :llm/lmstudio)
 
 (def service :llm/service)
 (def model-params :llm/model-params)

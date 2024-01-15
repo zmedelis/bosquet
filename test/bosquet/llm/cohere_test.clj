@@ -14,7 +14,7 @@
                          {:generations [{:text "5"}]
                           :meta        {:billed_units {:input_tokens  7
                                                        :output_tokens 1}}})]
-           (complete "2 + 2 =")))))
+           (complete {:prompt "2 + 2 ="})))))
 
 (deftest chatml->cohere-test
   (is (= [{:user_name :a :text "2 + 2 ="}
