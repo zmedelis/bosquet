@@ -1,5 +1,6 @@
 (ns bosquet.generator-test
   (:require
+   [bosquet.db.cache :as cache]
    [bosquet.llm.generator :as gen]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
@@ -85,3 +86,35 @@
          (gen/total-usage
           {:x {:total 10 :completion 8 :prompt 2}
            :y {:total 5 :completion 4 :prompt 1}}))))
+
+(deftest chache-usage
+  (let [call-counter (atom 0)
+        cached-props (atom [])
+        question     "What is the distance from Moon to Io?"
+        generate     (fn [cache q]
+                       (gen/generate
+                        {:service-const {wkk/chat-fn (fn [_ props]
+                                                       (swap! cached-props conj
+                                                              (cache/cache-props props))
+                                                       (swap! call-counter inc) {})}}
+                        {:qna "Question: {{q}}  Answer:"
+                         :a   (gen/llm :service-const
+                                       wkk/cache   cache
+                                       wkk/context :qna)}
+                        {:q q}))]
+    ;; cache is off
+    (generate false question)
+    (is (= 1 @call-counter))
+    (generate false question)
+    (is (= 2 @call-counter))
+    ;; cache is on
+    (generate true question)
+    (is (= 3 @call-counter))
+    (generate true question)
+    (is (= 3 @call-counter))
+    (generate true "What is the distance between X and Y?")
+    (is (= 4 @call-counter))
+
+    ;; clear cache
+    (doseq [p @cached-props]
+      (cache/evict p))))
