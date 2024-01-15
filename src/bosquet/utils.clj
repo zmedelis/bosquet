@@ -1,10 +1,11 @@
 (ns bosquet.utils
   (:require
-   [clojure.string :as string]
-   [camel-snake-kebab.extras :as cske]
    [camel-snake-kebab.core :as csk]
+   [camel-snake-kebab.extras :as cske]
+   [clojure.string :as string]
    [jsonista.core :as j]
-   [me.flowthing.pp :as pp])
+   [me.flowthing.pp :as pp]
+   [taoensso.timbre :as timbre])
   (:import
    [java.util UUID]))
 
@@ -75,3 +76,9 @@
 (defn snake_case
   [m]
   (cske/transform-keys csk/->snake_case_keyword m))
+
+(defn log-call
+  [service-cfg params service-name]
+  (timbre/infof "💬 Calling %s with:" service-name)
+  (timbre/infof "\tParams: '%s'" (dissoc params :messages))
+  (timbre/infof "\tConfig: '%s'" (dissoc service-cfg :api-key)))

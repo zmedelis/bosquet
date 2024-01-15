@@ -18,6 +18,8 @@
 
 (def lmstudio :llm/lmstudio)
 
+(def mistral :llm/mistral)
+
 (def service :llm/service)
 (def model-params :llm/model-params)
 (def gen-fn :llm/gen-fn)

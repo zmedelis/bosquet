@@ -1,42 +1,41 @@
 (ns bosquet.llm.mistral
   (:require
-   [bosquet.llm.chat :as chat]
+   [bosquet.env :as env]
    [bosquet.llm.http :as http]
-   [taoensso.timbre :as timbre]))
+   [bosquet.llm.oai-shaped-llm :as oai]
+   [bosquet.llm.wkk :as wkk]
+   [bosquet.utils :as u]))
 
-(defn- ->completion
-  [{choices :choices {prompt_tokens     :prompt_tokens
-                      completion_tokens :completion_tokens
-                      total_tokens      :total_tokens} :usage}
-   generation-type]
-  #_(let [result (-> choices first :message chat/chatml->bosquet)]
-      {llm/generation-type generation-type
-       llm/content         (if (= :chat generation-type)
-                             result
-                             {:completion (:content result)})
-       llm/usage           {:prompt     prompt_tokens
-                            :completion completion_tokens
-                            :total      total_tokens}}))
+(defn chat
+  ([params] (chat (wkk/mistral env/config) params))
+  ([{api-endpoint :api-endpoint :as service-cfg}
+    {messages :messages :as params}]
+   (u/log-call service-cfg params "Mistral chat")
+   (let [lm-call (partial http/post (str api-endpoint "/chat/completions"))]
+     (-> params
+         (assoc :messages messages)
+         u/snake_case
+         lm-call
+         (oai/->completion :chat)))))
 
-(defn completion
-  [messages {generation-type gen-type
-             api-endpoint    :api-endpoint
-             :as             params}]
-  (timbre/infof "💬 Calling LM Studio with:")
-  (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
-  #_(let [call (partial http/post (str api-endpoint "/chat/completions"))]
-      (-> params
-          (assoc :messages (if (string? messages)
-                             [(chat/speak chat/user messages)]
-                             messages))
-          call
-          (->completion generation-type))))
+(defn complete
+  ([params] (complete
+             (wkk/mistral env/config)
+             params))
+  ([{api-endpoint :api-endpoint :as service-cfg}
+    {prompt :prompt :as params}]
+   (u/log-call service-cfg params "Mistral completion")
+   (let [lm-call (partial http/post (str api-endpoint "/chat/completions"))
+         params (-> params
+                    (dissoc :prompt)
+                    (assoc :messages [{:role :user :content prompt}]))]
+     (-> params
+         u/snake_case
+         lm-call
+         (oai/->completion :completion)))))
 
 (comment
-  #_(completion
-     (chat/converse chat/user "Calculate: 1 + 2")
-     {gen-type      :chat
-      :model        "mistral-small"
-      :api-key      (-> "config.edn" slurp read-string :mistral-api-key)
-      :api-endpoint "https://api.mistral.ai/v1"})
+  (complete
+   {:messages [:role :user :content "2+2="]
+    wkk/model-params {:model "mistral-small"}})
   #__)
