@@ -1,12 +1,11 @@
 (ns bosquet.agent.react
   (:require
-   [bosquet.agent.tool :as t]
    [bosquet.agent.agent-mind-reader :as mind-reader]
-   [bosquet.llm.generator :as generator]
+   [bosquet.agent.tool :as t]
+   [bosquet.llm :as llm]
+   [bosquet.llm.generator :as gen]
    [bosquet.template.read :as template]
-   [clojure.string :as string]
-   [taoensso.timbre :as timbre]
-   [taoensso.timbre.appenders.core :as appenders]))
+   [clojure.string :as string]))
 
 #_(timbre/merge-config!
    {:appenders {:println {:enabled? false}
@@ -17,10 +16,10 @@
   `ctx` has needed data points
   `prompt-palette` has all the prompts needed for ReAct
   `prompt-key` is the key to the prompt to be used to start the generation."
-  [ctx prompt-palette prompt-key]
+  [{:bosquet/keys [task-prompts services]} ctx prompt-key]
   (let [{gen-output  :thoughts
          full-output prompt-key}
-        (generator/generate prompt-palette ctx)
+        (gen/generate services task-prompts ctx)
         prompt                   (string/replace full-output gen-output "")]
     ;; :resoning-trace will contain only the thoughts from before,
     ;; most recent observation goes into :thoughts
@@ -40,16 +39,17 @@
   Second context parameter gives initialization data to start working
   - `task` is a quesiton ar task formulation for the agent
   - `max-steps` specifies how many thinking steps agent is allowed to do
-  it either reaches that number of steps or 'Finish' action, and then terminates.
-
-  :react/task contains a question or a claim to be solved"
-  [tool prompt-palette
-   {:keys [task max-steps]
-    :or   {max-steps 5}
-    :as   initial-ctx}]
-  (t/print-thought (format "'%s' tool has the following task" (t/my-name tool)) task)
-  (let [{:keys [thoughts reasoning-trace]}
-        (generate-thoughts initial-ctx prompt-palette :react/step-0)]
+  it either reaches that number of steps or 'Finish' action, and then terminates."
+  [{:bosquet/keys [max-steps tools]
+    :or           {max-steps 5}
+    :as           cfg}
+   task]
+  (let [tool        (first tools)
+        initial-ctx {:react/task task}
+        _           (t/print-thought
+                     (format "'%s' tool has the following task" (t/my-name tool)) task)
+        {:keys [thoughts reasoning-trace]}
+        (generate-thoughts cfg initial-ctx :react/step-0)]
     (loop [step            1
            ctx             initial-ctx
            thoughts        thoughts
@@ -79,18 +79,23 @@
                 _                   (t/print-indexed-step "Observation" current-observation step)
                 {:keys [thoughts reasoning-trace]}
                 (generate-thoughts
-                 {:step            (inc step)
-                  :reasoning-trace (str reasoning-trace thought)
-                  :observation     current-observation}
-                 prompt-palette :react/step-n)]
+                 cfg
+                 {:react/step            (inc step)
+                  :react/reasoning-trace (str reasoning-trace thought)
+                  :react/observation     current-observation}
+                 :react/step-n)]
             (recur (inc step) ctx thoughts reasoning-trace)))))))
 
 (comment
   (import '[bosquet.agent.wikipedia Wikipedia])
   (def prompt-palette (template/load-palettes "resources/prompt-palette/agent"))
   (def question
-    "What does Lithuania share borders with?"
-    #_"Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
+    "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
 
-  (solve-task (Wikipedia.) prompt-palette {:task question})
+  (solve-task
+   {:bosquet/services     llm/default-services
+    :bosquet/tools        [(Wikipedia.)]
+    :bosquet/task-prompts prompt-palette
+    :bosquet/max-steps    5}
+   question)
   #__)

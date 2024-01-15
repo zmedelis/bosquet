@@ -1,13 +1,13 @@
-{:react/step-0
- "{{react/examples}}
-Question: {{task}}
-{% gen temperature=0 var-name=thoughts model=gpt-4%}"
-
- :react/step-n
- "{{reasoning-trace}}
-Observation {{step}}: {{observation}}
-{% gen temperature=0 var-name=thoughts model=gpt-4%}"
-
+{:react/step-0           ["{{react/examples}}"
+                          "Question: {{react/task}}"]
+ :react/initial-thoughts {:llm/service      :llm/openai
+                          :llm/context      :react/step-0
+                          :llm/model-params {:model :gpt-4}}
+ :react/step-n           ["{{react/reasoning-trace}}"
+                          "Observation {{react/step}}: {{react/observation}}"]
+ :react/thoughts         {:llm/service      :llm/openai
+                          :llm/context      :react/step-n
+                          :llm/model-params {:model :gpt-4}}
  :react/examples
  "Question: What is the elevation range for the area that the eastern sector of the
 Colorado orogeny extends into?
