@@ -76,7 +76,7 @@
 
 (deftest appending-gen-instruction
   (is (= {gen/default-template-prompt     "What is the distance from Moon to Io?"
-          gen/default-template-completion {wkk/service wkk/openai
+          gen/default-template-completion {wkk/service wkk/lmstudio
                                            wkk/context gen/default-template-prompt}}
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
