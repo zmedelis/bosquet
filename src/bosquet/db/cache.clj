@@ -1,5 +1,6 @@
 (ns bosquet.db.cache
   (:require
+   [bosquet.llm.wkk :as wkk]
    [clojure.core.cache.wrapped :as w]))
 
 (defn ->cache []
@@ -7,8 +8,13 @@
 
 (def cache (->cache))
 
-(defn evict [properties]
-  (w/evict cache properties))
+(defn cache-props
+  [properties]
+  (select-keys properties [wkk/model-params :messages :prompt]))
+
+(defn evict
+  [props]
+  (w/evict cache (cache-props props)))
 
 (defn lookup-or-call
   "Call `gen-fn` function with `properties` that are used as
@@ -17,5 +23,5 @@
   [gen-fn properties]
   (w/lookup-or-miss
    cache
-   properties
+   (cache-props properties)
    (fn [_item] (gen-fn properties))))

@@ -30,7 +30,7 @@
    (fn [[role content]] {:role role :content content})
    messages))
 
-(defn- call-llm
+(defn call-llm
   "Make a call to the LLM service.
   - `llm-config` provides a map containing LLM service configurations, the
      LLM to call is specified in
@@ -288,7 +288,7 @@
                 "Generate only JSON omit any other prose and explanations.")
     :answer    (llm wkk/lmstudio
                     wkk/output-format :json
-                    wkk/max-tokens 300
+                    wkk/model-params {:max-tokens 300}
                     wkk/context :astronomy)})
 
   ;; ----
