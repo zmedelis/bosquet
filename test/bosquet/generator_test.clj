@@ -67,8 +67,7 @@
 
 (deftest fail-generation
   (is (= {gen/completions {:in  "How are you?"
-                           :out nil}
-          gen/usage       {}}
+                           :out nil}}
          (gen/generate
           {:in  "How are you?"
            :out (gen/llm :non-existing-service wkk/context :in)}

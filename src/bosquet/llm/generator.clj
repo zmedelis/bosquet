@@ -14,6 +14,19 @@
    [selmer.parser :as selmer]
    [taoensso.timbre :as timbre]))
 
+(def default-template-prompt
+  "Simple string template generation case does not create var names for the completions,
+  compared to Map generation where map keys are the var names.
+
+  This is a key for prompt entry"
+  ::prompt)
+(def default-template-completion
+  "Simple string template generation case does not create var names for the completions,
+  compared to Map generation where map keys are the var names.
+
+  This is a key for completion entry"
+  ::completion)
+
 (defn- resolver-error-wrapper
   [env]
   (p.plugin/register
@@ -159,6 +172,13 @@
                            (get messages prompt-key)))
     (keys messages))))
 
+(defn append-generation-instruction
+  "If template does not specify generation function append the default one."
+  [string-template]
+  {default-template-prompt     string-template
+   default-template-completion {wkk/service (env/default-llm)
+                                wkk/context default-template-prompt}})
+
 (defn complete
   [llm-config messages vars-map]
   (let [indexes  (prompt-indexes llm-config messages)
@@ -166,25 +186,25 @@
         resolver (resolver-error-wrapper sm)]
     (select-keys resolver (keys messages))))
 
-(def default-template-prompt
-  "Simple string template generation case does not create var names for the completions,
-  compared to Map generation where map keys are the var names.
+(defn complete-template
+  "Completion for a case when we have simple string `prompt`"
+  [llm-config template vars-map]
+  (completions (default-template-completion
+                (complete llm-config (append-generation-instruction template) vars-map))))
 
-  This is a key for prompt entry"
-  ::prompt)
-(def default-template-completion
-  "Simple string template generation case does not create var names for the completions,
-  compared to Map generation where map keys are the var names.
-
-  This is a key for completion entry"
-  ::completion)
-
-(defn append-generation-instruction
-  "If template does not specify generation function append the default one."
-  [string-template]
-  {default-template-prompt     string-template
-   default-template-completion {wkk/service (env/default-llm)
-                                wkk/context default-template-prompt}})
+(defn complete-graph
+  "Completion case when we are processing prompt graph. Main work here is on constructing
+  the output format with `usage` and `completions` sections."
+  [llm-config graph vars-map]
+  (let [gen-result  (complete llm-config graph vars-map)
+        gen-usage   (reduce-kv (fn [m k v] (if (map? v) (assoc m k (usage v)) m))
+                               {}
+                               gen-result)
+        total-usage (total-usage gen-usage)]
+    (u/mergex
+     {completions (reduce-kv (fn [m k v] (assoc m k (if (map? v) (completions v) v)))
+                             {} gen-result)}
+     {usage (when (seq total-usage) (assoc gen-usage :bosquet/total total-usage))})))
 
 (defn generate
   "
@@ -212,23 +232,8 @@
   ([llm-config messages vars-map]
    (cond
      (vector? messages) (chat llm-config messages vars-map)
-     (map? messages)
-     (let [gen-result  (complete llm-config messages vars-map)
-           gen-usage   (reduce-kv (fn [m k v]
-                                    (if (map? v) (assoc m k (usage v)) m))
-                                  {}
-                                  gen-result)
-           total-usage (total-usage gen-usage)]
-       {completions (reduce-kv (fn [m k v]
-                                 (assoc m k (if (map? v) (completions v) v)))
-                               {}
-                               gen-result)
-        usage       (if (empty? total-usage)
-                      {}
-                      (assoc gen-usage :bosquet/total total-usage))})
-     (string? messages)
-     (completions (default-template-completion
-                   (complete llm-config (append-generation-instruction messages) vars-map))))))
+     (map? messages)    (complete-graph llm-config messages vars-map)
+     (string? messages) (complete-template llm-config messages vars-map))))
 
 (defn llm
   "A helper function to create LLM spec for calls during the generation process.
