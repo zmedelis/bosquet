@@ -1,9 +1,10 @@
 (ns bosquet.template.read
   (:require
+   [bosquet.utils :as u]
    [bosquet.wkk :as wkk]
    [clojure.edn :as edn]
-   [clojure.set :as set]
    [clojure.java.io :as io]
+   [clojure.set :as set]
    [clojure.string :as string]
    [selmer.parser :as selmer]
    [selmer.util :refer [without-escaping]]
@@ -15,7 +16,8 @@
 (defn load-prompt-palette-edn [file]
   (timbre/info "Read prompts from: " (.getName file))
   (with-open [rdr (io/reader file)]
-    (reduce-kv (fn [m k v] (assoc m k v))
+    (reduce-kv (fn [m k v] (assoc m k
+                                  (if (sequential? v) (u/join-coll v) v)))
                {} (read-edn rdr))))
 
 (defn- edn-file? [file] (string/ends-with? (.getName file) ".edn"))
