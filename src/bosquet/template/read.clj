@@ -100,8 +100,9 @@
     (selmer/known-variables text))))
 
 (defn render [text ctx]
-  (without-escaping
-   (selmer/render-with-values text ctx)))
+  (when-not (string/blank? text)
+    (without-escaping
+     (selmer/render text ctx))))
 
 (defn fill-slots
   "Use Selmer to fill in `text` template `slots`"

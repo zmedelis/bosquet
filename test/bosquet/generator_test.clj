@@ -43,12 +43,13 @@
           {:title "Mr. O"}))))
 
 (deftest map-generation
-  (is (= {gen/completions {:question-answer "Question: What is the distance from Moon to Io?  Answer:"
+  (is (= {gen/completions {:question-answer "Question: What is the distance from Moon to Io?  Answer: !!!"
                            :answer          "!!!"
                            :self-eval       (u/join-nl
                                              "Question: What is the distance from Moon to Io?"
                                              "Answer: !!!"
-                                             "Is this a correct answer?")
+                                             "Is this a correct answer?"
+                                             "!!!")
                            :test            "!!!"}
           gen/usage       {:answer        {:prompt 1 :completion 3 :total 4}
                            :test          {:prompt 1 :completion 3 :total 4}
@@ -57,26 +58,26 @@
           {:service-const {wkk/chat-fn (fn [_ _]
                                          {wkk/content {:content "!!!" :role :assistant}
                                           wkk/usage   {:prompt 1 :completion 3 :total 4}})}}
-          {:question-answer "Question: {{question}}  Answer:"
-           :answer          (gen/llm :service-const wkk/context :question-answer)
+          {:question-answer "Question: {{question}}  Answer: {{answer}}"
+           :answer          (gen/llm :service-const)
            :self-eval       ["Question: {{question}}"
                              "Answer: {{answer}}"
-                             "Is this a correct answer?"]
-           :test            (gen/llm :service-const wkk/context :self-eval)}
+                             "Is this a correct answer?"
+                             "{{test}}"]
+           :test            (gen/llm :service-const)}
           {:question "What is the distance from Moon to Io?"}))))
 
 (deftest fail-generation
-  (is (= {gen/completions {:in  "How are you?"
+  (is (= {gen/completions {:in  "How are you? {{out}}"
                            :out nil}}
          (gen/generate
-          {:in  "How are you?"
-           :out (gen/llm :non-existing-service wkk/context :in)}
+          {:in  "How are you? {{out}}"
+           :out (gen/llm :non-existing-service)}
           {}))))
 
 (deftest appending-gen-instruction
-  (is (= {gen/default-template-prompt     "What is the distance from Moon to Io?"
-          gen/default-template-completion {wkk/service wkk/lmstudio
-                                           wkk/context gen/default-template-prompt}}
+  (is (= {gen/default-template-prompt     "What is the distance from Moon to Io? {{bosquet..template/completion}}"
+          gen/default-template-completion {wkk/service wkk/lmstudio}}
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
 
@@ -96,10 +97,8 @@
                                                        (swap! cached-props conj
                                                               (cache/cache-props props))
                                                        (swap! call-counter inc) {})}}
-                        {:qna "Question: {{q}}  Answer:"
-                         :a   (gen/llm :service-const
-                                       wkk/cache   cache
-                                       wkk/context :qna)}
+                        {:qna "Question: {{q}}  Answer: {{a}}"
+                         :a   (gen/llm :service-const wkk/cache cache)}
                         {:q q}))]
     ;; cache is off
     (generate false question)
@@ -117,3 +116,9 @@
     ;; clear cache
     (doseq [p @cached-props]
       (cache/evict p))))
+
+(deftest find-var-references
+  (is (= #{:y :z} (gen/find-refering-templates :x {:x "aaa" :y "{{x}}" :z "{{x}} {{y}}"})))
+  (is (= #{:y :z} (gen/find-refering-templates :n/x {:x "aaa" :y "{{n/x}}" :z "{{n/x}} {{y}}"})))
+  (is (= #{:n/y :n/z} (gen/find-refering-templates :x {:x "aaa" :n/y "{{x}}" :n/z "{{x}} {{y}}"})))
+  (is (= #{} (gen/find-refering-templates :x {:x "aaa"}))))

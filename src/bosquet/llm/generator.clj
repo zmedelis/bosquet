@@ -9,6 +9,7 @@
    [bosquet.utils :as u]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
+   [com.wsscode.pathom3.entity-tree :as pet]
    [com.wsscode.pathom3.interface.smart-map :as psm]
    [com.wsscode.pathom3.plugin :as p.plugin]
    [selmer.parser :as selmer]
@@ -19,13 +20,29 @@
   compared to Map generation where map keys are the var names.
 
   This is a key for prompt entry"
-  ::prompt)
+  :bosquet.template/prompt)
+
 (def default-template-completion
   "Simple string template generation case does not create var names for the completions,
   compared to Map generation where map keys are the var names.
 
   This is a key for completion entry"
-  ::completion)
+  :bosquet.template/completion)
+
+(def text-trail
+  :bosquet.generation/text-trail)
+
+(defn llm
+  "A helper function to create LLM spec for calls during the generation process.
+  It comes back with a map constructed from `service` and `args`:
+
+  ```
+  {:llm/service      service
+   :llm/cache        true
+   :llm/model-params params}
+  ```"
+  [service & args]
+  (assoc (apply hash-map args) wkk/service service))
 
 (defn- resolver-error-wrapper
   [env]
@@ -120,7 +137,7 @@
                  (conj processed-messages [role gen-result])
                  (assoc accumulated-usage var-name usage)
                  (assoc ctx var-name gen-result)))
-        (let [tpl-result (first (template/render (u/join-coll content) ctx))]
+        (let [tpl-result (template/render (u/join-coll content) ctx)]
           (recur messages
                  (conj processed-messages [role tpl-result])
                  accumulated-usage
@@ -128,83 +145,131 @@
 
 (defn- ->resolver
   [name-sufix message-key input resolve-fn]
+  (timbre/infof "'%s' resolver for IN: '%s', OUT: '%s'" name-sufix input [message-key])
   (pco/resolver
    {::pco/op-name (-> message-key .-sym (str "-" name-sufix) symbol)
-    ::pco/output  [message-key]
+    ::pco/output  [message-key #_text-trail]
     ::pco/input   input
     ::pco/resolve resolve-fn}))
 
-(defn- generation-resolver
-  [llm-config message-key {ctx-var wkk/context :as message-content}]
-  (if (map? message-content)
-    ;; Generation node
-    (if ctx-var
-      (->resolver "ai-gen" message-key [(wkk/context message-content)]
-                  (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
-                    (try
-                      (let [full-text (get @entry-tree ctx-var)
-                            gen-res   (call-llm llm-config message-content [[:user full-text]])
-                            result    (get-in gen-res [wkk/content :content])
-                            gen-usage (wkk/usage gen-res)]
-                        {message-key
-                         {completions result
-                          usage       gen-usage}})
-                      (catch Exception e
-                        (timbre/error e)))))
-      (timbre/warnf "Context var is not set in generation spec. Add 'llm/context' to '%s'" message-key))
-    ;; Template node
-    (let [message-content (u/join-coll message-content)]
-      (->resolver "template" message-key (vec (selmer/known-variables message-content))
-                  (fn [{entry-tree :com.wsscode.pathom3.entity-tree/entity-tree*} _input]
-                    {message-key
-                     (first (template/render message-content
-                                             (reduce-kv (fn [m k v]
-                                                          (assoc m k (if (map? v) (completions v) v)))
-                                                        {}
-                                                        @entry-tree)))})))))
+(defn find-refering-templates
+  "Given all the templates in a `context-map` find out which ones are
+  have references to `var-name`"
+  [var-name context-map]
+  (reduce-kv
+   (fn [refs tpl-name tpl]
+     (if (and (string? tpl) (contains? (-> tpl selmer/known-variables set) var-name))
+       (conj refs tpl-name)
+       refs))
+   #{}
+   context-map))
 
-(defn- prompt-indexes [llm-config messages]
+(defn- update-text-trail
+  [{entry-tree ::pet/entity-tree*} text]
+  (swap! entry-tree assoc text-trail (str (text-trail @entry-tree) text)))
+
+(defn- current-text-trail
+  [{entry-tree ::pet/entity-tree*}]
+  (get @entry-tree text-trail))
+
+(template/set-missing-val)
+
+(defn- generation-resolver
+  [llm-config message-key context vars-map]
+  (let [content-or-llm-cfg (message-key context)]
+    (if (map? content-or-llm-cfg)
+      ;; Generation node
+      (mapv
+       (fn [refering-template-key]
+         (->resolver (str "ai-gen" (name refering-template-key) "-") message-key
+                     [refering-template-key]
+                     (fn [env _input]
+                       (try
+                         (let [txt                                  (template/remove-var-slot (current-text-trail env) message-key)
+                               {gen-usage              wkk/usage
+                                {gen-content :content} wkk/content} (call-llm llm-config content-or-llm-cfg [[:user txt]])]
+                           (update-text-trail env gen-content)
+                           {message-key {completions gen-content
+                                         usage       gen-usage}})
+                         (catch Exception e
+                           (timbre/error e))))))
+       (find-refering-templates message-key context))
+
+      ;; Template node
+      (let [;; fill in provided data slots, no need to go over those with resolvers
+            message-content (selmer/render content-or-llm-cfg vars-map)]
+        (try
+          (->resolver "template" message-key (vec (filter #(string? (get context %)) (selmer/known-variables message-content)))
+                      (fn [{entry-tree ::pet/entity-tree* :as env} _input]
+                        (let [result (template/render message-content
+                                                      (reduce-kv (fn [m k v]
+                                                                   (assoc m k (if (map? v) (completions v) v)))
+                                                                 {}
+                                                                 @entry-tree))]
+                          (update-text-trail env result)
+                          {message-key result})))
+          (catch Exception e
+            (timbre/error e)))))))
+
+(defn- prompt-indexes [llm-config context vars-map]
   (pci/register
    (mapv
     (fn [prompt-key]
-      (generation-resolver llm-config
-                           prompt-key
-                           (get messages prompt-key)))
-    (keys messages))))
+      (generation-resolver llm-config prompt-key context vars-map))
+    (keys context))))
 
 (defn append-generation-instruction
   "If template does not specify generation function append the default one."
   [string-template]
-  {default-template-prompt     string-template
-   default-template-completion {wkk/service (env/default-llm)
-                                wkk/context default-template-prompt}})
+  {default-template-prompt     (template/append-slot string-template default-template-completion)
+   default-template-completion (llm (env/default-llm))})
 
 (defn complete
-  [llm-config messages vars-map]
-  (let [indexes  (prompt-indexes llm-config messages)
-        sm       (psm/smart-map indexes vars-map)
-        resolver (resolver-error-wrapper sm)]
-    (select-keys resolver (keys messages))))
+  "Complete the template graph case, where execution order will be determined
+  by Pathom."
+  [llm-config context vars-map]
+  (-> (prompt-indexes llm-config context vars-map)
+      (psm/smart-map vars-map)
+      (resolver-error-wrapper)
+      (select-keys (conj (keys context) text-trail))))
 
-(defn complete-template
-  "Completion for a case when we have simple string `prompt`"
-  [llm-config template vars-map]
-  (completions (default-template-completion
-                (complete llm-config (append-generation-instruction template) vars-map))))
-
+(defn- prep-graph
+  [graph]
+  (reduce-kv (fn [m k v] (assoc m k (if (sequential? v) (u/join-coll v) v)))
+             {} graph))
 (defn complete-graph
   "Completion case when we are processing prompt graph. Main work here is on constructing
   the output format with `usage` and `completions` sections."
   [llm-config graph vars-map]
-  (let [gen-result  (complete llm-config graph vars-map)
+  (let [graph       (prep-graph graph)
+        gen-result  (complete llm-config graph vars-map)
         gen-usage   (reduce-kv (fn [m k v] (if (map? v) (assoc m k (usage v)) m))
                                {}
                                gen-result)
         total-usage (total-usage gen-usage)]
     (u/mergex
-     {completions (reduce-kv (fn [m k v] (assoc m k (if (map? v) (completions v) v)))
-                             {} gen-result)}
+     {completions (reduce-kv
+                   (fn [m k v]
+                     ;; TODO kadanors būna map?
+                     (assoc m k
+                            (if (map? v)
+                              (completions v)
+                              (template/render
+                               v
+                               (reduce-kv (fn [m k v]
+                                            (if (map? v)
+                                              (assoc m k (get-in gen-result [k completions]))
+                                              m))
+                                          {} gen-result)))))
+                   {} gen-result)}
      {usage (when (seq total-usage) (assoc gen-usage :bosquet/total total-usage))})))
+
+(defn complete-template
+  "Completion for a case when we have simple string `prompt`"
+  [llm-config template vars-map]
+  (get-in
+   (complete-graph llm-config (append-generation-instruction template) vars-map)
+   [completions default-template-completion]))
 
 (defn generate
   "
@@ -235,32 +300,25 @@
      (map? messages)    (complete-graph llm-config messages vars-map)
      (string? messages) (complete-template llm-config messages vars-map))))
 
-(defn llm
-  "A helper function to create LLM spec for calls during the generation process.
-  It comes back with a map constructed from `service` and `args`:
-
-  ```
-  {:llm/service      service
-   :llm/cache        true
-   :llm/model-params params}
-  ```"
-  [service & args]
-  (assoc (apply hash-map args) wkk/service service))
-
 (comment
 
-  (generate
-   "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
+  (generate "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
 
   (generate
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
 
   (generate
+   {:q1 "Q: When I was {{data/age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{gen/a}}"
+    :gen/a (llm wkk/openai
+                wkk/model-params {:max-tokens 150})}
+   {:data/age 13})
+
+  (generate
    [[:system "You are an amazing writer."]
     [:user ["Write a synopsis for the play:"
-            "Title: {{title}}"
-            "Genre: {{genre}}"
+            "Title​ {{title}}"
+            "Genre​ {{genre}}"
             "Synopsis:"]]
     [:assistant (llm wkk/lmstudio
                      wkk/model-params {:temperature 0.8 :max-tokens 120}
@@ -274,29 +332,39 @@
 
   (generate
    llm/default-services
-   {:question-answer "Question: {{question}}  Answer:"
-    :answer          (llm wkk/lmstudio
-                          wkk/context :question-answer
-                          wkk/cache true)
-    :self-eval       ["Question: {{question}}"
-                      "Answer: {{answer}}"
+   {:question-answer "Question​ {{question}}  Answer: {{answer}}"
+    :answer          (llm wkk/lmstudio wkk/cache false)
+    :self-eval       ["{{question-answer}}"
                       ""
-                      "Is this a correct answer?"]
-    :test            (llm wkk/lmstudio wkk/context :self-eval)}
+                      "Is this a correct answer?"
+                      "{{test}}"]
+    :test            (llm wkk/lmstudio)}
    {:question "What is the distance from Moon to Io?"})
 
   (generate
-   {:astronomy (u/join-nl
-                "As a brilliant astronomer, list distances between planets and the Sun"
+   {:astronomy ["As a brilliant astronomer, list distances between planets and the Sun"
                 "in the Solar System. Provide the answer in JSON map where the key is the"
                 "planet name and the value is the string distance in millions of kilometers."
-                "Generate only JSON omit any other prose and explanations.")
-    :answer    (llm wkk/lmstudio
+                "Generate only JSON omit any other prose and explanations."]
+    :distances (llm wkk/lmstudio
                     wkk/output-format :json
                     wkk/model-params {:max-tokens 300}
-                    wkk/context :astronomy)})
+                    wkk/context :astronomy)
+    :analysis  ["Based on the JSON planet to sun distances table"
+                "provide me with​ a) average distance b) max distance c) min distance"
+                "{{distances}}"]
+    :stats     (llm wkk/lmstudio
+                    wkk/context :analysis)})
 
   ;; ----
+  (generate
+   {:q
+    "Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?
+     A: {{a}}"
+    :a (llm wkk/lmstudio
+            wkk/model-params {:max-tokens 50}
+            wkk/context :q)}
+   {:age 13})
 
   (generate
    [[:system "You are a calculator."]
@@ -304,25 +372,4 @@
     [:assistant (llm wkk/cohere
                      wkk/model-params {:temperature 0.0 :max-tokens 10}
                      wkk/var-name :calc)]])
-
-  #_(generate
-     [(chat/speak chat/user "What's the weather like in San Francisco, Tokyo, and Paris?")]
-     {}
-     {chat/conversation
-      {wkk/service [:llm/openai :provider/openai]
-       wkk/model-parameters
-       {:temperature 0
-        :tools       [{:type "function"
-                       :function
-                       {:name       "get-current-weather"
-                        :decription "Get the current weather in a given location"
-                        :parameters {:type       "object"
-                                     :required   [:location]
-                                     :properties {:location {:type        "string"
-                                                             :description "The city and state, e.g. San Francisco, CA"}
-                                                  :unit     {:type "string"
-                                                             :enum ["celsius" "fahrenheit"]}}}}}]
-
-        :model "gpt-3.5-turbo"}}})
-
   #__)
