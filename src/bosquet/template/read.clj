@@ -112,14 +112,34 @@
      text
      (assoc ctx wkk/llm-config config)))))
 
-(defn fill-slots-2
-  "Use Selmer to fill in `text` template `slots`"
-  [llm-config properties prompt data]
-  (let [[full-text {gen :gen}]
-        (without-escaping
-         (selmer/render-with-values
-          prompt
-          (merge data
-                 {:service    llm-config
-                  :properties properties})))]
-    [full-text gen]))
+(defn missing-value-noop [tag _context-map]
+  (format "{{%s}}" (:tag-value tag)))
+
+(defn set-missing-val
+  []
+  (selmer.util/set-missing-value-formatter! missing-value-noop))
+
+(defn kw->str
+  [kw]
+  (let [ns        (namespace kw)
+        name      (name kw)]
+    (string/replace
+     (if ns (str ns "/" name) name)
+     ;; ecape '.' for Selmer
+     "." "..")))
+
+(defn remove-var-slot
+  "Remove a `slot` reference from the `template`
+
+  `template` = '{{x}}^2 = {{y}}'
+  `slot` = '{{y}}'
+  => '{{x}}^2 = '"
+  [template slot]
+  (string/replace
+   template
+   (->> slot kw->str (format "\\{\\{%s\\}\\}") re-pattern)
+   ""))
+
+(defn append-slot
+  [template slot]
+  (format "%s {{%s}}" template (kw->str slot)))
