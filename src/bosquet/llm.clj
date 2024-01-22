@@ -15,6 +15,4 @@
                         wkk/chat-fn     openai/chat})
    wkk/cohere   (merge (env/val wkk/cohere)
                        {wkk/complete-fn cohere/complete
-                        wkk/chat-fn     cohere/chat})
-   :local       {wkk/complete-fn (fn [_system options] {:eval (str "TODO-" (:gen options) "-COMPLETE")})
-                 wkk/chat-fn     (fn [_system options] {:eval (str "TODO-" (:gen options) "-CHAT")})}})
+                        wkk/chat-fn     cohere/chat})})

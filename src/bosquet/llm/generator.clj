@@ -181,7 +181,7 @@
       ;; Generation node
       (mapv
        (fn [refering-template-key]
-         (->resolver (str "ai-gen" (name refering-template-key) "-") message-key
+         (->resolver (str "ai-gen-" (name refering-template-key)) message-key
                      [refering-template-key]
                      (fn [env _input]
                        (try

@@ -25,8 +25,9 @@
    schema/usage-total-count (+ output_tokens input_tokens)})
 
 (defn complete
-  ([{api-key :api-key} params]
+  ([{api-key :api-key :as cfg} params]
    (set-api-key api-key)
+   (u/log-call cfg params "Cohere completion")
    (let [{{usage :billed_units} :meta generations :generations}
          (client/generate (props->cohere params))]
      {wkk/generation-type :completion
@@ -45,8 +46,9 @@
 
 (defn chat
   ([params] (chat (wkk/cohere env/config) params))
-  ([{api-key :api-key} {messages :messages :as params}]
+  ([{api-key :api-key :as cfg} {messages :messages :as params}]
    (set-api-key api-key)
+   (u/log-call cfg params "Cohere chat")
    (let [params   (dissoc params :messages)
          messages (chatml->cohere messages)
          message  (-> messages last :text)

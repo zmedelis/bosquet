@@ -1,10 +1,25 @@
 (ns bosquet.llm.mistral
   (:require
    [bosquet.env :as env]
+   [bosquet.llm.chat :as chat]
    [bosquet.llm.http :as http]
-   [bosquet.llm.oai-shaped-llm :as oai]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]))
+
+
+(defn ->completion
+  "Construct completion result data with generation
+  `content` and token `usage`"
+  [{choices :choices {prompt_tokens     :prompt_tokens
+                      completion_tokens :completion_tokens
+                      total_tokens      :total_tokens} :usage}
+   generation-type]
+  (let [result (-> choices first :message chat/chatml->bosquet)]
+    {wkk/generation-type generation-type
+     wkk/content         result
+     wkk/usage           {:prompt     prompt_tokens
+                          :completion completion_tokens
+                          :total      total_tokens}}))
 
 (defn chat
   ([params] (chat (wkk/mistral env/config) params))
@@ -16,7 +31,7 @@
          (assoc :messages messages)
          u/snake_case
          lm-call
-         (oai/->completion :chat)))))
+         (->completion :chat)))))
 
 (defn complete
   ([params] (complete
@@ -32,7 +47,7 @@
      (-> params
          u/snake_case
          lm-call
-         (oai/->completion :completion)))))
+         (->completion :completion)))))
 
 (comment
   (complete

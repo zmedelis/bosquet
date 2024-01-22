@@ -1,8 +1,7 @@
 (ns bosquet.llm.chat
   (:require
    [clojure.set :as set]
-   [clojure.string :as string]
-   [malli.generator :as mg]))
+   [clojure.string :as string]))
 
 ;; ## ChatML
 
@@ -52,19 +51,6 @@
    (if (coll? speaker-content)
      (string/join "\n" speaker-content)
      speaker-content)})
-
-(defn converse
-  "Helper function to create onversation sequence. Pass in conversation params:
-
-  ```
-  (converse chat/system \"You are a brilliant cook.\"
-            chat/user   \"What is a good cookie?\")
-  ```
-
-  and this will create a message seq ready to pass to gen service."
-  [& utterances]
-  (mapv (fn [[role message]] (speak role message))
-        (partition 2 utterances)))
 
 (def conversation
   "Key to reference complete `conversation` - a history"

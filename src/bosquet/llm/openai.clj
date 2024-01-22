@@ -2,6 +2,7 @@
   (:require
    [bosquet.llm.chat :as chat]
    [bosquet.llm.wkk :as wkk]
+   [bosquet.utils :as u]
    [jsonista.core :as j]
    [taoensso.timbre :as timbre]
    [wkok.openai-clojure.api :as api]))
@@ -46,9 +47,7 @@
   [service-cfg {:keys [messages model] :as params}]
   (let [params   (if model params (assoc params :model :gpt-3.5-turbo))
         messages (mapv chat/bosquet->chatml messages)]
-    (timbre/infof "💬 Calling OAI chat with:")
-    (timbre/infof "\tParams: '%s'" (dissoc params :prompt))
-    (timbre/infof "\tConfig: '%s'" (dissoc service-cfg :api-key))
+    (u/log-call service-cfg params "OAI chat")
     (try
       (let [payload (assoc params :messages messages)
             result (api/create-chat-completion payload service-cfg)]
@@ -64,7 +63,5 @@
     :or   {model :gpt-3.5-turbo}
     :as   params}]
   (let [params (if (nil? params) {:model model} (assoc params :model model))]
-    (timbre/infof "💬 Calling OAI completion with:")
-    (timbre/infof "\t* Params: '%s'" (dissoc params :prompt))
-    (timbre/infof "\t* Options: '%s'" (dissoc service-cfg :api-key))
+    (u/log-call service-cfg params "OAI completion")
     (->completion (api/create-completion params service-cfg))))
