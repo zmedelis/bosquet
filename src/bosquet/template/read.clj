@@ -129,16 +129,18 @@
      ;; ecape '.' for Selmer
      "." "..")))
 
-(defn remove-var-slot
-  "Remove a `slot` reference from the `template`
+(defn clear-gen-var-slot
+  "Remove a `slot` reference from the `template` and
+  all the text after it. This is to enforce the generation
+  context up to the generation slot.
 
-  `template` = '{{x}}^2 = {{y}}'
+  `template` = '{{x}}^2 = {{y}} further text'
   `slot` = '{{y}}'
   => '{{x}}^2 = '"
   [template slot]
   (string/replace
    template
-   (->> slot kw->str (format "\\{\\{%s\\}\\}") re-pattern)
+   (->> slot kw->str (format "\\{\\{%s\\}\\}.*") re-pattern)
    ""))
 
 (defn append-slot

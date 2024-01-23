@@ -12,13 +12,13 @@
 
 (def generation-type :llm/type)
 
-(def openai :llm/openai)
+(def openai :openai)
 
-(def cohere :llm/cohere)
+(def cohere :cohere)
 
-(def lmstudio :llm/lmstudio)
+(def lmstudio :lmstudio)
 
-(def mistral :llm/mistral)
+(def mistral :mistral)
 
 (def model-params :llm/model-params)
 (def gen-fn :llm/gen-fn)

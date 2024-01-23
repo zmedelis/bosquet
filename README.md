@@ -38,19 +38,19 @@ Simple prompt completion can be done like this.
 
 
 ```clojure
-(require '[bosquet.llm.wkk :as wkk])
 (require '[bosquet.llm :as llm])
 (require '[bosquet.llm.generator :refer [generate llm]])
 
 (generate
  llm/default-services
- {:question-answer "Question: {{question}}  Answer:"
-  :answer          (llm wkk/openai wkk/context :question-answer)
+ {:question-answer "Question: {{question}}  Answer: {{answer}}"
+  :answer          (llm :openai)
   :self-eval       ["Question: {{question}}"
                     "Answer: {{answer}}"
                     ""
-                    "Is this a correct answer?"]
-  :test            (llm wkk/openai wkk/context :self-eval)}
+                    "Is this a correct answer?"
+                    "{{test}}"]
+  :test            (llm :openai)}
  {:question "What is the distance from Moon to Io?"})
 =>
 

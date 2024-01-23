@@ -77,6 +77,7 @@
           service-config (dissoc (llm-impl llm-config) wkk/gen-fn wkk/chat-fn)
           chat-fn        (partial (get-in llm-config [llm-impl wkk/chat-fn]) service-config)
           params         (assoc model-params :messages (->chatml messages))
+          _ (tap> {'messages messages})
           result         (if use-cache
                            (cache/lookup-or-call chat-fn params)
                            (chat-fn params))]
@@ -185,9 +186,10 @@
                      [refering-template-key]
                      (fn [env _input]
                        (try
-                         (let [txt                                  (template/remove-var-slot (current-text-trail env) message-key)
-                               {gen-usage              wkk/usage
-                                {gen-content :content} wkk/content} (call-llm llm-config content-or-llm-cfg [[:user txt]])]
+                         (let [txt           (template/clear-gen-var-slot (current-text-trail env) message-key)
+                               {gen-usage wkk/usage
+                                {gen-content :content}
+                                wkk/content} (call-llm llm-config content-or-llm-cfg [[:user txt]])]
                            (update-text-trail env gen-content)
                            {message-key {completions gen-content
                                          usage       gen-usage}})
