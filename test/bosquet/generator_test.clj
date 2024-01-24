@@ -81,12 +81,6 @@
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
 
-(deftest usage-aggregation
-  (is (= {:total 15 :completion 12 :prompt 3}
-         (gen/total-usage
-          {:x {:total 10 :completion 8 :prompt 2}
-           :y {:total 5 :completion 4 :prompt 1}}))))
-
 (deftest chache-usage
   (let [call-counter (atom 0)
         cached-props (atom [])
@@ -118,7 +112,7 @@
       (cache/evict p))))
 
 (deftest find-var-references
-  (is (= #{:y :z} (gen/find-refering-templates :x {:x "aaa" :y "{{x}}" :z "{{x}} {{y}}"})))
-  (is (= #{:y :z} (gen/find-refering-templates :n/x {:x "aaa" :y "{{n/x}}" :z "{{n/x}} {{y}}"})))
-  (is (= #{:n/y :n/z} (gen/find-refering-templates :x {:x "aaa" :n/y "{{x}}" :n/z "{{x}} {{y}}"})))
-  (is (= #{} (gen/find-refering-templates :x {:x "aaa"}))))
+  (is (= [:y :z] (gen/find-refering-templates :x {:x "aaa" :y "{{x}}" :z "{{x}} {{y}}"})))
+  (is (= [:y :z] (gen/find-refering-templates :n/x {:x "aaa" :y "{{n/x}}" :z "{{n/x}} {{y}}"})))
+  (is (= [:n/y :n/z] (gen/find-refering-templates :x {:x "aaa" :n/y "{{x}}" :n/z "{{x}} {{y}}"})))
+  (is (= [] (gen/find-refering-templates :x {:x "aaa"}))))

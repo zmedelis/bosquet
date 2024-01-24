@@ -1,5 +1,6 @@
 (ns bosquet.llm.generator
   (:require
+   [bosquet.llm.gen-data :as gd]
    [bosquet.template.selmer :as selmer]
    [bosquet.converter :as converter]
    [bosquet.db.cache :as cache]
@@ -94,22 +95,6 @@
   "Result map key holding LLM token usage data"
   :bosquet/usage)
 
-(defn total-usage
-  [usages]
-  (reduce-kv
-   (fn [{:keys [prompt completion total]
-         :or   {prompt 0 completion 0 total 0}
-         :as   aggr}
-        _k
-        {p :prompt c :completion t :total
-         :or {p 0 c 0 t 0}}]
-     (assoc aggr
-            :prompt (+ p prompt)
-            :completion (+ c completion)
-            :total (+ t total)))
-   {}
-   usages))
-
 (defn chat
   "Chat completion using
   - `llm-config` holding LLM service configuration
@@ -127,7 +112,7 @@
       {conversation processed-messages
        completions  (apply dissoc ctx (keys inputs))
        usage        (assoc accumulated-usage
-                           :bosquet/total (total-usage accumulated-usage))}
+                           :bosquet/total (gd/total-usage accumulated-usage))}
       (if (= :assistant role)
         (let [{{gen-result :content} wkk/content
                usage                 wkk/usage} (call-llm llm-config content processed-messages)
@@ -209,10 +194,9 @@
                                                           (selmer/known-variables-in-order message-content)))
                       (fn [{entry-tree ::pet/entity-tree* :as env} _input]
                         (let [result (selmer/render message-content
-                                                    (reduce-kv (fn [m k v]
-                                                                 (assoc m k (if (map? v) (completions v) v)))
-                                                               {}
-                                                               @entry-tree))]
+                                                    (gd/reduce-gen-graph
+                                                     (fn [m k v] (assoc m k (completions v)))
+                                                     @entry-tree))]
                           (update-text-trail env result)
                           {message-key result})))
           (catch Exception e
@@ -253,10 +237,8 @@
   [llm-config graph vars-map]
   (let [graph       (prep-graph graph)
         gen-result  (complete llm-config graph vars-map)
-        gen-usage   (reduce-kv (fn [m k v] (if (map? v) (assoc m k (usage v)) m))
-                               {}
-                               gen-result)
-        total-usage (total-usage gen-usage)]
+        gen-usage   (gd/reduce-gen-graph (fn [m k v] (assoc m k (usage v))) gen-result)
+        total-usage (gd/total-usage gen-usage)]
     (u/mergex
      {completions (reduce-kv
                    (fn [m k v]
@@ -265,11 +247,10 @@
                               (completions v)
                               (selmer/render
                                v
-                               (reduce-kv (fn [m k v]
-                                            (if (map? v)
-                                              (assoc m k (get-in gen-result [k completions]))
-                                              m))
-                                          {} gen-result)))))
+                               (gd/reduce-gen-graph
+                                (fn [m k _v]
+                                  (assoc m k (get-in gen-result [k completions])))
+                                gen-result)))))
                    {} gen-result)}
      {usage (when (seq total-usage) (assoc gen-usage :bosquet/total total-usage))})))
 
@@ -379,8 +360,7 @@
     "Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?
      A: {{a}}"
     :a (llm wkk/lmstudio
-            wkk/model-params {:max-tokens 50}
-            wkk/context :q)}
+            wkk/model-params {:max-tokens 50})}
    {:age 13})
 
   (generate

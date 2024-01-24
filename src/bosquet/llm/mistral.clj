@@ -6,7 +6,6 @@
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]))
 
-
 (defn ->completion
   "Construct completion result data with generation
   `content` and token `usage`"
