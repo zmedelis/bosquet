@@ -299,18 +299,18 @@
    {:age 13})
 
   (generate
-   {:q1    ["Q: When I was {{data/age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{gen/a}}"
+   {:q1   ["Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{a}}"
             "Is this answer correct? {{eval}}"]
-    :eval  (llm wkk/lmstudio)
-    :gen/a (llm wkk/lmstudio
-                wkk/model-params {:max-tokens 150})}
-   {:data/age 13})
+    :eval (llm wkk/lmstudio)
+    :a    (llm wkk/lmstudio
+               wkk/model-params {:max-tokens 150})}
+   {:age 13})
 
   {:bsq.q1/gen_a "Q: When I was {{data/age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{gen/a}}"
-   :bsq.q1/eval "{{q1-gen_a}} Is this answer correct? {{eval}}"
-   :eval  (llm wkk/lmstudio)
-   :gen/a (llm wkk/lmstudio
-               wkk/model-params {:max-tokens 150})}
+   :bsq.q1/eval  "{{q1-gen_a}} Is this answer correct? {{eval}}"
+   :eval         (llm wkk/lmstudio)
+   :gen/a        (llm wkk/lmstudio
+                      wkk/model-params {:max-tokens 150})}
 
   (generate
    [[:system "You are an amazing writer."]

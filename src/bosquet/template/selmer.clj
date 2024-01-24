@@ -79,10 +79,14 @@
        parse-variables
        (map first)))
 
+(defn known-variables
+  [template]
+  (selmer/known-variables template))
+
 (defn render [text ctx]
   (when-not (string/blank? text)
     (util/without-escaping
-     (selmer/render text ctx))))
+      (selmer/render text ctx))))
 
 (defn missing-value-noop [tag _context-map]
   (format "{{%s}}" (:tag-value tag)))
