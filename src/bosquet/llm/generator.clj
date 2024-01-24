@@ -1,18 +1,17 @@
 (ns bosquet.llm.generator
   (:require
+   [bosquet.template.selmer :as selmer]
    [bosquet.converter :as converter]
    [bosquet.db.cache :as cache]
    [bosquet.env :as env]
    [bosquet.llm :as llm]
    [bosquet.llm.wkk :as wkk]
-   [bosquet.template.read :as template]
    [bosquet.utils :as u]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
    [com.wsscode.pathom3.entity-tree :as pet]
    [com.wsscode.pathom3.interface.smart-map :as psm]
    [com.wsscode.pathom3.plugin :as p.plugin]
-   [selmer.parser :as selmer]
    [taoensso.timbre :as timbre]))
 
 (def default-template-prompt
@@ -77,7 +76,6 @@
           service-config (dissoc (llm-impl llm-config) wkk/gen-fn wkk/chat-fn)
           chat-fn        (partial (get-in llm-config [llm-impl wkk/chat-fn]) service-config)
           params         (assoc model-params :messages (->chatml messages))
-          _ (tap> {'messages messages})
           result         (if use-cache
                            (cache/lookup-or-call chat-fn params)
                            (chat-fn params))]
@@ -138,7 +136,7 @@
                  (conj processed-messages [role gen-result])
                  (assoc accumulated-usage var-name usage)
                  (assoc ctx var-name gen-result)))
-        (let [tpl-result (template/render (u/join-coll content) ctx)]
+        (let [tpl-result (selmer/render (u/join-coll content) ctx)]
           (recur messages
                  (conj processed-messages [role tpl-result])
                  accumulated-usage
@@ -159,10 +157,10 @@
   [var-name context-map]
   (reduce-kv
    (fn [refs tpl-name tpl]
-     (if (and (string? tpl) (contains? (-> tpl selmer/known-variables set) var-name))
+     (if (and (string? tpl) (contains? (-> tpl selmer/known-variables-in-order set) var-name))
        (conj refs tpl-name)
        refs))
-   #{}
+   []
    context-map))
 
 (defn- update-text-trail
@@ -173,7 +171,7 @@
   [{entry-tree ::pet/entity-tree*}]
   (get @entry-tree text-trail))
 
-(template/set-missing-val)
+(selmer/set-missing-value-formatter)
 
 (defn- generation-resolver
   [llm-config message-key context vars-map]
@@ -186,11 +184,17 @@
                      [refering-template-key]
                      (fn [env _input]
                        (try
-                         (let [txt           (template/clear-gen-var-slot (current-text-trail env) message-key)
+                         (let [t (current-text-trail env)
+                               txt           (-> env current-text-trail (selmer/clear-gen-var-slot message-key))
                                {gen-usage wkk/usage
                                 {gen-content :content}
                                 wkk/content} (call-llm llm-config content-or-llm-cfg [[:user txt]])]
                            (update-text-trail env gen-content)
+                           (tap> {'current-text (current-text-trail env)
+                                  'pre-text t
+                                  'messages    txt
+                                  'message-key message-key
+                                  'gen-content gen-content})
                            {message-key {completions gen-content
                                          usage       gen-usage}})
                          (catch Exception e
@@ -201,13 +205,14 @@
       (let [;; fill in provided data slots, no need to go over those with resolvers
             message-content (selmer/render content-or-llm-cfg vars-map)]
         (try
-          (->resolver "template" message-key (vec (filter #(string? (get context %)) (selmer/known-variables message-content)))
+          (->resolver "template" message-key (vec (filter #(string? (get context %))
+                                                          (selmer/known-variables-in-order message-content)))
                       (fn [{entry-tree ::pet/entity-tree* :as env} _input]
-                        (let [result (template/render message-content
-                                                      (reduce-kv (fn [m k v]
-                                                                   (assoc m k (if (map? v) (completions v) v)))
-                                                                 {}
-                                                                 @entry-tree))]
+                        (let [result (selmer/render message-content
+                                                    (reduce-kv (fn [m k v]
+                                                                 (assoc m k (if (map? v) (completions v) v)))
+                                                               {}
+                                                               @entry-tree))]
                           (update-text-trail env result)
                           {message-key result})))
           (catch Exception e
@@ -223,7 +228,7 @@
 (defn append-generation-instruction
   "If template does not specify generation function append the default one."
   [string-template]
-  {default-template-prompt     (template/append-slot string-template default-template-completion)
+  {default-template-prompt     (selmer/append-slot string-template default-template-completion)
    default-template-completion (llm (env/default-llm))})
 
 (defn complete
@@ -236,9 +241,12 @@
       (select-keys (conj (keys context) text-trail))))
 
 (defn- prep-graph
+  "Join strings if tempalte is provided as collection"
   [graph]
-  (reduce-kv (fn [m k v] (assoc m k (if (sequential? v) (u/join-coll v) v)))
-             {} graph))
+  (reduce-kv
+   (fn [m k v] (assoc m k (if (sequential? v) (u/join-coll v) v)))
+   {} graph))
+
 (defn complete-graph
   "Completion case when we are processing prompt graph. Main work here is on constructing
   the output format with `usage` and `completions` sections."
@@ -252,11 +260,10 @@
     (u/mergex
      {completions (reduce-kv
                    (fn [m k v]
-                     ;; TODO kadanors būna map?
                      (assoc m k
                             (if (map? v)
                               (completions v)
-                              (template/render
+                              (selmer/render
                                v
                                (reduce-kv (fn [m k v]
                                             (if (map? v)
@@ -311,10 +318,18 @@
    {:age 13})
 
   (generate
-   {:q1 "Q: When I was {{data/age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{gen/a}}"
-    :gen/a (llm wkk/openai
+   {:q1    ["Q: When I was {{data/age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{gen/a}}"
+            "Is this answer correct? {{eval}}"]
+    :eval  (llm wkk/lmstudio)
+    :gen/a (llm wkk/lmstudio
                 wkk/model-params {:max-tokens 150})}
    {:data/age 13})
+
+  {:bsq.q1/gen_a "Q: When I was {{data/age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{gen/a}}"
+   :bsq.q1/eval "{{q1-gen_a}} Is this answer correct? {{eval}}"
+   :eval  (llm wkk/lmstudio)
+   :gen/a (llm wkk/lmstudio
+               wkk/model-params {:max-tokens 150})}
 
   (generate
    [[:system "You are an amazing writer."]

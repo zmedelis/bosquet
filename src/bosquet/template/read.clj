@@ -99,11 +99,6 @@
     (fn [variable] (string/includes? (name variable) "="))
     (selmer/known-variables text))))
 
-(defn render [text ctx]
-  (when-not (string/blank? text)
-    (without-escaping
-     (selmer/render text ctx))))
-
 (defn fill-slots
   "Use Selmer to fill in `text` template `slots`"
   ([text ctx] (fill-slots text ctx nil))
@@ -112,37 +107,3 @@
     (selmer/render-with-values
      text
      (assoc ctx wkk/llm-config config)))))
-
-(defn missing-value-noop [tag _context-map]
-  (format "{{%s}}" (:tag-value tag)))
-
-(defn set-missing-val
-  []
-  (selmer.util/set-missing-value-formatter! missing-value-noop))
-
-(defn kw->str
-  [kw]
-  (let [ns        (namespace kw)
-        name      (name kw)]
-    (string/replace
-     (if ns (str ns "/" name) name)
-     ;; ecape '.' for Selmer
-     "." "..")))
-
-(defn clear-gen-var-slot
-  "Remove a `slot` reference from the `template` and
-  all the text after it. This is to enforce the generation
-  context up to the generation slot.
-
-  `template` = '{{x}}^2 = {{y}} further text'
-  `slot` = '{{y}}'
-  => '{{x}}^2 = '"
-  [template slot]
-  (string/replace
-   template
-   (->> slot kw->str (format "\\{\\{%s\\}\\}.*") re-pattern)
-   ""))
-
-(defn append-slot
-  [template slot]
-  (format "%s {{%s}}" template (kw->str slot)))
