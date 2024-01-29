@@ -19,11 +19,28 @@
 (defn clean [_]
   (b/delete {:path "target"}))
 
+(defn- pom-template [version]
+  [[:description "Tooling to build LLM applications: prompt templating and composition, agents, LLM memory, and other instruments for builders of AI applications."]
+   [:url "https://github.com/zmedelis/bosquet"]
+   [:licenses
+    [:license
+     [:name "Eclipse Public License"]
+     [:url "http://www.eclipse.org/legal/epl-v10.html"]]]
+   [:developers
+    [:developer
+     [:name "Žygimantas Medelis"]]]
+   [:scm
+    [:url "https://github.com/zmedelis/bosquet"]
+    [:connection "scm:git:https://github.com/zmedelis/bosquet.git"]
+    [:developerConnection "scm:git:ssh:git@github.com:zmedelis/bosquet.git"]
+    [:tag (str "v" version)]]])
+
 (defn jar [_]
   (b/write-pom {:class-dir class-dir
                 :lib lib
                 :version version
                 :basis basis
+                :pom-data  (pom-template version)
                 :src-dirs ["src"]})
   (b/copy-dir {:src-dirs ["src" "resources"]
                :target-dir class-dir})
