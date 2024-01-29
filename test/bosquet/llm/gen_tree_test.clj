@@ -10,9 +10,9 @@
          (depend-tree :tasks "First, I am doing {{A}}")))
 
   (is (= {:bosquet.depseq/tasks-0 "First, I am doing {{A}}"
-          :bosquet.depseq/tasks-1 "{{bosquet..depseq/tasks-0}} followed by {{B}}"
+          :bosquet.depseq/tasks-1 "{{bosquet..depseq/tasks-0}}\nfollowed by {{B}}"
           :bosquet.depseq/tasks-2 "{{bosquet..depseq/tasks-1}} task."}
-         (depend-tree :tasks "First, I am doing {{A}} followed by {{B}} task.")))
+         (depend-tree :tasks "First, I am doing {{A}}\nfollowed by {{B}} task.")))
 
   (is (= {:bosquet.depseq/tasks__today-0 "First, I am doing {{A}}"}
          (depend-tree :tasks/today "First, I am doing {{A}}"))))

@@ -29,7 +29,8 @@
 (defn partition-template
   [template]
   (if (string? template)
-    (let [slots (mapv first (re-seq #"(.*?)(\{\{.*?\}\})" template))
+    (let [slots (mapv first (re-seq #"(?sm)(.*?)(\{\{.*?\}\})" template))
+          ;; slots (remove (partial dependency-slot? template-map) slots)
           ;; will attach the remainder of the template text
           tail (string/replace template (string/join slots) "")]
       (if (string/blank? tail)
