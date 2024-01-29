@@ -1,12 +1,13 @@
 (ns bosquet.llm.generator
   (:require
-   [bosquet.llm.gen-data :as gd]
-   [bosquet.template.selmer :as selmer]
    [bosquet.converter :as converter]
    [bosquet.db.cache :as cache]
    [bosquet.env :as env]
    [bosquet.llm :as llm]
+   [bosquet.llm.gen-data :as gd]
+   [bosquet.llm.gen-tree :as gen-tree]
    [bosquet.llm.wkk :as wkk]
+   [bosquet.template.selmer :as selmer]
    [bosquet.utils :as u]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
@@ -132,7 +133,7 @@
   (timbre/infof "'%s' resolver for IN: '%s', OUT: '%s'" name-sufix input [message-key])
   (pco/resolver
    {::pco/op-name (-> message-key .-sym (str "-" name-sufix) symbol)
-    ::pco/output  [message-key #_text-trail]
+    ::pco/output  [message-key]
     ::pco/input   input
     ::pco/resolve resolve-fn}))
 
@@ -156,7 +157,21 @@
   [{entry-tree ::pet/entity-tree*}]
   (get @entry-tree text-trail))
 
+(defn- entry
+  [{entry-tree ::pet/entity-tree*} entry-key]
+  (get @entry-tree entry-key))
+
 (selmer/set-missing-value-formatter)
+
+(defn- render
+  [{entry-tree ::pet/entity-tree*} content]
+  (selmer/render content
+                 (merge
+                  @entry-tree
+                  (gd/reduce-gen-graph
+                   (fn [m k v] (assoc m k
+                                      (completions v)))
+                   @entry-tree))))
 
 (defn- generation-resolver
   [llm-config message-key context vars-map]
@@ -169,14 +184,19 @@
                      [refering-template-key]
                      (fn [env _input]
                        (try
-                         (let [t (current-text-trail env)
-                               txt           (-> env current-text-trail (selmer/clear-gen-var-slot message-key))
+                         (let [txt (render
+                                    env
+                                    (selmer/clear-gen-var-slot
+                                     (entry env refering-template-key)
+                                     message-key))
+                               #_(-> env current-text-trail (selmer/clear-gen-var-slot message-key))
                                {gen-usage wkk/usage
-                                {gen-content :content}
-                                wkk/content} (call-llm llm-config content-or-llm-cfg [[:user txt]])]
+                                {gen-content :content} wkk/content}
+                               (call-llm llm-config content-or-llm-cfg [[:user txt]])]
                            (update-text-trail env gen-content)
-                           (tap> {'current-text (current-text-trail env)
-                                  'pre-text t
+                           (tap> {'tpl         (entry env refering-template-key)
+                                  'refering    refering-template-key
+                                  'env         env
                                   'messages    txt
                                   'message-key message-key
                                   'gen-content gen-content})
@@ -194,10 +214,15 @@
                                                           (selmer/known-variables-in-order message-content)))
                       (fn [{entry-tree ::pet/entity-tree* :as env} _input]
                         (let [result (selmer/render message-content
-                                                    (gd/reduce-gen-graph
-                                                     (fn [m k v] (assoc m k (completions v)))
-                                                     @entry-tree))]
+                                                    (merge
+                                                     @entry-tree
+                                                     (gd/reduce-gen-graph
+                                                      (fn [m k v] (assoc m k
+                                                                         (completions v)))
+                                                      @entry-tree)))]
                           (update-text-trail env result)
+                          (tap> {'tpl-res      result
+                                 'env          env})
                           {message-key result})))
           (catch Exception e
             (timbre/error e)))))))
@@ -235,23 +260,28 @@
   "Completion case when we are processing prompt graph. Main work here is on constructing
   the output format with `usage` and `completions` sections."
   [llm-config graph vars-map]
-  (let [graph       (prep-graph graph)
+  (let [graph       (-> graph prep-graph gen-tree/expand-dependencies)
         gen-result  (complete llm-config graph vars-map)
+        _ (tap> {'dep-tree graph
+                 'res gen-result
+                 'colapse (gen-tree/collapse-resolved-tree gen-result)})
         gen-usage   (gd/reduce-gen-graph (fn [m k v] (assoc m k (usage v))) gen-result)
         total-usage (gd/total-usage gen-usage)]
     (u/mergex
-     {completions (reduce-kv
-                   (fn [m k v]
-                     (assoc m k
-                            (if (map? v)
-                              (completions v)
-                              (selmer/render
-                               v
-                               (gd/reduce-gen-graph
-                                (fn [m k _v]
-                                  (assoc m k (get-in gen-result [k completions])))
-                                gen-result)))))
-                   {} gen-result)}
+     {completions
+      (gen-tree/collapse-resolved-tree
+       (reduce-kv
+        (fn [m k v]
+          (assoc m k
+                 (if (map? v)
+                   (completions v)
+                   (selmer/render
+                    v
+                    (gd/reduce-gen-graph
+                     (fn [m k _v]
+                       (assoc m k (get-in gen-result [k completions])))
+                     gen-result)))))
+        {} gen-result))}
      {usage (when (seq total-usage) (assoc gen-usage :bosquet/total total-usage))})))
 
 (defn complete-template
@@ -299,18 +329,29 @@
    {:age 13})
 
   (generate
-   {:q1   ["Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{a}}"
-            "Is this answer correct? {{eval}}"]
-    :eval (llm wkk/lmstudio)
-    :a    (llm wkk/lmstudio
-               wkk/model-params {:max-tokens 150})}
-   {:age 13})
+   {:synopsis ["You are a playwright. Given the play's title and it's genre"
+               "it is your job to write synopsis for that play."
+               "Title: {{title}}"
+               "Genre: {{genre}}"
+               ""
+               "Synopsis: {{play}}"]
+    :play     (llm :openai)}
+   {:title "City of Shadows" :genre "crime"})
 
-  {:bsq.q1/gen_a "Q: When I was {{data/age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{gen/a}}"
-   :bsq.q1/eval  "{{q1-gen_a}} Is this answer correct? {{eval}}"
-   :eval         (llm wkk/lmstudio)
-   :gen/a        (llm wkk/lmstudio
-                      wkk/model-params {:max-tokens 150})}
+  (generate
+   {:q1   ["Q: When I was {{age}} my sister was {{age-relation}} my age. Now I’m 70 how old is my sister? A: {{a}}"
+           "Is this answer correct? {{eval}}"]
+    :eval (llm wkk/openai)
+    :a    (llm wkk/openai wkk/model-params {:max-tokens 100})}
+   {:age 13
+    :age-relation "half"})
+
+  (gen-tree/expand-dependencies
+   (prep-graph
+    {:q1   ["Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{a}}"
+            "Is this answer correct? {{eval}}"]
+     :eval (llm wkk/lmstudio)
+     :a    (llm wkk/lmstudio wkk/model-params {:max-tokens 250})}))
 
   (generate
    [[:system "You are an amazing writer."]

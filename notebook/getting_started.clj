@@ -1,8 +1,6 @@
 (ns getting-started
   (:require
-   [bosquet.llm :as llm]
-   [bosquet.llm.generator :as g]
-   [bosquet.utils :as u]))
+   [bosquet.llm.generator :as g]))
 
 ;; ## Getting Started
 ;;
@@ -44,17 +42,22 @@
 ;; Linked templates are defined in a map, where the map key is a variable name that can be used to reference templates from each other.
 
 (def template
-  {:synopsis (u/join-nl "You are a playwright. Given the play's title and it's genre"
-                        "it is your job to write synopsis for that play."
-                        "Title: {{title}}"
-                        "Genre: {{genre}}")
-   :play     (g/llm :llm/openai :llm/context :synopsis)
-   :critique "You are a play critic from the Moon City Times.
-              Given the synopsis of play, it is your job to write a review for that play.
-              Play Synopsis:
-              {{play}}
-              Review from a New York Times play critic of the above play:"
-   :review   (g/llm :llm/openai :llm/context :critique)})
+  {:synopsis ["You are a playwright. Given the play's title and it's genre"
+              "it is your job to write synopsis for that play."
+              "Title: {{title}}"
+              "Genre: {{genre}}"
+              ""
+              "Synopsis: {{play}}"]
+   :play     (g/llm :openai)
+   :critique ["You are a play critic from the Moon City Times."
+              "Given the synopsis of play, it is your job to write a review for that play."
+              ""
+              "Play Synopsis:"
+              "{{play}}"
+              ""
+              "Review from a New York Times play critic of the above play:"
+              "{{review}}"]
+   :review   (g/llm :openai)})
 
 ;; Things to note:
 ;; * `play` and `review` define generation points, there you specify which LLM to use and which value from the map will be used as prompt context
