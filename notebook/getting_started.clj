@@ -1,6 +1,7 @@
 (ns getting-started
   (:require
-   [bosquet.llm.generator :as g]))
+   [bosquet.llm.generator :as g]
+   [bosquet.llm.wkk :as wkk]))
 
 ;; ## Getting Started
 ;;
@@ -69,3 +70,23 @@
 
 ^{:nextjournal.clerk/auto-expand-results? true}
 (g/generate template {:title "City of Shadows" :genre "crime"})
+
+;; ### Chat mode
+;;  The same generation can be done using chat mode
+
+^{:nextjournal.clerk/auto-expand-results? true}
+(g/generate
+    [[:system "You are an amazing writer."]
+     [:user ["Write a synopsis for the play:"
+             "Title: {{title}}"
+             "Genre: {{genre}}"
+             "Synopsis:"]]
+     [:assistant (g/llm :openai
+                        wkk/model-params {:temperature 0.8 :max-tokens 120}
+                        wkk/var-name :synopsis)]
+     [:user "Now write a critique of the above synopsis:"]
+     [:assistant (g/llm :openai
+                        wkk/model-params {:temperature 0.2 :max-tokens 120}
+                        wkk/var-name     :critique)]]
+    {:title "Mr. X"
+    :genre "Sci-Fi"})
