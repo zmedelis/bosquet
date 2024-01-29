@@ -2,6 +2,7 @@
   (:require
    [bosquet.llm :as llm]
    [bosquet.llm.generator :refer [generate llm]]
+   [bosquet.llm.wkk :as wkk]
    [nextjournal.clerk :as clerk]))
 
 ;; # Bosquet Tutorial
@@ -65,17 +66,15 @@
 ^{:nextjournal.clerk/auto-expand-results? true}
 (generate
  llm/default-services
- {:question-answer "Question: {{question}}  Answer:"
-  :answer          (llm llm/openai
-                        llm/model-params {:temperature 0.8 :max-tokens 120}
-                        llm/context :question-answer)
+ {:question-answer "Question: {{question}}  Answer: {{answer}}"
+  :answer          (llm :openai
+                        wkk/model-params {:temperature 0.8 :max-tokens 120})
   :self-eval       ["Question: {{question}}"
                     "Answer: {{answer}}"
                     ""
-                    "Is this a correct answer?"]
-  :test            (llm llm/openai
-                        llm/context :self-eval
-                        llm/model-params {:temperature 0.2 :max-tokens 120})}
+                    "Is this a correct answer? {{test}}"]
+  :test            (llm :openai
+                        wkk/model-params {:temperature 0.2 :max-tokens 120})}
  {:question "What is the distance from Moon to Io?"})
 
 ;; This shows how to use `generate` with all the parameters:
@@ -93,13 +92,13 @@
          "Title: {{title}}"
          "Genre: {{genre}}"
          "Synopsis:"]
-  :assistant (llm llm/openai
-                  llm/model-params {:temperature 0.8 :max-tokens 120}
-                  llm/var-name :synopsis)
+  :assistant (llm :openai
+                  wkk/model-params {:temperature 0.8 :max-tokens 120}
+                  wkk/var-name :synopsis)
   :user "Now write a critique of the above synopsis:"
-  :assistant (llm llm/openai
-                  llm/model-params {:temperature 0.2 :max-tokens 120}
-                  llm/var-name     :critique)]
+  :assistant (llm :openai
+                  wkk/model-params {:temperature 0.2 :max-tokens 120}
+                  wkk/var-name     :critique)]
  {:title "Mr. X"
   :genre "Sci-Fi"})
 

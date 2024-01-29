@@ -1,4 +1,5 @@
-;; ## Text chunking
+;; # FIXME needs updating to new API
+;; Text chunking
 ;;
 ;; Text chunking is the process of breaking a text into parts. It is an essential part of
 ;; working with LLMs since they can only process a limited amount of text. Even as LLM context
@@ -13,10 +14,9 @@
 
 (ns text-splitting
   (:require
-   [bosquet.llm :as llm]
    [bosquet.llm.generator :as g]
+   [bosquet.llm.wkk :as wkk]
    [bosquet.nlp.splitter :as split]
-   [bosquet.wkk :as wkk]
    [clojure.string :as string]
    [helpers :as h]
    [nextjournal.clerk :as clerk]))
@@ -187,22 +187,22 @@ TEXT: {{chunk}}")
 ;; be done with another LLM request that gets all the per chunk detected emotions and aggregates
 ;; them into a single list.
 
-(def summarization-prompt
-  {:prompt
-   "You are provided with a list of expressions of emotions. Please aggregate them into
-a single list of summarizing emotions. Omit any duplicates and skip 'no empotions expressed' entries.
-Respond with unnumbered bullet list and nothing else.
+;; (def summarization-prompt
+;;   {:prompt
+;;    "You are provided with a list of expressions of emotions. Please aggregate them into
+;; a single list of summarizing emotions. Omit any duplicates and skip 'no empotions expressed' entries.
+;; Respond with unnumbered bullet list and nothing else.
 
-EMOTIONS: {{emotions}}"
-   :summary (g/llm :openai
-                   llm/model-params {:model :gpt-4}
-                   llm/context :prompt)})
+;; EMOTIONS: {{emotions}}
 
-(defn summarize [analysis]
-  (:summary
-   (g/generate summarization-prompt
-               {:emotions (string/join ", " analysis)})))
+;; {{summary}}"
+;;    :summary (g/llm :openai wkk/model-params {:model :gpt-4})})
 
-(clerk/table [["Character split" (clerk/md (summarize char-results))]
-              ["Sentence split" (clerk/md (summarize sentence-results))]
-              ["Token split" (clerk/md (summarize token-results))]])
+;; (defn summarize [analysis]
+;;   (:summary
+;;    (g/generate summarization-prompt
+;;                {:emotions (string/join ", " analysis)})))
+
+;; (clerk/table [["Character split" (clerk/md (summarize char-results))]
+;;               ["Sentence split" (clerk/md (summarize sentence-results))]
+;;               ["Token split" (clerk/md (summarize token-results))]])

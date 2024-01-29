@@ -194,12 +194,6 @@
                                 {gen-content :content} wkk/content}
                                (call-llm llm-config content-or-llm-cfg [[:user txt]])]
                            (update-text-trail env gen-content)
-                           (tap> {'tpl         (entry env refering-template-key)
-                                  'refering    refering-template-key
-                                  'env         env
-                                  'messages    txt
-                                  'message-key message-key
-                                  'gen-content gen-content})
                            {message-key {completions gen-content
                                          usage       gen-usage}})
                          (catch Exception e
@@ -221,8 +215,6 @@
                                                                          (completions v)))
                                                       @entry-tree)))]
                           (update-text-trail env result)
-                          (tap> {'tpl-res      result
-                                 'env          env})
                           {message-key result})))
           (catch Exception e
             (timbre/error e)))))))
@@ -251,20 +243,29 @@
 
 (defn- prep-graph
   "Join strings if tempalte is provided as collection"
-  [graph]
-  (reduce-kv
-   (fn [m k v] (assoc m k (if (sequential? v) (u/join-coll v) v)))
-   {} graph))
+  [graph available-data]
+  (->> graph
+       (reduce-kv
+        (fn [m k v]
+          (assoc m k (if (vector? v) (u/join-coll v) v)))
+        {})
+       ;; FIXME this is not good. First pass to join prompt vectors
+       ;; another pass to fill in tempalte data slots,
+       ;; two reduce is crap, but then there fundamental issues with deps
+       ;; inside for loops and so on
+       (reduce-kv
+        (fn [m k v]
+          (assoc m k (if (string? v)
+                       (selmer/render v available-data)
+                       v)))
+        {})))
 
 (defn complete-graph
   "Completion case when we are processing prompt graph. Main work here is on constructing
   the output format with `usage` and `completions` sections."
   [llm-config graph vars-map]
-  (let [graph       (-> graph prep-graph gen-tree/expand-dependencies)
+  (let [graph       (-> graph (prep-graph vars-map) gen-tree/expand-dependencies)
         gen-result  (complete llm-config graph vars-map)
-        _ (tap> {'dep-tree graph
-                 'res gen-result
-                 'colapse (gen-tree/collapse-resolved-tree gen-result)})
         gen-usage   (gd/reduce-gen-graph (fn [m k v] (assoc m k (usage v))) gen-result)
         total-usage (gd/total-usage gen-usage)]
     (u/mergex

@@ -3,6 +3,8 @@
    [bosquet.llm.generator :as g]
    [bosquet.wkk :as wkk]))
 
+;; # TODO needs updating
+
 ;; ## Using LLMs
 ;;
 ;; At the moment Bosquet supports the following:
@@ -41,13 +43,13 @@
 
 ;; ### OpenAI
 
-^{:nextjournal.clerk/auto-expand-results? true}
-(g/generate
- prompt data
- {:answer {wkk/service          :llm/openai
-           wkk/model-parameters params}
-  :test   {wkk/service          :llm/openai
-           wkk/model-parameters params}})
+;; ^{:nextjournal.clerk/auto-expand-results? true}
+;; (g/generate
+;;  prompt data
+;;  {:answer {wkk/service          :llm/openai
+;;            wkk/model-parameters params}
+;;   :test   {wkk/service          :llm/openai
+;;            wkk/model-parameters params}})
 
 
 ;; ### Local LLMs via LM Studio
@@ -55,31 +57,31 @@
 ;; This will only work if you have LM Studio running locally. See there for more details:
 ;; https://lmstudio.ai
 
-^{:nextjournal.clerk/auto-expand-results? true}
-(g/generate
- prompt data
- {:answer {wkk/service          :llm/lm-studio
-           wkk/model-parameters params}
-  :test   {wkk/service          :llm/lm-studio
-           wkk/model-parameters params}})
+;; ^{:nextjournal.clerk/auto-expand-results? true}
+;; (g/generate
+;;  prompt data
+;;  {:answer {wkk/service          :llm/lm-studio
+;;            wkk/model-parameters params}
+;;   :test   {wkk/service          :llm/lm-studio
+;;            wkk/model-parameters params}})
 
 ;; ### Cohere
 ;;
 ;; Note that `model-parameters` can be omitted. Defaults will be used.
 ;;
 
-^{:nextjournal.clerk/auto-expand-results? true}
-(g/generate
- prompt data
- {:answer {wkk/service :llm/cohere}
-  :test   {wkk/service :llm/cohere}})
+;; ^{:nextjournal.clerk/auto-expand-results? true}
+;; (g/generate
+;;  prompt data
+;;  {:answer {wkk/service :llm/cohere}
+;;   :test   {wkk/service :llm/cohere}})
 
 ;; ### Mixing LLMs
 ;;
 ;; Lastly, lets use different LLMs for different generation tags.
 
-^{:nextjournal.clerk/auto-expand-results? true}
-(g/generate
- prompt data
- {:answer {wkk/service :llm/cohere}
-  :test   {wkk/service :llm/lm-studio}})
+;; ^{:nextjournal.clerk/auto-expand-results? true}
+;; (g/generate
+;;  prompt data
+;;  {:answer {wkk/service :llm/cohere}
+;;   :test   {wkk/service :llm/lm-studio}})

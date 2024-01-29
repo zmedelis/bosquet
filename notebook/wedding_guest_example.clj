@@ -4,6 +4,8 @@
    [bosquet.llm.generator :as gen]
    [nextjournal.clerk :as clerk]))
 
+;; # TODO NEEDS UPDATING
+
 ;; # Generating thank you letters
 ;;
 ;; There was a wedding with lots of guests. They traveled far and wide to attend it, brough gifts and all.
@@ -175,7 +177,7 @@ First, let's think step by step:
 
 
 ^{::clerk/visibility {:result :hide}}
-(def letters
+#_(def letters
   (pmap
     (fn [guest]
       (gen/generate letter-writter
@@ -187,7 +189,7 @@ First, let's think step by step:
 ;; First two examples of generated text
 
 ^{::clerk/visibility {:code :hide}}
-(clerk/row
+#_(clerk/row
   (clerk/html [:div.whitespace-pre-line.max-w-md.bg-white.p-4.text-slate-500.text-sm
                (-> letters first :letter-generation)])
 
@@ -197,4 +199,4 @@ First, let's think step by step:
 ;; Full generation data
 
 ^{::clerk/visibility {:code :hide}}
-(clerk/table letters)
+#_(clerk/table letters)

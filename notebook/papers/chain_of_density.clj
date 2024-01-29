@@ -1,8 +1,8 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (ns papers.chain-of-density
   (:require
-   [bosquet.llm :as llm]
    [bosquet.llm.generator :as g]
+   [bosquet.llm.wkk :as wkk]
    [nextjournal.clerk :as clerk]))
 
 ;; ## Chain of Density prompting
@@ -41,7 +41,8 @@
 ;; - `FORMAT` to control the output format, defaults to `JSON` (more on that later)
 
 (def cod-prompt
-  "Article: {{ ARTICLE }}
+  {:cod
+   "Article: {{ ARTICLE }}
 
 You will generate increasingly concise, entity-dense summaries of the above article.
 
@@ -69,7 +70,12 @@ Guidelines:
 - Never drop entities from the previous summary. If space cannot be made, add fewer new entities.
 
 Remember, use the exact same number of words for each summary. Answer in {{FORMAT|default:JSON}}. The {{FORMAT|default:JSON}} should be a list (length 5) of dictionaries whose keys
-are \"Missing-Entities\" and \"Denser-Summary\".")
+are \"Missing-Entities\" and \"Denser-Summary\".
+
+{{sum-gen}}"
+   :sum-gen (g/llm :openai
+                   wkk/output-format :json
+                   wkk/model-params {:model :gpt-4})})
 
 ;;
 ;; With that set a call to generation (see *Getting Started* and *Configuration* notebooks for more details on how generation works) can be made.
@@ -80,9 +86,6 @@ are \"Missing-Entities\" and \"Denser-Summary\".")
 
 ^{:nextjournal.clerk/visibility {:result :hide}}
 (def result (g/generate
-             {llm/service       llm/openai
-              llm/output-format :json
-              llm/model-params  {:model :gpt-4}}
              cod-prompt
              {:ARTICLE article
               :FORMAT  "JSON"}))
