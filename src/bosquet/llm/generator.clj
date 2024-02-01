@@ -330,6 +330,16 @@
    {:age 13})
 
   (generate
+   {:role  ["Lets play a calculator. Solve the following equations:"
+            "{{part1}}"
+            "{{part2}}"]
+    :part1 "{{a}} + {{b}} = {{x}}"
+    :part2 "{{x}} - {{c}} = {{y}}"
+    :x     (llm :openai)
+    :y     (llm :openai)}
+   {:a 2 :b 4 :c 1})
+
+  (generate
    {:synopsis ["You are a playwright. Given the play's title and it's genre"
                "it is your job to write synopsis for that play."
                "Title: {{title}}"
@@ -344,7 +354,7 @@
            "Is this answer correct? {{eval}}"]
     :eval (llm wkk/openai)
     :a    (llm wkk/openai wkk/model-params {:max-tokens 100})}
-   {:age 13
+   {:age          13
     :age-relation "half"})
 
   (gen-tree/expand-dependencies

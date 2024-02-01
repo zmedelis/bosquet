@@ -32,10 +32,10 @@
 
 (deftest reading-edn
   (is (= [1 2] (c/edn-reader "[1 2]")))
-  (is (= [1 2] (c/edn-reader (u/join-nl "```clojure" "[1 2]" "```"))))
-  (is (= :edn (c/edn-reader (u/join-nl "```edn" ":edn" "```")))))
+  (is (= [1 2] (c/edn-reader (u/join-lines "```clojure" "[1 2]" "```"))))
+  (is (= :edn (c/edn-reader (u/join-lines "```edn" ":edn" "```")))))
 
 (deftest reading-json
   (is (= [1 2] (c/json-reader "[1, 2]")))
-  (is (= {"a" 2} (c/json-reader (u/join-nl "Junk\nmore of it\n```json" "{\"a\" : 2}" "```\njunk"))))
-  (is (= 1 (c/json-reader (u/join-nl "```json" "1" "```")))))
+  (is (= {"a" 2} (c/json-reader (u/join-lines "Junk\nmore of it\n```json" "{\"a\" : 2}" "```\njunk"))))
+  (is (= 1 (c/json-reader (u/join-lines "```json" "1" "```")))))

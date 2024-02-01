@@ -36,7 +36,7 @@
   ([x & ys]
    (into (vec x) cat ys)))
 
-(defn join-nl [& lines]
+(defn join-lines [& lines]
   (apply str (interpose "\n" lines)))
 
 (defn join-coll [content]

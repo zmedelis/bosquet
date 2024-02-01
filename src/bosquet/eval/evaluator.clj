@@ -15,7 +15,7 @@
 
 (def eval-prompt
   {:system
-   (u/join-nl
+   (u/join-lines
     "You are an expert question answering evaluation system."
 
     "You are given the following information:"
@@ -40,7 +40,7 @@
     "Explanation: The generated answer has the exact same metrics as the reference answer,"
     "but it is not as concise.")
    :eval
-   (u/join-nl
+   (u/join-lines
     "{{system}}"
     ""
     "## User Query"

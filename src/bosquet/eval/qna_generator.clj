@@ -19,7 +19,7 @@
 (def max-chunks :eval/max-chunks)
 
 (def context-prompt-block
-  (u/join-nl
+  (u/join-lines
    "CONTEXT INFORMATION is below:"
    "~~~~~~"
    "{{context}}"
@@ -27,13 +27,13 @@
 
 (def format-constraints
   #_"Write your response as numbered list, one item per line."
-  (u/join-nl
+  (u/join-lines
    "Write your response in JSON. Resulting JSON is a vector containing generated items one vector element per generated item."
    "Example JSON output: [\"Item 1\", \"Item 2\", \"Item 3\", \"Item 4\"]"))
 
 (def question-building-prompts
   {:role
-   (u/join-nl
+   (u/join-lines
     "You are an excelent Teacher who understands subject material perfectly."
     "Your ability to analyze text is astonishing. Based on that your task is to setup"
     "{{question-count}} questions for the upcoming student examination."
@@ -46,7 +46,7 @@
    :question-generation context-prompt-block
 
    :qna
-   (u/join-nl
+   (u/join-lines
     "{{role}}"
     "{{question-generation}}"
     "{{format}}"
@@ -55,7 +55,7 @@
     "{% gen var-name=questions%}")})
 
 (def answering-prompt
-  (u/join-nl
+  (u/join-lines
    context-prompt-block
    "Given the CONTEXT INFORMATION and using zero prior knowledge, answer the following QUESTIONS."
    "QUESTIONS"

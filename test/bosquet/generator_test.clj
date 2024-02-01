@@ -1,6 +1,7 @@
 (ns bosquet.generator-test
   (:require
    [bosquet.db.cache :as cache]
+   [bosquet.env :as env]
    [bosquet.llm.generator :as gen]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
@@ -20,7 +21,7 @@
 
 (deftest chat-generation
   (is (= {:bosquet/conversation [[:system "You are a brilliant writer."]
-                                 [:user (u/join-nl
+                                 [:user (u/join-lines
                                          "Write a synopsis for the play:"
                                          "Title: Mr. O")]
                                  [:assistant "You are a brilliant writer."]
@@ -45,7 +46,7 @@
 (deftest map-generation
   (is (= {gen/completions {:question-answer "Question: What is the distance from Moon to Io?  Answer: !!!"
                            :answer          "!!!"
-                           :self-eval       (u/join-nl
+                           :self-eval       (u/join-lines
                                              "Question: What is the distance from Moon to Io?"
                                              "Answer: !!!"
                                              "Is this a correct answer?"
@@ -77,7 +78,7 @@
 
 (deftest appending-gen-instruction
   (is (= {gen/default-template-prompt     "What is the distance from Moon to Io? {{bosquet..template/completion}}"
-          gen/default-template-completion {wkk/service wkk/lmstudio}}
+          gen/default-template-completion {wkk/service (env/default-llm)}}
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
 

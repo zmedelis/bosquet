@@ -53,7 +53,7 @@
 ;; OPRO Meta-prompt
 ;;
 (def opro-prompt
-  (u/join-nl
+  (u/join-lines
     "Your task is to generate the instruction <INS>. Below are some previous instructions with their scores."
     "The score ranges from 1 to 5."
     ""
@@ -92,7 +92,7 @@
 (defn optimization-step-prompt
   [instruction]
   {:instruction     instruction
-   :prompt-template (u/join-nl
+   :prompt-template (u/join-lines
                       "{{instruction}}"
                       "Context information is below."
                       u/separator
@@ -100,7 +100,7 @@
                       u/separator
                       "Query: {{query}}"
                       "Answer:")
-   :generation      (u/join-nl
+   :generation      (u/join-lines
                       "{{prompt-template}}"
                       "{% gen var-name=answer %}")})
 
