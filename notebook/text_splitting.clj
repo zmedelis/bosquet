@@ -1,3 +1,14 @@
+^{:nextjournal.clerk/visibility {:code :fold}}
+(ns text-splitting
+  {:nextjournal.clerk/toc true}
+  (:require
+   [bosquet.llm.generator :as g]
+   [bosquet.llm.wkk :as wkk]
+   [bosquet.nlp.splitter :as split]
+   [clojure.string :as string]
+   [helpers :as h]
+   [nextjournal.clerk :as clerk]))
+
 ;; # Text chunking
 ;;
 ;; Text chunking is the process of breaking a text into parts. It is an essential part of
@@ -10,15 +21,6 @@
 ;; generation.
 
 ;; ### Chunking strategies
-
-(ns text-splitting
-  (:require
-   [bosquet.llm.generator :as g]
-   [bosquet.llm.wkk :as wkk]
-   [bosquet.nlp.splitter :as split]
-   [clojure.string :as string]
-   [helpers :as h]
-   [nextjournal.clerk :as clerk]))
 
 ;; Text splitting can be done by using different splitting units. *Bosquet* supports splitting by:
 ;;
@@ -134,7 +136,7 @@ get to sea as soon as I can.")
             [:div chunk]]])
         token-chunks))))
 
-;; ### Using text chunking with LLM
+;; ### Generation with chunking
 ;;
 ;; An example of using text chunking would be to send parts of the longer text to LLM for
 ;; processing separately and then aggregating the results. Let's extract the feelings expressed
@@ -157,27 +159,24 @@ TEXT: {{chunk}}")
    #(g/generate extraction-prompt {:chunk %})
    chunks))
 
-;; #### Per chunk results
-;;
 ;; Bellow per chunker resutls show how chunking methid can influence the output. The three methods
 ;; return quite different extracted emotions.
 ;;
-;; ##### Character splitter
-
+;; #### Character splitter
 
 (def char-results (analysis char-chunks))
 
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (h/card-list (mapv clerk/md char-results))
 
-;; ##### Sentence splitter
+;; #### Sentence splitter
 
 (def sentence-results (analysis sentence-chunks))
 
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (h/card-list (mapv clerk/md sentence-results))
 
-;; ##### Token splitter
+;; #### Token splitter
 
 (def token-results (analysis token-chunks))
 
@@ -185,7 +184,7 @@ TEXT: {{chunk}}")
 (h/card-list (mapv clerk/md token-results))
 
 
-;; ### Summary
+;; #### Summary
 ;;
 ;; All the chunk results need to be consolidated into a single list of unique emotions. This can
 ;; be done with another LLM request that gets all the per chunk detected emotions and aggregates

@@ -70,15 +70,17 @@
   ([text max-tokens model]
    (split-max-tokens text max-tokens model " ")))
 
-(def en-sentence-detector
-  "English sentence splitting model
+(defn- load-splitter-model
+  "Load OpenNLP model for a `lang` sentence boundary detection.
 
-  https://opennlp.apache.org/models.html"
-  (delay
-    (let [model-file (io/file "lang/en/sentence-detector.bin")]
-      (if (.exists model-file)
-        (SentenceDetectorME. (SentenceModel. model-file))
-        (timbre/errorf "Sentence detenction model file is not found. Use `bb lang:sent:en` to download.")))))
+  See https://opennlp.apache.org/models.html"
+  [lang]
+  (let [model-file (io/file (format "lang/%s/sentence-detector.bin" (name lang)))]
+    (if (.exists model-file)
+      (SentenceDetectorME. (SentenceModel. model-file))
+      (timbre/errorf
+        "‼️ Sentence detenction model file is not found. Use `bb lang:sent:%s` to download."
+        (name lang)))))
 
 (defn- text-units-length
   [units]
@@ -108,10 +110,10 @@
 (defn- text->sentences
   "Split `text` into sentences using OpenNLP sentence splitting model"
   [{:keys [lang] :or {lang :en}} text]
-  (vec (.sentDetect
-        (condp = lang
-          :en @en-sentence-detector)
-        text)))
+  (-> lang
+      load-splitter-model
+      (.sentDetect text)
+      vec))
 
 (defn- text<-sentences
   [_opts sentences]
