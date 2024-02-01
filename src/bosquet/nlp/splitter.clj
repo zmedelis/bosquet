@@ -3,7 +3,8 @@
    [bosquet.llm.openai-tokens :as oai]
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [flatland.useful.seq :as useq])
+   [flatland.useful.seq :as useq]
+   [taoensso.timbre :as timbre])
   (:import
    [opennlp.tools.sentdetect SentenceDetectorME SentenceModel]))
 
@@ -73,10 +74,11 @@
   "English sentence splitting model
 
   https://opennlp.apache.org/models.html"
-  (SentenceDetectorME.
-   (-> "models/opennlp-en-ud-ewt-sentence-1.0-1.9.3.bin"
-       io/resource
-       SentenceModel.)))
+  (delay
+    (let [model-file (io/file "lang/en/sentence-detector.bin")]
+      (if (.exists model-file)
+        (SentenceDetectorME. (SentenceModel. model-file))
+        (timbre/errorf "Sentence detenction model file is not found. Use `bb lang:sent:en` to download.")))))
 
 (defn- text-units-length
   [units]
@@ -105,8 +107,11 @@
 
 (defn- text->sentences
   "Split `text` into sentences using OpenNLP sentence splitting model"
-  [_opts text]
-  (vec (.sentDetect en-sentence-detector text)))
+  [{:keys [lang] :or {lang :en}} text]
+  (vec (.sentDetect
+        (condp = lang
+          :en @en-sentence-detector)
+        text)))
 
 (defn- text<-sentences
   [_opts sentences]
@@ -126,7 +131,7 @@
 (defn- text<-tokens [{:splitter/keys [model]} text]
   (oai/decode text model))
 
-(def ^:private split-handlers
+(def split-handlers
   "Split handlers are needed to turn text into specified text units via `encode` function.
   `decode` function will turn those units back into single text string."
   {sentence  {:encode text->sentences
@@ -156,6 +161,8 @@
 (comment
 
   (def text (slurp "https://raw.githubusercontent.com/scicloj/scicloj.ml.smile/main/LICENSE"))
+
+  (text->sentences nil text)
 
   (tap>
    (chunk-text {chunk-size 3 split-unit sentence} text))

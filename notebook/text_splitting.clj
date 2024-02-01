@@ -1,5 +1,4 @@
-;; # FIXME needs updating to new API
-;; Text chunking
+;; # Text chunking
 ;;
 ;; Text chunking is the process of breaking a text into parts. It is an essential part of
 ;; working with LLMs since they can only process a limited amount of text. Even as LLM context
@@ -78,6 +77,11 @@ get to sea as soon as I can.")
 ;;
 ;; #### Splitting by sentences
 ;;
+;; Sentence splitting relies on OpenNLP models - https://opennlp.apache.org/models.html
+;;
+;; **NOTE:** They need to be downloaded before using this functionality.
+;;
+;; Running `bb lang:sent:en` will download the English sentence splitting model and place it in `lang/en` directory.
 ;;
 ;; Splitting by sentences will partition the text into chunks of N sentences. This results in
 ;; chunks that are natural to reader. It will also prevent cutting the meaning of the sentence
@@ -85,7 +89,7 @@ get to sea as soon as I can.")
 ;; using this splitting method. However, long sentences might result in overflows of the context
 ;; window of the LLM.
 ;;
-;; *Note*: that overlap is not specified in the example below - the default of 0 is used.
+;; **Note:** that overlap is not specified in the example below - the default of 0 is used.
 
 (def sentence-chunks (split/chunk-text
                       {split/chunk-size 3
@@ -187,22 +191,24 @@ TEXT: {{chunk}}")
 ;; be done with another LLM request that gets all the per chunk detected emotions and aggregates
 ;; them into a single list.
 
-;; (def summarization-prompt
-;;   {:prompt
-;;    "You are provided with a list of expressions of emotions. Please aggregate them into
-;; a single list of summarizing emotions. Omit any duplicates and skip 'no empotions expressed' entries.
-;; Respond with unnumbered bullet list and nothing else.
+(def summarization-prompt
+  {:prompt
+   "You are provided with a list of expressions of emotions. Please aggregate them into
+a single list of summarizing emotions. Omit any duplicates and skip 'no empotions expressed' entries.
+Respond with unnumbered bullet list and nothing else.
 
-;; EMOTIONS: {{emotions}}
+EMOTIONS: {{emotions}}
 
-;; {{summary}}"
-;;    :summary (g/llm :openai wkk/model-params {:model :gpt-4})})
+{{summary}}"
+   :summary (g/llm :openai wkk/model-params {:model :gpt-4})})
 
-;; (defn summarize [analysis]
-;;   (:summary
-;;    (g/generate summarization-prompt
-;;                {:emotions (string/join ", " analysis)})))
+(defn summarize [analysis]
+  (->
+   summarization-prompt
+   (g/generate {:emotions (string/join ", " analysis)})
+   g/completions
+   :summary))
 
-;; (clerk/table [["Character split" (clerk/md (summarize char-results))]
-;;               ["Sentence split" (clerk/md (summarize sentence-results))]
-;;               ["Token split" (clerk/md (summarize token-results))]])
+(clerk/table [["Character split" (clerk/md (summarize char-results))]
+              ["Sentence split" (clerk/md (summarize sentence-results))]
+              ["Token split" (clerk/md (summarize token-results))]])

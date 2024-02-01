@@ -2,6 +2,7 @@
   (:require
    [bosquet.llm.openai-tokens :as oai]
    [bosquet.nlp.splitter :as split]
+   [clojure.string :as string]
    [clojure.test :refer [deftest is]]))
 
 (deftest max-tokens-under
@@ -40,17 +41,24 @@
           "Never attempt to win by force what can be won by deception"))))
 
 (deftest splitting-by-sentence
-  (let [text (str
-              "Jenny lost keys. Panic rises. Frantic search begins." " "
-              "Couch cushions invaded. Discovery: in pocket.")]
-    (is (= ["Jenny lost keys. Panic rises. Frantic search begins."
-            "Couch cushions invaded. Discovery: in pocket."]
-           (split/chunk-text {split/chunk-size 3 split/split-unit split/sentence} text)))
-    (is (= ["Jenny lost keys. Panic rises. Frantic search begins."
-            "Frantic search begins. Couch cushions invaded. Discovery: in pocket."
-            "Discovery: in pocket."]
-           (split/chunk-text
-            {split/chunk-size 3 split/overlap 1 split/split-unit split/sentence}
-            text)))
-    (is (= ["Jenny lost keys. Panic rises. Frantic search begins. Couch cushions invaded. Discovery: in pocket."]
-           (split/chunk-text {split/chunk-size 30 split/split-unit split/sentence} text)))))
+  (with-redefs [split/split-handlers
+                (assoc-in split/split-handlers
+                          [split/sentence :encode]
+                          (fn [_ txt]
+                            (mapv
+                             (fn [snt] (str (string/trim snt) "."))
+                             (string/split txt #"\."))))]
+    (let [text (str
+                "Jenny lost keys. Panic rises. Frantic search begins." " "
+                "Couch cushions invaded. Discovery: in pocket.")]
+      (is (= ["Jenny lost keys. Panic rises. Frantic search begins."
+              "Couch cushions invaded. Discovery: in pocket."]
+             (split/chunk-text {split/chunk-size 3 split/split-unit split/sentence} text)))
+      (is (= ["Jenny lost keys. Panic rises. Frantic search begins."
+              "Frantic search begins. Couch cushions invaded. Discovery: in pocket."
+              "Discovery: in pocket."]
+             (split/chunk-text
+              {split/chunk-size 3 split/overlap 1 split/split-unit split/sentence}
+              text)))
+      (is (= ["Jenny lost keys. Panic rises. Frantic search begins. Couch cushions invaded. Discovery: in pocket."]
+             (split/chunk-text {split/chunk-size 30 split/split-unit split/sentence} text))))))
