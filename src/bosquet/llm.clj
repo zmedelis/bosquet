@@ -3,6 +3,7 @@
    [bosquet.env :as env]
    [bosquet.llm.cohere :as cohere]
    [bosquet.llm.lmstudio :as lmstudio]
+   [bosquet.llm.mistral :as mistral]
    [bosquet.llm.openai :as openai]
    [bosquet.llm.wkk :as wkk]))
 
@@ -15,4 +16,7 @@
                         wkk/chat-fn     openai/chat})
    wkk/cohere   (merge (env/val wkk/cohere)
                        {wkk/complete-fn cohere/complete
-                        wkk/chat-fn     cohere/chat})})
+                        wkk/chat-fn     cohere/chat})
+   wkk/mistral  (merge (env/val wkk/mistral)
+                       {wkk/complete-fn mistral/complete
+                        wkk/chat-fn     mistral/chat})})
