@@ -11,7 +11,7 @@
            hato/hato                                     {:mvn/version "0.9.0"}
            metosin/jsonista                              {:mvn/version "0.3.8"}
            org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
-           com.taoensso/encore                           {:mvn/version "3.76.0"}
+           com.taoensso/encore                           {:mvn/version "3.77.0"}
            io.aviso/pretty                               {:mvn/version "1.4.4"}
            aero/aero                                     {:mvn/version "1.1.6"}
            org.clojure/core.cache                        {:mvn/version "1.0.225"}
@@ -24,19 +24,20 @@
            org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.1"}
            org.apache.poi/poi                            {:mvn/version "5.2.5"}
            org.apache.tika/tika-parsers-standard-package {:mvn/version "2.9.1"}
-           org.apache.opennlp/opennlp-tools              {:mvn/version "2.3.1"} camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}}
+           org.apache.opennlp/opennlp-tools              {:mvn/version "2.3.2"} camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
-                        :extra-deps  {io.github.nextjournal/clerk {:mvn/version "0.15.957"}
-                                      criterium/criterium         {:mvn/version "0.4.6"}
-                                      djblue/portal               {:mvn/version "0.51.1"}
-                                      integrant/repl              {:mvn/version "0.3.3"}}}
+                        :extra-deps  {io.github.nextjournal/clerk      {:mvn/version "0.15.957"}
+                                      criterium/criterium              {:mvn/version "0.4.6"}
+                                      com.wsscode/pathom-viz-connector {:mvn/version "2022.02.14"}
+                                      djblue/portal                    {:mvn/version "0.51.1"}
+                                      integrant/repl                   {:mvn/version "0.3.3"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "2024.01.29"}}
            :rebel      {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
                         :main-opts  ["-m" "rebel-readline.main"]}
            :outdated   {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
                         :main-opts ["-m" "antq.core" "--upgrade"]}
-           :test       {:extra-deps {nubank/matcher-combinators {:mvn/version "3.8.8"}}}
+           :test       {:extra-deps {nubank/matcher-combinators {:mvn/version "3.9.1"}}}
            :kaocha     {:main-opts   ["-m" "kaocha.runner"]
                         :extra-paths ["test"]
                         :extra-deps  {lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
