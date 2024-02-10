@@ -2,6 +2,7 @@
   "JTokkit wrapper to get encode/decode and get token counts.
   Plus a price estimator for model produced tokens"
   (:import
+   [com.knuddels.jtokkit.api IntArrayList]
    [com.knuddels.jtokkit Encodings]))
 
 ;;
@@ -21,12 +22,17 @@
 (defn encode
   "Encode `text` using `model` (:gpt-4, :gpt-3.5-turbo)"
   [text model]
-  (.encode (encoding model) text))
+  (-> model encoding (.encode text) .toArray vec))
 
 (defn decode
   "Encode `tokens` using `model`"
   [tokens model]
-  (.decode (encoding model) tokens))
+  (.decode (encoding model)
+           (reduce (fn [m token]
+                     (.add m token)
+                     m)
+                   (IntArrayList. (count tokens))
+                   tokens)))
 
 (defn token-count
   "Count tokens in the `text` using `model` for token production. "
@@ -36,6 +42,7 @@
 (comment
   (def text (:text (bosquet.read.document/parse "data/llama2.pdf")))
   (token-count text :gpt-4)
+  (decode (encode "Small test" :gpt-4) :gpt-4)
   #__)
 
 ;;
