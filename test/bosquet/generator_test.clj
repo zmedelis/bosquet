@@ -44,11 +44,10 @@
           {:title "Mr. O"}))))
 
 (deftest map-generation
-  (is (= {gen/completions {:question-answer "Question: What is the distance from Moon to Io?  Answer: !!!"
+  (is (= {gen/completions {:question-answer "Question: What is the distance from Moon to Io? Answer: !!!"
                            :answer          "!!!"
                            :self-eval       (u/join-lines
-                                             "Question: What is the distance from Moon to Io?"
-                                             "Answer: !!!"
+                                             "Question: What is the distance from Moon to Io? Answer: !!!"
                                              "Is this a correct answer?"
                                              "!!!")
                            :test            "!!!"}
@@ -59,18 +58,18 @@
           {:service-const {wkk/chat-fn (fn [_ _]
                                          {wkk/content {:content "!!!" :role :assistant}
                                           wkk/usage   {:prompt 1 :completion 3 :total 4}})}}
-          {:question-answer "Question: {{question}}  Answer: {{answer}}"
+          {:question-answer "Question: {{question}} Answer: {{answer}}"
            :answer          (gen/llm :service-const)
-           :self-eval       ["Question: {{question}}"
-                             "Answer: {{answer}}"
+           :self-eval       ["{{question-answer}}"
                              "Is this a correct answer?"
                              "{{test}}"]
            :test            (gen/llm :service-const)}
           {:question "What is the distance from Moon to Io?"}))))
 
 (deftest fail-generation
-  (is (= {gen/completions {:in  "How are you? {{out}}"
-                           :out nil}}
+  (is (= {gen/completions {:in "How are you? {{out}}" :out nil}
+          gen/usage       {:out           nil
+                           :bosquet/total {:prompt 0 :completion 0 :total 0}}}
          (gen/generate
           {:in  "How are you? {{out}}"
            :out (gen/llm :non-existing-service)}

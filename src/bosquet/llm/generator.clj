@@ -5,14 +5,14 @@
    [bosquet.env :as env]
    [bosquet.llm :as llm]
    [bosquet.llm.gen-data :as gd]
-   [bosquet.llm.gen-tree :as gen-tree]
    [bosquet.llm.wkk :as wkk]
    [bosquet.template.selmer :as selmer]
    [bosquet.utils :as u]
+   [clojure.string :as string]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
    [com.wsscode.pathom3.entity-tree :as pet]
-   [com.wsscode.pathom3.interface.smart-map :as psm]
+   [com.wsscode.pathom3.interface.eql :as p.eql]
    [com.wsscode.pathom3.plugin :as p.plugin]
    [taoensso.timbre :as timbre]))
 
@@ -29,9 +29,6 @@
 
   This is a key for completion entry"
   :bosquet.template/completion)
-
-(def text-trail
-  :bosquet.generation/text-trail)
 
 (defn llm
   "A helper function to create LLM spec for calls during the generation process.
@@ -73,16 +70,16 @@
     use-cache    wkk/cache
     :as          properties}
    messages]
-  (if (map? properties)
+  (if-let [chat-impl (get-in llm-config [llm-impl wkk/chat-fn])]
     (let [format-fn      (partial converter/coerce (wkk/output-format properties))
           service-config (dissoc (llm-impl llm-config) wkk/gen-fn wkk/chat-fn)
-          chat-fn        (partial (get-in llm-config [llm-impl wkk/chat-fn]) service-config)
+          chat-fn        (partial chat-impl service-config)
           params         (assoc model-params :messages (->chatml messages))
           result         (if use-cache
                            (cache/lookup-or-call chat-fn params)
                            (chat-fn params))]
       (update-in result [wkk/content :content] format-fn))
-    (timbre/warnf ":assistant instruction does not contain AI gen function spec")))
+    (timbre/warnf "Generation instruction does not contain AI gen function spec")))
 
 (def conversation
   "Result map key holding full chat conversation including generated parts"
@@ -109,6 +106,7 @@
          processed-messages          []
          accumulated-usage           {}
          ctx                         inputs]
+
     (if (nil? role)
       {conversation processed-messages
        completions  (apply dissoc ctx (keys inputs))
@@ -130,11 +128,11 @@
 
 (defn- ->resolver
   [name-sufix message-key input resolve-fn]
-  (timbre/infof "'%s' resolver for IN: '%s', OUT: '%s'" name-sufix input [message-key])
+  (timbre/infof "resolver: (%s%s) => %s" name-sufix (if (seq input) (str " " (string/join " " input)) "") message-key)
   (pco/resolver
    {::pco/op-name (-> message-key .-sym (str "-" name-sufix) symbol)
     ::pco/output  [message-key]
-    ::pco/input   input
+    ::pco/input   (vec input)
     ::pco/resolve resolve-fn}))
 
 (defn find-refering-templates
@@ -149,14 +147,6 @@
    []
    context-map))
 
-(defn- update-text-trail
-  [{entry-tree ::pet/entity-tree*} text]
-  (swap! entry-tree assoc text-trail (str (text-trail @entry-tree) text)))
-
-(defn- current-text-trail
-  [{entry-tree ::pet/entity-tree*}]
-  (get @entry-tree text-trail))
-
 (defn- entry
   [{entry-tree ::pet/entity-tree*} entry-key]
   (get @entry-tree entry-key))
@@ -169,13 +159,13 @@
                  (merge
                   @entry-tree
                   (gd/reduce-gen-graph
-                   (fn [m k v] (assoc m k
-                                      (completions v)))
+                   (fn [m k v] (assoc m k (completions v)))
                    @entry-tree))))
 
 (defn- generation-resolver
   [llm-config message-key context vars-map]
-  (let [content-or-llm-cfg (message-key context)]
+  (let [content-or-llm-cfg (message-key context)
+        refs               (find-refering-templates message-key context)]
     (if (map? content-or-llm-cfg)
       ;; Generation node
       (mapv
@@ -183,48 +173,31 @@
          (->resolver (str "ai-gen-" (name refering-template-key)) message-key
                      [refering-template-key]
                      (fn [env _input]
-                       (try
-                         (let [txt (render
-                                    env
-                                    (selmer/clear-gen-var-slot
-                                     (entry env refering-template-key)
-                                     message-key))
-                               #_(-> env current-text-trail (selmer/clear-gen-var-slot message-key))
-                               {gen-usage wkk/usage
-                                {gen-content :content} wkk/content}
-                               (call-llm llm-config content-or-llm-cfg [[:user txt]])]
-                           (update-text-trail env gen-content)
-                           {message-key {completions gen-content
-                                         usage       gen-usage}})
-                         (catch Exception e
-                           (timbre/error e))))))
-       (find-refering-templates message-key context))
+                       (let [txt (render env (selmer/clear-gen-var-slot (entry env refering-template-key) message-key))
+                             {gen-usage wkk/usage {gen-content :content} wkk/content}
+                             (call-llm llm-config content-or-llm-cfg [[:user txt]])]
+                         {message-key {completions gen-content
+                                       usage       gen-usage}}))))
+       refs)
 
       ;; Template node
-      (let [;; fill in provided data slots, no need to go over those with resolvers
-            message-content (selmer/render content-or-llm-cfg vars-map)]
-        (try
-          (->resolver "template" message-key (vec (filter #(string? (get context %))
-                                                          (selmer/known-variables-in-order message-content)))
-                      (fn [{entry-tree ::pet/entity-tree* :as env} _input]
-                        (let [result (selmer/render message-content
-                                                    (merge
-                                                     @entry-tree
-                                                     (gd/reduce-gen-graph
-                                                      (fn [m k v] (assoc m k
-                                                                         (completions v)))
-                                                      @entry-tree)))]
-                          (update-text-trail env result)
-                          {message-key result})))
-          (catch Exception e
-            (timbre/error e)))))))
+      (let [message-content (selmer/render content-or-llm-cfg vars-map)]
+        (->resolver "template" message-key
+                    (vec (filter #(string? (get context %)) (selmer/known-variables-in-order message-content)))
+                    (fn [{entry-tree ::pet/entity-tree*} _input]
+                      (let [result (selmer/render message-content
+                                                  (merge
+                                                   @entry-tree
+                                                   (gd/reduce-gen-graph
+                                                    (fn [m k v] (assoc m k (completions v)))
+                                                    @entry-tree)))]
+                        {message-key result})))))))
 
 (defn- prompt-indexes [llm-config context vars-map]
   (pci/register
-   (mapv
-    (fn [prompt-key]
-      (generation-resolver llm-config prompt-key context vars-map))
-    (keys context))))
+   (mapv (fn [prompt-key]
+           (generation-resolver llm-config prompt-key context vars-map))
+         (keys context))))
 
 (defn append-generation-instruction
   "If template does not specify generation function append the default one."
@@ -232,14 +205,10 @@
   {default-template-prompt     (selmer/append-slot string-template default-template-completion)
    default-template-completion (llm (env/default-llm))})
 
-(defn complete
-  "Complete the template graph case, where execution order will be determined
-  by Pathom."
+(defn gen-environment
   [llm-config context vars-map]
   (-> (prompt-indexes llm-config context vars-map)
-      (psm/smart-map vars-map)
-      (resolver-error-wrapper)
-      (select-keys (conj (keys context) text-trail))))
+      (resolver-error-wrapper)))
 
 (defn- prep-graph
   "Join strings if tempalte is provided as collection"
@@ -251,7 +220,7 @@
         {})
        ;; FIXME this is not good. First pass to join prompt vectors
        ;; another pass to fill in tempalte data slots,
-       ;; two reduce is crap, but then there fundamental issues with deps
+       ;; two reduce is crap, but then there are fundamental issues with deps
        ;; inside for loops and so on
        (reduce-kv
         (fn [m k v]
@@ -260,30 +229,93 @@
                        v)))
         {})))
 
+(defn- template->chat
+  "Convert Selmer template into chat structure. This
+  **really** needs refactoring!!!"
+  [template generators]
+  (let [gen-var-re #"(?sm)\{\{.+?\}\}"
+        elements (remove
+                  string/blank?
+                  (interleave
+                   (string/split template gen-var-re)
+                   (conj
+                    ;; conj in "" in case we have dangling non-gen tempalte string as in
+                    ;; "We start with {{generation}} conj in for 'interpose'"
+                    (vec (re-seq gen-var-re template)) "")))]
+    (->> elements
+         (reduce
+          (fn [[chat resolved-vars] part]
+            (if (string/starts-with? part "{{")
+              (let [gen-var (keyword
+                             (string/replace
+                              (second (re-find #"\{\{(.*?)\}\}" part))
+                              #"\.\." "."))
+                    ai      (assoc (gen-var generators) wkk/var-name gen-var)]
+                [(if (gen-var resolved-vars)
+                   (conj chat [:user part])
+                   (conj chat [:assistant ai]))
+                 (conj resolved-vars gen-var)])
+              [(conj chat [:user part]) resolved-vars]))
+          [[] #{}])
+         first
+         (partition-by first)
+         (reduce (fn [chat elements]
+                   (if (= :assistant (ffirst elements))
+                     (into chat elements)
+                     (conj chat [:user (apply str (mapv second elements))])
+                     ))
+                 []))))
+
+(defn- split-gen-graph
+  [graph]
+  (reduce-kv
+   (fn [[templates generators] k v]
+     (if (map? v)
+       [templates (assoc generators k v)]
+       [(assoc templates k v) generators]))
+   [{} {}]
+   graph))
+
+(defn- index-keys [index key]
+  (filter key (keys index)))
+
+(defn top-level-template
+  [index context]
+  (let [graph (reduce-kv
+               (fn [m k v] (assoc m k (-> v keys set)))
+               {}
+               index)
+        root-nodes
+        (remove #(seq (index-keys graph %)) (->> graph vals (apply clojure.set/union)))]
+    (select-keys context root-nodes)))
+
 (defn complete-graph
   "Completion case when we are processing prompt graph. Main work here is on constructing
   the output format with `usage` and `completions` sections."
   [llm-config graph vars-map]
-  (let [graph       (-> graph (prep-graph vars-map) gen-tree/expand-dependencies)
-        gen-result  (complete llm-config graph vars-map)
-        gen-usage   (gd/reduce-gen-graph (fn [m k v] (assoc m k (usage v))) gen-result)
-        total-usage (gd/total-usage gen-usage)]
+  (let [[templates generators] (split-gen-graph graph)
+        tpl-graph              (prep-graph templates vars-map)
+        gen-env                (gen-environment llm-config tpl-graph vars-map)
+        pre-gen-res            (p.eql/process gen-env vars-map (vec (keys tpl-graph)))
+        ;; TODO what happens when more than one????
+        [_top-name top-tpl]    (first (top-level-template
+                                       (:com.wsscode.pathom3.connect.indexes/index-io gen-env)
+                                       pre-gen-res))
+        top-template           (chat llm-config
+                                     (template->chat top-tpl generators)
+                                     vars-map)
+        gen-result             (merge
+                                (reduce-kv (fn [m k v]
+                                             (assoc m k (selmer/render
+                                                         v
+                                                         (completions top-template))))
+                                           {}
+                                           pre-gen-res)
+                                (completions top-template))
+        gen-usage              (usage top-template)]
     (u/mergex
-     {completions
-      (gen-tree/collapse-resolved-tree
-       (reduce-kv
-        (fn [m k v]
-          (assoc m k
-                 (if (map? v)
-                   (completions v)
-                   (selmer/render
-                    v
-                    (gd/reduce-gen-graph
-                     (fn [m k _v]
-                       (assoc m k (get-in gen-result [k completions])))
-                     gen-result)))))
-        {} gen-result))}
-     {usage (when (seq total-usage) (assoc gen-usage :bosquet/total total-usage))})))
+     {completions gen-result}
+     {usage gen-usage})))
 
 (defn complete-template
   "Completion for a case when we have simple string `prompt`"
@@ -293,8 +325,7 @@
    [completions default-template-completion]))
 
 (defn generate
-  "
-  Generate completions for various modes. Generation mode is determined
+  "Generate completions for various modes. Generation mode is determined
   by the type of the `messages`:
 
   - Vector of tuples, triggers `chat` mode completion
@@ -323,62 +354,74 @@
 
 (comment
 
-  (generate "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
+  (generate
+   {:question-answer "Question: {{question}}  Answer: {{answer}}"
+    :answer          (llm :lmstudio)
+    :self-eval       ["{{question-answer}}"
+                      "Is this a correct answer?"
+                      "{{test}}"]
+    :test            (llm :lmstudio)}
+   {:question "What is the distance from Moon to Io?"})
+
+  (generate "Extract name from this russian text. TEXT: Напомним, Вячеслав Дондоков занимал пост главного врача БСМП")
 
   (generate
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
 
-  (generate
-   {:role  ["Lets play a calculator. Solve the following equations:"
-            "{{part1}}"
-            "{{part2}}"]
-    :part1 "{{a}} + {{b}} = {{x}}"
-    :part2 "{{x}} - {{c}} = {{y}}"
-    :x     (llm :openai)
-    :y     (llm :openai)}
-   {:a 2 :b 4 :c 1})
+  (def solver (llm :lmstudio wkk/model-params {:max-tokens 50}))
 
-  (generate
-   {:synopsis ["You are a playwright. Given the play's title and it's genre"
-               "it is your job to write synopsis for that play."
-               "Title: {{title}}"
-               "Genre: {{genre}}"
-               ""
-               "Synopsis: {{play}}"]
-    :play     (llm :openai)}
-   {:title "City of Shadows" :genre "crime"})
+  (def g {:calc       ["Lets solve math problems."
+                       "Answer only with calculated result. Abstain from explanations or rephrasing the task!"
+                       "Given the values:"
+                       "A = {{a}}; B = {{b}}; C = {{c}}"
+                       "Solve the following equations:"
+                       "{{tasks}}"
+                       "{{grade}}"]
+          :tasks      ["{{p1}}" "{{p2}}" "{{p3}}"]
+          :p1         "A + B = {{x}}"
+          :p2         "A - B = {{y}}"
+          :p3         "({{x}} + {{y}}) / C = {{z}}"
+          :eval1-role ["{{tasks}}"
+                       "Evaluate if the solutions to the above equations are correct"
+                       "{{eval1}}"]
+          :eval2-role ["{{tasks}}"
+                       "Evaluate if the solutions to the above equations are calulated optimaly"
+                       "{{eval2}}"]
+          :grade      ["Based on the following evaluations to math problems:"
+                       "* {{eval1-role}}"
+                       "* {{eval2-role}}"
+                       "Provide a single score and summarizing explanation of student's math problem solving capabilities"
+                       "{{score}}"]
+          :x          solver
+          :y          solver
+          :z          solver
+          :eval1      solver
+          :eval2      solver
+          :score      solver})
+
+  (generate g {:a 5 :b 2 :c 1})
 
   (generate
    {:q1   ["Q: When I was {{age}} my sister was {{age-relation}} my age. Now I’m 70 how old is my sister? A: {{a}}"
            "Is this answer correct? {{eval}}"]
     :eval (llm wkk/openai)
-    :a    (llm wkk/openai wkk/model-params {:max-tokens 100})}
-   {:age          13
-    :age-relation "half"})
+    :a    (llm wkk/openai wkk/model-params {:max-tokens 100})})
 
-  (gen-tree/expand-dependencies
-   (prep-graph
-    {:q1   ["Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{a}}"
-            "Is this answer correct? {{eval}}"]
-     :eval (llm wkk/lmstudio)
-     :a    (llm wkk/lmstudio wkk/model-params {:max-tokens 250})}))
-
-  (generate
-   [[:system "You are an amazing writer."]
-    [:user ["Write a synopsis for the play:"
-            "Title​ {{title}}"
-            "Genre​ {{genre}}"
-            "Synopsis:"]]
-    [:assistant (llm wkk/lmstudio
-                     wkk/model-params {:temperature 0.8 :max-tokens 120}
-                     wkk/var-name :synopsis)]
-    [:user "Now write a critique of the above synopsis:"]
-    [:assistant (llm wkk/lmstudio
-                     wkk/model-params {:temperature 0.2 :max-tokens 120}
-                     wkk/var-name     :critique)]]
-   {:title "Mr. X"
-    :genre "Sci-Fi"})
+  (generate [[:system "You are an amazing writer."]
+             [:user ["Write a synopsis for the play:"
+                     "Title​ {{title}}"
+                     "Genre​ {{genre}}"
+                     "Synopsis:"]]
+             [:assistant (llm wkk/lmstudio
+                              wkk/model-params {:temperature 0.8 :max-tokens 120}
+                              wkk/var-name :synopsis)]
+             [:user "Now write a critique of the above synopsis:"]
+             [:assistant (llm wkk/lmstudio
+                              wkk/model-params {:temperature 0.2 :max-tokens 120}
+                              wkk/var-name :critique)]]
+            {:title "Mr. X"
+             :genre "Sci-Fi"})
 
   (generate
    llm/default-services
@@ -387,9 +430,7 @@
     :self-eval       ["{{question-answer}}"
                       ""
                       "Is this a correct answer?"
-                      "{{test}}"]
-    :test            (llm wkk/lmstudio)}
-   {:question "What is the distance from Moon to Io?"})
+                      "{{test}}"]})
 
   (generate
    {:astronomy ["As a brilliant astronomer, list distances between planets and the Sun"
@@ -402,23 +443,6 @@
                     wkk/context :astronomy)
     :analysis  ["Based on the JSON planet to sun distances table"
                 "provide me with​ a) average distance b) max distance c) min distance"
-                "{{distances}}"]
-    :stats     (llm wkk/lmstudio
-                    wkk/context :analysis)})
+                "{{distances}}"]})
 
-  ;; ----
-  (generate
-   {:q
-    "Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?
-     A: {{a}}"
-    :a (llm wkk/lmstudio
-            wkk/model-params {:max-tokens 50})}
-   {:age 13})
-
-  (generate
-   [[:system "You are a calculator."]
-    [:user "2-2="]
-    [:assistant (llm wkk/cohere
-                     wkk/model-params {:temperature 0.0 :max-tokens 10}
-                     wkk/var-name :calc)]])
   #__)
