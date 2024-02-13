@@ -75,7 +75,7 @@
 
   See https://opennlp.apache.org/models.html"
   [lang]
-  (let [model-file (io/file (format "lang/%s/sentence-detector.bin" (name lang)))]
+  (let [model-file (io/file (format "models/lang/%s/sentence-detector.bin" (name lang)))]
     (if (.exists model-file)
       (SentenceDetectorME. (SentenceModel. model-file))
       (timbre/errorf

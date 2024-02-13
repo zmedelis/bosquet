@@ -17,5 +17,5 @@
                         (clojure "-X:dev user/build-static-docs"))
          lang:sent:en (do
                         (shell "mkdir -p lang/en")
-                        (shell (str "wget -O lang/en/sentence-detector.bin "
+                        (shell (str "wget -O models/lang/en/sentence-detector.bin "
                                     "https://dlcdn.apache.org/opennlp/models/ud-models-1.0/opennlp-en-ud-ewt-sentence-1.0-1.9.3.bin")))}}

@@ -36,4 +36,4 @@ config.edn
 qdrant_storage
 .cache
 data
-lang
+models
