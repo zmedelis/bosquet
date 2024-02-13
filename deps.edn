@@ -24,7 +24,11 @@
            org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.1"}
            org.apache.poi/poi                            {:mvn/version "5.2.5"}
            org.apache.tika/tika-parsers-standard-package {:mvn/version "2.9.1"}
-           org.apache.opennlp/opennlp-tools              {:mvn/version "2.3.2"} camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}}
+           com.microsoft.onnxruntime/onnxruntime         {:mvn/version "1.17.0"}
+           org.apache.opennlp/opennlp-tools              {:mvn/version "2.3.2"}
+           camel-snake-kebab/camel-snake-kebab           {:mvn/version "0.4.3"}
+           org.clojure/tools.cli                         {:mvn/version "1.0.219"}
+           ai.djl.huggingface/tokenizers                 {:mvn/version "0.26.0"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk      {:mvn/version "0.15.957"}
                                       criterium/criterium              {:mvn/version "0.4.6"}
