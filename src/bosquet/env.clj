@@ -16,7 +16,13 @@
 (defn val [& key]
   (get-in config key))
 
-(defn default-llm
-  "Get default LLM service as defiened in config.edn or env.edn"
+(defn default-service
+  "Get default LLM service as defiened in config.edn"
   []
-  (val :llm/default))
+  (-> :default-model val :service))
+
+
+(defn default-model-params
+  "Get default LLM model parameters"
+  []
+  (-> :default-model val (dissoc :service)))

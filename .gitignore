@@ -33,6 +33,7 @@
 .idea/
 *.iml
 config.edn
+secrets.edn
 qdrant_storage
 .cache
 data

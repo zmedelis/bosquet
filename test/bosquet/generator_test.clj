@@ -77,7 +77,7 @@
 
 (deftest appending-gen-instruction
   (is (= {gen/default-template-prompt     "What is the distance from Moon to Io? {{bosquet..template/completion}}"
-          gen/default-template-completion {wkk/service (env/default-llm)}}
+          gen/default-template-completion (gen/default-llm)}
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
 

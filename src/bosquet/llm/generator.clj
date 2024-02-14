@@ -42,6 +42,10 @@
   [service & args]
   (assoc (apply hash-map args) wkk/service service))
 
+(defn default-llm
+  []
+  (assoc (env/default-model-params) wkk/service (env/default-service)))
+
 (defn- resolver-error-wrapper
   [env]
   (p.plugin/register
@@ -203,7 +207,7 @@
   "If template does not specify generation function append the default one."
   [string-template]
   {default-template-prompt     (selmer/append-slot string-template default-template-completion)
-   default-template-completion (llm (env/default-llm))})
+   default-template-completion (default-llm)})
 
 (defn gen-environment
   [llm-config context vars-map]
