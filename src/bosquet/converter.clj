@@ -32,14 +32,14 @@
   (condp = (-> answer s/trim s/lower-case)
     "yes" true
     "no"  false
-    nil))
+    answer))
 
 (defn string->number
   [num]
   (cond
     (re-matches #"\d+" num) (Integer/parseInt num)
     (re-matches #"\d+(\.\d+)?" num) (Double/parseDouble num)
-    :else nil))
+    :else num))
 
 (defn json-reader
   "Some models (GPT-3.5-*, Cohere) tend to wrap response with Makrdown code
