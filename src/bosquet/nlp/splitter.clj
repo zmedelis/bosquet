@@ -79,8 +79,8 @@
     (if (.exists model-file)
       (SentenceDetectorME. (SentenceModel. model-file))
       (timbre/errorf
-        "‼️ Sentence detenction model file is not found. Use `bb lang:sent:%s` to download."
-        (name lang)))))
+       "‼️ Sentence detenction model file is not found. Use `bb lang:sent:%s` to download."
+       (name lang)))))
 
 (defn- text-units-length
   [units]

@@ -19,11 +19,11 @@
        u/write-json))
 
 (defn post
-  [url {api-key :api-key :as params}]
+  [url api-key params]
   (-> url
-      (hc/post {:content-type :json
-                :oauth-token  api-key
-                :body         (json-params params)
-                :http-client  client})
+      (hc/post (merge {:content-type :json
+                       :body         (-> params json-params u/snake_case)
+                       :http-client  client}
+                      (when api-key {:oauth-token api-key})))
       :body
       (u/read-json)))

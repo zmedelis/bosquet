@@ -266,8 +266,7 @@
          (reduce (fn [chat elements]
                    (if (= :assistant (ffirst elements))
                      (into chat elements)
-                     (conj chat [:user (apply str (mapv second elements))])
-                     ))
+                     (conj chat [:user (apply str (mapv second elements))])))
                  []))))
 
 (defn- split-gen-graph
@@ -305,9 +304,7 @@
         [_top-name top-tpl]    (first (top-level-template
                                        (:com.wsscode.pathom3.connect.indexes/index-io gen-env)
                                        pre-gen-res))
-        top-template           (chat llm-config
-                                     (template->chat top-tpl generators)
-                                     vars-map)
+        top-template           (chat llm-config (template->chat top-tpl generators) vars-map)
         gen-result             (merge
                                 (reduce-kv (fn [m k v]
                                              (assoc m k (selmer/render
@@ -373,7 +370,7 @@
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
 
-  (def solver (llm :lmstudio wkk/model-params {:max-tokens 50}))
+  (def solver (llm :openai wkk/model-params {:max-tokens 50}))
 
   (def g {:calc       ["Lets solve math problems."
                        "Answer only with calculated result. Abstain from explanations or rephrasing the task!"
@@ -417,12 +414,12 @@
                      "Title​ {{title}}"
                      "Genre​ {{genre}}"
                      "Synopsis:"]]
-             [:assistant (llm wkk/lmstudio
-                              wkk/model-params {:temperature 0.8 :max-tokens 120}
+             [:assistant (llm wkk/openai
+                              wkk/model-params {:model :gpt-4 :temperature 0.8 :max-tokens 120}
                               wkk/var-name :synopsis)]
              [:user "Now write a critique of the above synopsis:"]
-             [:assistant (llm wkk/lmstudio
-                              wkk/model-params {:temperature 0.2 :max-tokens 120}
+             [:assistant (llm wkk/mistral
+                              wkk/model-params {:model :mistral-small :temperature 0.2 :max-tokens 120}
                               wkk/var-name :critique)]]
             {:title "Mr. X"
              :genre "Sci-Fi"})

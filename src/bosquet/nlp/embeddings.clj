@@ -17,6 +17,7 @@
   (encode [_this text] (oai-embeddings text opts)))
 
 (comment
+
   (require '[bosquet.system :as system])
   (require '[bosquet.db.qdrant :as qd])
 

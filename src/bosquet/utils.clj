@@ -81,4 +81,4 @@
   [service-cfg params service-name]
   (timbre/infof "💬 Calling %s with:" service-name)
   (timbre/infof "\tParams: '%s'" (dissoc params :messages))
-  (timbre/infof "\tConfig: '%s'" (dissoc service-cfg :api-key)))
+  (timbre/infof "\tConfig: '%s'" (dissoc service-cfg :api-key :llm/complete-fn :llm/chat-fn)))

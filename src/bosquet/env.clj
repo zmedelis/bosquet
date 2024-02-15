@@ -21,7 +21,6 @@
   []
   (-> :default-model val :service))
 
-
 (defn default-model-params
   "Get default LLM model parameters"
   []

@@ -20,36 +20,41 @@
                           :completion completion_tokens
                           :total      total_tokens}}))
 
+(defn- prep-params
+  [params]
+  (-> params
+      (dissoc :prompt wkk/model-params)
+      (merge (wkk/model-params params))))
+
+(defn- call-fn [{:keys [api-endpoint api-key]}]
+  (partial http/post (str api-endpoint "/chat/completions") api-key))
+
 (defn chat
   ([params] (chat (wkk/mistral env/config) params))
-  ([{api-endpoint :api-endpoint :as service-cfg}
-    {messages :messages :as params}]
+  ([service-cfg params]
    (u/log-call service-cfg params "Mistral chat")
-   (let [lm-call (partial http/post (str api-endpoint "/chat/completions"))]
+   (let [lm-call (call-fn service-cfg)]
      (-> params
-         (assoc :messages messages)
-         u/snake_case
+         prep-params
          lm-call
          (->completion :chat)))))
 
 (defn complete
-  ([params] (complete
-             (wkk/mistral env/config)
-             params))
-  ([{api-endpoint :api-endpoint :as service-cfg}
-    {prompt :prompt :as params}]
+  ([params] (complete (wkk/mistral env/config) params))
+  ([service-cfg {prompt :prompt :as params}]
    (u/log-call service-cfg params "Mistral completion")
-   (let [lm-call (partial http/post (str api-endpoint "/chat/completions"))
-         params (-> params
-                    (dissoc :prompt)
-                    (assoc :messages [{:role :user :content prompt}]))]
+   (let [lm-call (call-fn service-cfg)]
      (-> params
-         u/snake_case
+         prep-params
+         (assoc :messages [{:role :user :content prompt}])
          lm-call
          (->completion :completion)))))
 
 (comment
+  (chat
+   {:messages [{:role :user :content "2/2="}]
+    wkk/model-params {:model "mistral-small"}})
   (complete
-   {:messages [:role :user :content "2+2="]
+   {:prompt "2+2="
     wkk/model-params {:model "mistral-small"}})
   #__)
