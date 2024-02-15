@@ -85,7 +85,9 @@
 (defn- set-default [options]
   (update-config-file [model-default] options))
 
-(defn- collect-data [prompts]
+(defn- collect-data
+  "Ask user to enter data in the console prompt"
+  [prompts]
   (loop [m {}
          [slot & slots] (read/data-slots prompts)]
     (if slot
@@ -93,27 +95,29 @@
              slots)
       m)))
 
-(defn- call-llm [prompt {:keys [prompt-file data-file]}]
+(defn- call-llm
+  "Do the call to LLM and print out the results"
+  [prompt {:keys [prompt-file data-file]}]
   (timbre/set-min-level! :error)
-  (let [prompts (-> prompt-file slurp read-string)]
-    (println (u/pp-str
-              (if prompt-file
-                (gen/generate prompts
-                              (if data-file
-                                (-> data-file slurp read-string)
-                                (collect-data prompts)))
-                (gen/generate prompt))))))
+  (let [prompts   (-> prompt-file slurp read-string)
+        user-data (if data-file
+                    (-> data-file slurp read-string)
+                    (collect-data prompts))]
+    (if prompt-file
+      (doseq [data (if (vector? user-data) user-data [user-data])]
+        (println (u/pp-str (gen/generate prompts data))))
+      (gen/generate prompt))))
 
 (defn- action [options arguments]
   (let [[action arg param & _rest] (map keyword arguments)]
     (condp = action
       :models (condp = arg
                 :default (set-default options))
-      :keys (condp = arg
-              :set  (set-key param)
-              :list (list-set-keys)
-              :path config-path
-              (list-set-keys))
+      :keys   (condp = arg
+                :set  (set-key param)
+                :list (list-set-keys)
+                :path config-path
+                (list-set-keys))
       (call-llm (first arguments) options))))
 
 (defn -main [& args]
