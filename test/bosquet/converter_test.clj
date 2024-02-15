@@ -23,7 +23,7 @@
   (is (true? (c/yes-no->bool "YES")))
   (is (false? (c/yes-no->bool "     nO    ")))
   (is (false? (c/yes-no->bool "NO")))
-  (is (nil? (c/yes-no->bool "X"))))
+  (is (= "X" (c/yes-no->bool "X"))))
 
 (deftest coerce-test
   (is (= "Dogs are great!" (c/coerce nil "Dogs are great!")))
