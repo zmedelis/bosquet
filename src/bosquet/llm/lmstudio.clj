@@ -1,10 +1,10 @@
 (ns bosquet.llm.lmstudio
   (:require
+   [bosquet.env :as env]
    [bosquet.llm.chat :as chat]
    [bosquet.llm.http :as http]
    [bosquet.llm.wkk :as wkk]
-   [bosquet.utils :as u]
-   [taoensso.timbre :as timbre]))
+   [bosquet.utils :as u]))
 
 (defn- ->completion
   [{choices :choices {prompt_tokens     :prompt_tokens
@@ -18,42 +18,41 @@
                           :completion completion_tokens
                           :total      total_tokens}}))
 
+(defn- prep-params
+  ;; TODO is it so copy/paste accross oai, mistral and this ns
+  [params]
+  (-> params
+      (dissoc :prompt wkk/model-params)
+      (merge (wkk/model-params params))))
+
+(defn- call-fn [{:keys [api-endpoint api-key]}]
+  (partial http/post (str api-endpoint "/chat/completions") api-key))
+
 (defn chat
-  ([params] (chat nil params))
-  ([{api-endpoint :api-endpoint :as service-cfg}
-    {messages :messages :as params}]
-   (timbre/infof "💬 Calling LM Studio with:")
-   (timbre/infof "\tParams: '%s'" (dissoc params :messages))
-   (timbre/infof "\tConfig: '%s'" (dissoc service-cfg :api-key))
-   (let [lm-call (partial http/post (str api-endpoint "/chat/completions"))]
+  ([params] (chat (wkk/lmstudio env/config) params))
+  ([service-cfg params]
+   (u/log-call service-cfg params "LM Studio chat")
+   (let [lm-call (call-fn service-cfg)]
      (-> params
-         (assoc :messages messages)
-         u/snake_case
+         prep-params
          lm-call
          (->completion :chat)))))
 
 (defn complete
-  ([params] (chat nil params))
-  ([{api-endpoint :api-endpoint :as service-cfg}
-    {prompt :prompt :as params}]
-   (timbre/infof "💬 Calling LM studio completion with:")
-   (timbre/infof "\t* Params: '%s'" (dissoc params :prompt))
-   (timbre/infof "\t* Options: '%s'" (dissoc service-cfg :api-key))
-   (let [lm-call (partial http/post (str api-endpoint "/chat/completions"))
-         params (-> params
-                    (dissoc :prompt)
-                    (assoc :messages [{:role :user :content prompt}]))]
+  ([params] (complete (wkk/lmstudio env/config) params))
+  ([service-cfg {prompt :prompt :as params}]
+   (u/log-call service-cfg params "LM Studio completion")
+   (let [lm-call (call-fn service-cfg)]
      (-> params
-         u/snake_case
+         prep-params
+         (assoc :messages [{:role :user :content prompt}])
          lm-call
          (->completion :completion)))))
 
 (comment
   (complete
-   {:api-endpoint "http://localhost:1234/v1"}
    {:prompt "2+2="})
   (chat
-   {:api-endpoint "http://localhost:1234/v1"}
    {:messages [{:role :system :content "You are a calculator. You only converse in this format: expression = answer"}
                {:role :user :content "2-2="}]})
   #__)

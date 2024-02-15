@@ -428,15 +428,6 @@
              :genre "Sci-Fi"})
 
   (generate
-   llm/default-services
-   {:question-answer "Question​ {{question}}  Answer: {{answer}}"
-    :answer          (llm wkk/lmstudio wkk/cache false)
-    :self-eval       ["{{question-answer}}"
-                      ""
-                      "Is this a correct answer?"
-                      "{{test}}"]})
-
-  (generate
    {:astronomy ["As a brilliant astronomer, list distances between planets and the Sun"
                 "in the Solar System. Provide the answer in JSON map where the key is the"
                 "planet name and the value is the string distance in millions of kilometers."
