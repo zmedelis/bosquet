@@ -1,5 +1,6 @@
 (ns bosquet.template.selmer
   (:require
+   [bosquet.utils :as u]
    [clojure.set :as set]
    [clojure.string :as string]
    [selmer.filter-parser :refer [literal? split-value]]
@@ -80,13 +81,19 @@
        (map first)))
 
 (defn known-variables
+  "Known variables in the `template` or templates"
   [template]
-  (selmer/known-variables template))
+  (let [xf (comp
+            (remove nil?)
+            (mapcat (fn [template]
+                      (when-not (map? template)
+                        (selmer/known-variables template)))))]
+    (into #{} xf (if (string? template) [template] template))))
 
 (defn render [text ctx]
   (when-not (string/blank? text)
     (util/without-escaping
-     (selmer/render text ctx))))
+      (selmer/render text ctx))))
 
 (defn missing-value-noop [tag _context-map]
   (format "{{%s}}" (:tag-value tag)))

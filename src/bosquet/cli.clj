@@ -1,6 +1,6 @@
 (ns bosquet.cli
   (:require
-   [me.flowthing.pp :as pp]
+   [bosquet.template.read :as read]
    [bosquet.llm.generator :as gen]
    [bosquet.utils :as u]
    [clojure.java.io :as io]
@@ -63,6 +63,11 @@
 (def ^:private update-secrets-file
   (partial update-props-file secrets-file))
 
+(defn- read-input [label]
+  (printf "%s: " (name label))
+  (flush)
+  (read-line))
+
 (defn- set-key [llm-name]
   (print "Enter key:")
   (flush)
@@ -80,13 +85,24 @@
 (defn- set-default [options]
   (update-config-file [model-default] options))
 
+(defn- collect-data [prompts]
+  (loop [m {}
+         [slot & slots] (read/data-slots prompts)]
+    (if slot
+      (recur (assoc m slot (read-input slot))
+             slots)
+      m)))
+
 (defn- call-llm [prompt {:keys [prompt-file data-file]}]
   (timbre/set-min-level! :error)
-  (println (u/pp-str
-            (if prompt-file
-              (gen/generate (-> prompt-file slurp read-string)
-                            (when data-file (-> data-file slurp read-string)))
-              (gen/generate prompt)))))
+  (let [prompts (-> prompt-file slurp read-string)]
+    (println (u/pp-str
+              (if prompt-file
+                (gen/generate prompts
+                              (if data-file
+                                (-> data-file slurp read-string)
+                                (collect-data prompts)))
+                (gen/generate prompt))))))
 
 (defn- action [options arguments]
   (let [[action arg param & _rest] (map keyword arguments)]
@@ -96,7 +112,7 @@
       :keys (condp = arg
               :set  (set-key param)
               :list (list-set-keys)
-              :path (config-path)
+              :path config-path
               (list-set-keys))
       (call-llm (first arguments) options))))
 
