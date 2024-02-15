@@ -39,3 +39,10 @@
   (is (= [1 2] (c/json-reader "[1, 2]")))
   (is (= {"a" 2} (c/json-reader (u/join-lines "Junk\nmore of it\n```json" "{\"a\" : 2}" "```\njunk"))))
   (is (= 1 (c/json-reader (u/join-lines "```json" "1" "```")))))
+
+(deftest converting-numbers
+  (is (nil? (c/string->number "x")))
+  (is (= 1 (c/string->number "1")))
+  (is (= 1.1 (c/string->number "1.1")))
+  (is (= 101.09 (c/string->number "101.09")))
+  (is (= 0.1 (c/coerce :number "0.100"))))

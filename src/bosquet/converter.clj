@@ -34,6 +34,13 @@
     "no"  false
     nil))
 
+(defn string->number
+  [num]
+  (cond
+    (re-matches #"\d+" num) (Integer/parseInt num)
+    (re-matches #"\d+(\.\d+)?" num) (Double/parseDouble num)
+    :else nil))
+
 (defn json-reader
   "Some models (GPT-3.5-*, Cohere) tend to wrap response with Makrdown code
   ```json
@@ -66,4 +73,5 @@
     :json (json-reader completion)
     :edn  (edn-reader completion)
     :list (list-reader completion)
+    :number (string->number completion)
     completion))
