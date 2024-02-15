@@ -1,13 +1,19 @@
 (ns bosquet.cli
   (:require
+   [me.flowthing.pp :as pp]
+   [bosquet.llm.generator :as gen]
    [bosquet.utils :as u]
    [clojure.java.io :as io]
-   [clojure.tools.cli :refer [parse-opts]])
+   [clojure.tools.cli :refer [parse-opts]]
+   [taoensso.timbre :as timbre])
   (:gen-class))
 
 (def cli-options
-  [["-m" "--model MODEL" "Model name"
-    #_ #_:id :model
+  [["-p" "--prompt-file PROMPT-FILE" "File containing either chat, graph, or plain string prompt"
+    :validate [#(.exists (io/file %)) "Prompt file is not found."]]
+   ["-d" "--data-file DATA-FILE" "File containing context data for the prompts"
+    :validate [#(.exists (io/file %)) "Data file is not found."]]
+   ["-m" "--model MODEL" "Model name"
     :default :gpt-4
     :parse-fn keyword]
    ["-t" "--temperature TEMP" "Generation temerature"
@@ -74,18 +80,29 @@
 (defn- set-default [options]
   (update-config-file [model-default] options))
 
-(defn- action [options [action arg param & _rest]]
-  (condp = action
-    :models (condp = arg
-              :default (set-default options))
-    :keys (condp = arg
-            :set  (set-key param)
-            :list (list-set-keys)
-            :path (config-path)
-            (list-set-keys))))
+(defn- call-llm [prompt {:keys [prompt-file data-file]}]
+  (timbre/set-min-level! :error)
+  (println (u/pp-str
+            (if prompt-file
+              (gen/generate (-> prompt-file slurp read-string)
+                            (when data-file (-> data-file slurp read-string)))
+              (gen/generate prompt)))))
+
+(defn- action [options arguments]
+  (let [[action arg param & _rest] (map keyword arguments)]
+    (condp = action
+      :models (condp = arg
+                :default (set-default options))
+      :keys (condp = arg
+              :set  (set-key param)
+              :list (list-set-keys)
+              :path (config-path)
+              (list-set-keys))
+      (call-llm (first arguments) options))))
 
 (defn -main [& args]
-  (let [{:keys [options arguments errors] :as x} (parse-opts args cli-options)]
+  (let [{:keys [options arguments errors]} (parse-opts args cli-options)]
     (if errors
-      (println errors)
-      (action options (map keyword arguments)))))
+      (doseq [err errors]
+        (println err))
+      (action options arguments))))

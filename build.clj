@@ -64,6 +64,7 @@
                   :class-dir class-dir})
   (b/uber {:class-dir class-dir
            :uber-file uber-file
+           :main 'bosquet.cli
            :basis basis}))
 
 (defn deploy [opts]
