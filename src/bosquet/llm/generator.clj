@@ -78,7 +78,9 @@
     (let [format-fn      (partial converter/coerce (wkk/output-format properties))
           service-config (dissoc (llm-impl llm-config) wkk/gen-fn wkk/chat-fn)
           chat-fn        (partial chat-impl service-config)
-          params         (assoc model-params :messages (->chatml messages))
+          params         (merge
+                          (env/default-model-params)
+                          (assoc model-params :messages (->chatml messages)))
           result         (if use-cache
                            (cache/lookup-or-call chat-fn params)
                            (chat-fn params))]
