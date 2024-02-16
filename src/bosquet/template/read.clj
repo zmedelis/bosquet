@@ -34,28 +34,21 @@
         {})))
 
 (defn data-slots
-  "Exrract data slots that are defined in the chat or graph context.
+  "Exrract data slots that are defined in the template, chat, or graph context.
   This will ignore all the self references and generation slots,
   only return slots that are suplied as data and not defined in prompts."
-  [chat-or-graph]
+  [tpl-chat-or-graph]
   ;; Different processing is needed for map based graph prompts
   ;; and chats
   (let [templates     (cond
-                        (map? chat-or-graph)    (vals chat-or-graph)
-                        (vector? chat-or-graph) (map (fn [[_ content]]
-                                                       (u/join-coll content)) chat-or-graph))
+                        (string? tpl-chat-or-graph) [tpl-chat-or-graph]
+                        (map? tpl-chat-or-graph)    (vals tpl-chat-or-graph)
+                        (vector? tpl-chat-or-graph) (map (fn [[_ content]]
+                                                       (u/join-coll content)) tpl-chat-or-graph))
         non-data-refs (set (cond
-                             (map? chat-or-graph)    (keys chat-or-graph)
-                             (vector? chat-or-graph) (map (fn [[_ content]]
+                             (map? tpl-chat-or-graph)    (keys tpl-chat-or-graph)
+                             (vector? tpl-chat-or-graph) (map (fn [[_ content]]
                                                             (when (map? content) (wkk/var-name content)))
-                                                          chat-or-graph)))
+                                                          tpl-chat-or-graph)))
         slots         (selmer/known-variables templates)]
     (set/difference slots non-data-refs)))
-
-(comment
-  (data-slots
-   {:q1   "Q: When I was {{my-age}} my sister was {{other-age}} my age. Now I’m 70 how old is my sister? A: {{a}}"
-    :a    #:llm{:service :openai}}
-   )
-
-  )

@@ -5,6 +5,7 @@
    [clojure.test :refer [deftest is]]))
 
 (deftest data-slots-test
+  (is (= #{:x :y} (data-slots "{{x}} + {{y}}")))
   (is #{:v1 :v2}
       (data-slots [[:user "ab {{v1}}"]
                    [:assistant {:llm :test wkk/var-name :ref1}]
