@@ -4,7 +4,9 @@
    [clojure.string :as string]
    [hato.client :as hc]))
 
-(def client (hc/build-http-client {:connect-timeout 10000}))
+(defn client
+  []
+  (hc/build-http-client {:connect-timeout 10000}))
 
 (defn- json-params
   "Snake case keys from `:max-tokens` to `:max_tokens`"
@@ -23,7 +25,7 @@
   (-> url
       (hc/post (merge {:content-type :json
                        :body         (-> params json-params u/snake_case)
-                       :http-client  client}
+                       :http-client  (client)}
                       (when api-key {:oauth-token api-key})))
       :body
       (u/read-json)))

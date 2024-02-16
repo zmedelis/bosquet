@@ -1,6 +1,5 @@
 (ns bosquet.template.selmer
   (:require
-   [bosquet.utils :as u]
    [clojure.set :as set]
    [clojure.string :as string]
    [selmer.filter-parser :refer [literal? split-value]]
