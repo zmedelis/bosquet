@@ -126,14 +126,14 @@
   "Do the call to LLM and print out the results"
   [prompt {:keys [prompt-file data-file]}]
   (timbre/set-min-level! :error)
-  (let [prompts   (-> prompt-file slurp read-string)
+  (let [prompts   (if prompt prompt (-> prompt-file slurp read-string))
         user-data (if data-file
                     (-> data-file slurp read-string)
                     (collect-data prompts))]
     (if prompt-file
       (doseq [data (if (vector? user-data) user-data [user-data])]
         (println (u/pp-str (gen/generate prompts data))))
-      (gen/generate prompt))))
+      (println (gen/generate prompt user-data)))))
 
 (defn- action [options arguments]
   (let [[action arg param & _rest] (map keyword arguments)]
