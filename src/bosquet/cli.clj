@@ -1,9 +1,10 @@
 (ns bosquet.cli
   (:require
-   [bosquet.template.read :as read]
    [bosquet.llm.generator :as gen]
+   [bosquet.template.read :as read]
    [bosquet.utils :as u]
    [clojure.java.io :as io]
+   [clojure.string :as string]
    [clojure.tools.cli :refer [parse-opts]]
    [taoensso.timbre :as timbre])
   (:gen-class))
@@ -26,7 +27,33 @@
     :default :openai
     :parse-fn keyword
     :validate [#{:openai :mistral :cohere :local-oai}
-               "LLM not supported. Supporting keys for: opeanai, mistral, cohere, and local-oai"]]])
+               "LLM not supported. Supporting keys for: opeanai, mistral, cohere, and local-oai"]]
+   ["-h" "--help" nil]])
+
+(defn usage
+  [summary]
+  (->> ["Bosquet CLI tool. Run LLM generations based on suplied prompts and data."
+        ""
+        "Usage: bllm action [options]"
+        ""
+        "Options:"
+        summary
+        ""
+        "Management actions:"
+        ""
+        " keys                      manage LLM service keys"
+        "   - set [service name]    set a key for a given serivice"
+        "   - list                  list registered services with keys"
+        " modelis                   manage model parameters"
+        "   - default               set default model parameters"
+        ""
+        "Generation actions:"
+        ""
+        " \"prompt string\"         running with prompt string will trigger generation using default model"
+        ""
+        "Please refer to https://github.com/zmedelis/bosquet for more information."]
+       (string/join \newline)
+       println))
 
 (def config-file (io/file (System/getProperty "user.home") ".bosquet/config.edn"))
 (def secrets-file (io/file (System/getProperty "user.home") ".bosquet/secrets.edn"))
@@ -121,8 +148,8 @@
       (call-llm (first arguments) options))))
 
 (defn -main [& args]
-  (let [{:keys [options arguments errors]} (parse-opts args cli-options)]
-    (if errors
-      (doseq [err errors]
-        (println err))
-      (action options arguments))))
+  (let [{:keys [options arguments errors summary] :as x} (parse-opts args cli-options)]
+    (cond
+      (seq errors)       (doseq [err errors] (println err))
+      (empty? arguments) (usage summary)
+      :else              (action options arguments))))
