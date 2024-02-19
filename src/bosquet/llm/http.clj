@@ -4,9 +4,34 @@
    [clojure.string :as string]
    [hato.client :as hc]))
 
+(defn use-local-proxy
+  "Use local proxy to log LLM API requests"
+  ([] (use-local-proxy "localhost" 8080))
+  ([host port]
+   (System/setProperty "javax.net.ssl.trustStore" (str (System/getProperty "user.home") "/.bosquet/keystore"))
+   (System/setProperty "javax.net.ssl.trustStorePassword" "changeit")
+   (System/setProperty "https.proxyHost" host)
+   (System/setProperty "https.proxyPort" (str port))))
+
 (defn client
-  []
-  (hc/build-http-client {:connect-timeout 10000}))
+  ([] (client nil))
+  ([{:keys [connect-timeout]
+     :or   {connect-timeout 10000}
+     :as   opts}]
+   (hc/build-http-client
+    (merge opts
+           {:connect-timeout connect-timeout}))))
+(comment
+  (System/setProperty "javax.net.ssl.trustStore" "/Users/zm/.bosquet/keystore")
+  (System/setProperty "javax.net.ssl.trustStorePassword" "changeit")
+
+  (System/setProperty "javax.net.ssl.keyStore" "/Users/zm/.bosquet/keystore")
+  (System/setProperty "javax.net.ssl.keyStorePassword" "changeit")
+
+  (System/setProperty "https.proxyHost" "localhost")
+  (System/setProperty "https.proxyPort" "8080")
+  )
+
 
 (defn- json-params
   "Snake case keys from `:max-tokens` to `:max_tokens`"

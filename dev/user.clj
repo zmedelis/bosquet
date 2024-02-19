@@ -27,7 +27,6 @@
 (timbre/merge-config! {:output-fn log-output-fn
                        :timestamp-opts {:pattern "HH:mm:ss"}})
 
-
 (defn build-static-docs
   [_]
   (clerk/build! {:paths    ["notebook/getting_started.clj"

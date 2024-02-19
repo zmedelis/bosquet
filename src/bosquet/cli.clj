@@ -1,6 +1,7 @@
 (ns bosquet.cli
   (:require
    [bosquet.llm.generator :as gen]
+   [bosquet.llm.http :as http]
    [bosquet.template.read :as read]
    [bosquet.utils :as u]
    [clojure.java.io :as io]
@@ -14,20 +15,26 @@
     :validate [#(.exists (io/file %)) "Prompt file is not found."]]
    ["-d" "--data-file DATA-FILE" "File containing context data for the prompts"
     :validate [#(.exists (io/file %)) "Data file is not found."]]
-   ["-m" "--model MODEL" "Model name"
-    :default :gpt-4
+   [nil "--model MODEL" "Model name"
     :parse-fn keyword]
-   ["-t" "--temperature TEMP" "Generation temerature"
+   [nil "--max-tokens NUMBER" "Max tokens to generate"
+    :default 300
+    :parse-fn #(Integer/parseInt %)
+    :validate [pos? "Max tokens must be > 0"]]
+   [nil "--temperature TEMP" "Generation temerature"
     :id :temperature
     :default 0
     :parse-fn #(Float/parseFloat %)
     :validate [#(<= 0 % 1) "Temperature value must be between 0.0 and 1.0"]]
    ["-s" "--service SERVICE" "LLM service provider"
     :id :service
-    :default :openai
     :parse-fn keyword
     :validate [#{:openai :mistral :cohere :local-oai}
                "LLM not supported. Supporting keys for: opeanai, mistral, cohere, and local-oai"]]
+   [nil "--proxy" "Use localy configured (localhost:8080) proxy for request/response logging"]
+   [nil "--proxy-host HOST" "Hostname for the proxy"]
+   [nil "--proxy-port PORT" "Port for the proxy"]
+
    ["-h" "--help" nil]])
 
 (defn usage
@@ -44,8 +51,10 @@
         " keys                      manage LLM service keys"
         "   - set [service name]    set a key for a given serivice"
         "   - list                  list registered services with keys"
-        " modelis                   manage model parameters"
-        "   - default               set default model parameters"
+        " llms                      manage model parameters"
+        "   - set                   set default model parameters"
+        "   - defaults              show model defaults"
+        "   - list                  show supported LLM services"
         ""
         "Generation actions:"
         ""
@@ -109,8 +118,20 @@
   []
   (println (str config-file)))
 
+(defn show-defaults
+  []
+  (println (-> config-file read-edn :default-model)))
+
 (defn- set-default [options]
-  (update-config-file [model-default] options))
+  (update-config-file [model-default] options)
+  (println "Defaults:")
+  (show-defaults))
+
+
+(defn- list-llms
+  []
+  (doseq [llm [:openai :openai-azure :cohere :lmstudio :mistral]]
+    (println (name llm))))
 
 (defn- collect-data
   "Ask user to enter data in the console prompt"
@@ -118,14 +139,14 @@
   (loop [m {}
          [slot & slots] (read/data-slots prompts)]
     (if slot
-      (recur (assoc m slot (read-input slot))
-             slots)
+      (recur (assoc m slot (read-input slot)) slots)
       m)))
 
 (defn- call-llm
   "Do the call to LLM and print out the results"
-  [prompt {:keys [prompt-file data-file]}]
-  (timbre/set-min-level! :error)
+  [prompt {:keys [prompt-file data-file proxy proxy-host proxy-port]}]
+  (when proxy (http/use-local-proxy))
+  (when (and proxy-host proxy-port) (http/use-local-proxy proxy-host proxy-port))
   (let [prompts   (if prompt prompt (-> prompt-file slurp read-string))
         user-data (if data-file
                     (-> data-file slurp read-string)
@@ -138,16 +159,20 @@
 (defn- action [options arguments]
   (let [[action arg param & _rest] (map keyword arguments)]
     (condp = action
-      :models (condp = arg
-                :default (set-default options))
-      :keys   (condp = arg
-                :set  (set-key param)
-                :list (list-set-keys)
-                :path config-path
-                (list-set-keys))
+      :llms (condp = arg
+              :set      (set-default options)
+              :defaults (show-defaults)
+              :list     (list-llms)
+              (list-llms))
+      :keys (condp = arg
+              :set  (set-key param)
+              :list (list-set-keys)
+              :path config-path
+              (list-set-keys))
       (call-llm (first arguments) options))))
 
 (defn -main [& args]
+  (timbre/set-min-level! :error)
   (let [{:keys [options arguments errors summary] :as x} (parse-opts args cli-options)]
     (cond
       (seq errors)       (doseq [err errors] (println err))
