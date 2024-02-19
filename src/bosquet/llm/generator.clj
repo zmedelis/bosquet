@@ -14,6 +14,7 @@
    [com.wsscode.pathom3.entity-tree :as pet]
    [com.wsscode.pathom3.interface.eql :as p.eql]
    [com.wsscode.pathom3.plugin :as p.plugin]
+   [jsonista.core :as j]
    [taoensso.timbre :as timbre]))
 
 (def default-template-prompt
@@ -57,9 +58,17 @@
         (timbre/errorf "Resolver operation '%s' failed" op-name)
         (timbre/error error)))}))
 
-(defn ->chatml [messages]
+(defn ->chatml
+  "Convert `messages` in tuple format ot ChatML. There is a caviat. When
+  `content` might not be a string (a likely case when one LLM call result in say JSON
+  feeds into another call."
+  [messages]
   (map
-   (fn [[role content]] {:role role :content content})
+   (fn [[role content]]
+     {:role role
+      :content (if (map? content)
+                 (j/write-value-as-string content)
+                 content)})
    messages))
 
 (defn call-llm
@@ -372,7 +381,7 @@
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
 
-  (def solver (llm :openai wkk/model-params {:max-tokens 50}))
+  (def solver (llm :openai wkk/model-params {:model :gpt-4 :max-tokens 50}))
 
   (def g {:calc       ["Lets solve math problems."
                        "Answer only with calculated result. Abstain from explanations or rephrasing the task!"
@@ -400,11 +409,11 @@
           :x          solver
           :y          solver
           :z          solver
-          :eval1      solver
-          :eval2      solver
+          :eval1      (llm :mistral wkk/model-params {:model :mistral-small :max-tokens 50})
+          :eval2      (llm :mistral wkk/model-params {:model :mistral-small :max-tokens 50})
           :score      (llm :openai
                            wkk/output-format :number
-                           wkk/model-params {:max-tokens 2})})
+                           wkk/model-params {:model :gpt-4 :max-tokens 2})})
 
   (generate g {:a 5 :b 2 :c 1})
 
@@ -430,16 +439,34 @@
              :genre "Sci-Fi"})
 
   (generate
-   {:astronomy ["As a brilliant astronomer, list distances between planets and the Sun"
-                "in the Solar System. Provide the answer in JSON map where the key is the"
-                "planet name and the value is the string distance in millions of kilometers."
-                "Generate only JSON omit any other prose and explanations."]
-    :distances (llm wkk/lmstudio
-                    wkk/output-format :json
-                    wkk/model-params {:max-tokens 300}
-                    wkk/context :astronomy)
-    :analysis  ["Based on the JSON planet to sun distances table"
-                "provide me with​ a) average distance b) max distance c) min distance"
-                "{{distances}}"]})
+   [[:system ["As a brilliant astronomer, list distances between planets and the Sun"
+              "in the Solar System. Provide the answer in JSON map where the key is the"
+              "planet name and the value is the string distance in millions of kilometers."
+              "{{analysis}}"]]
+    [:user ["Generate only JSON omit any other prose and explanations."]]
+    [:assistant (llm wkk/openai
+                     wkk/var-name :distances
+                     wkk/output-format :json
+                     wkk/model-params {:max-tokens 300 :model :gpt-4})]
+    [:user ["Based on the JSON distances data"
+            "provide me with​ a) average distance b) max distance c) min distance"]]
+    [:assistant (llm wkk/mistral
+                     wkk/var-name :analysis
+                     wkk/model-params {:model :mistral-small})]])
+
+  (generate
+   {:astronomer ["As a brilliant astronomer, list distances between planets and the Sun"
+                 "in the Solar System. Provide the answer in JSON map where the key is the"
+                 "planet name and the value is the string distance in millions of kilometers."
+                 "Generate only JSON omit any other prose and explanations."
+                 "{{distances}}"
+                 "Based on the JSON distances data"
+                 "provide me with​ a) average distance b) max distance c) min distance"
+                 "{{analysis}}"]
+    :distances  (llm wkk/openai
+                     wkk/output-format :json
+                     wkk/model-params {:max-tokens 300 :model :gpt-4})
+    :analysis   (llm wkk/mistral
+                     wkk/model-params {:model :mistral-small})})
 
   #__)

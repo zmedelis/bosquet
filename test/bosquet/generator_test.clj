@@ -1,7 +1,6 @@
 (ns bosquet.generator-test
   (:require
    [bosquet.db.cache :as cache]
-   [bosquet.env :as env]
    [bosquet.llm.generator :as gen]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
@@ -116,3 +115,8 @@
   (is (= [:y :z] (gen/find-refering-templates :n/x {:x "aaa" :y "{{n/x}}" :z "{{n/x}} {{y}}"})))
   (is (= [:n/y :n/z] (gen/find-refering-templates :x {:x "aaa" :n/y "{{x}}" :n/z "{{x}} {{y}}"})))
   (is (= [] (gen/find-refering-templates :x {:x "aaa"}))))
+
+(deftest ->chatml-conversion
+  (is (= [{:role :user :content "Hi!"}] (gen/->chatml [[:user "Hi!"]])))
+  (is (= [{:role :user :content "{\"lon\":54.1,\"lat\":50.3}"}]
+         (gen/->chatml [[:user {:lon 54.1 :lat 50.3}]]))))
