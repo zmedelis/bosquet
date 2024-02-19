@@ -12,15 +12,18 @@
 ;; ## Install
 ;;
 ;; Follow the installation instructions in the *Mitproxy* [documentation](https://docs.mitmproxy.org/stable/overview-installation/).
+;; Once installed you can start web console with `mitmweb`.
 ;;
-;; To enable HTTPS calls a certificate needs to be added. First, get the certificate as described [here](https://docs.mitmproxy.org/stable/concepts-certificates/).
+;; *Mitproxy* webconsole http://127.0.0.1:8081/#/flows
 ;;
-;; Add it to *Bosquet* keystore and use a default 'changeit' password.
+;; As Mitproxy starts it will create a `~/.mitproxt` dir containing SSL certificates.
+;; The certificate needs to be added to JVM keystore.
+;;
+;; The following command will add it to *Bosquet* keystore:
 ;;
 ;; ```bash
-;; mkdir ~/.bosquet && keytool -import -alias mitproxy -keystore ~/.bosquet/keystore -file mitmproxy-ca-cert.pem
+;; bb mitproxy:keystore
 ;; ```
-;;
 ;;
 ;; ## REPL
 ;;
@@ -55,8 +58,6 @@
                      :llm/model-params {:model :mistral-small})]])
 
 ;; The *Mitproxy* console should show logged calls, where request, response, and latency data can be examined.
-;;
-;; *Mitproxy* webconsole http://127.0.0.1:8081/#/flows
 ;;
 ;; ![Mitproxy](notebook/assets/mitproxy.png)
 ;;
