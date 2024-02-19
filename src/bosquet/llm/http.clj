@@ -21,17 +21,6 @@
    (hc/build-http-client
     (merge opts
            {:connect-timeout connect-timeout}))))
-(comment
-  (System/setProperty "javax.net.ssl.trustStore" "/Users/zm/.bosquet/keystore")
-  (System/setProperty "javax.net.ssl.trustStorePassword" "changeit")
-
-  (System/setProperty "javax.net.ssl.keyStore" "/Users/zm/.bosquet/keystore")
-  (System/setProperty "javax.net.ssl.keyStorePassword" "changeit")
-
-  (System/setProperty "https.proxyHost" "localhost")
-  (System/setProperty "https.proxyPort" "8080")
-  )
-
 
 (defn- json-params
   "Snake case keys from `:max-tokens` to `:max_tokens`"
