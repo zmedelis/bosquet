@@ -6,10 +6,10 @@
 
 (defn use-local-proxy
   "Use local proxy to log LLM API requests"
-  ([] (use-local-proxy "localhost" 8080))
-  ([host port]
+  ([] (use-local-proxy "localhost" 8080 "changeit"))
+  ([host port password]
    (System/setProperty "javax.net.ssl.trustStore" (str (System/getProperty "user.home") "/.bosquet/keystore"))
-   (System/setProperty "javax.net.ssl.trustStorePassword" "changeit")
+   (System/setProperty "javax.net.ssl.trustStorePassword" password)
    (System/setProperty "https.proxyHost" host)
    (System/setProperty "https.proxyPort" (str port))))
 

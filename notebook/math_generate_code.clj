@@ -1,8 +1,9 @@
 (ns math-generate-code
   (:require
-   [nextjournal.clerk :as c]
    [bosquet.llm.generator :as g]
-   [bosquet.utils :as u]))
+   [bosquet.llm.wkk :as wkk]
+   [bosquet.utils :as u]
+   [nextjournal.clerk :as c]))
 
 ;; ## Code generation for math calculations
 ;;
@@ -41,7 +42,7 @@
                         ""
                         "QUESTION: {{question}}"
                         "CODE: {{answer}}"]
-             :answer   (g/llm :openai)})
+             :answer   (g/llm :openai wkk/model-params {:model :gpt-4})})
 
 ;;
 ;; Let's have two questions to generate code for.

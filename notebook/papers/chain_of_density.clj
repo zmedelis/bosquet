@@ -87,7 +87,7 @@ are \"Missing-Entities\" and \"Denser-Summary\".
 ;;
 
 ^{:nextjournal.clerk/visibility {:result :hide}}
-(def result (g/generate
+(def result {} #_(g/generate
              cod-prompt
              {:ARTICLE article
               :FORMAT  "JSON"}))

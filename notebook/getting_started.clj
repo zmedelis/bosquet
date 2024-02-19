@@ -49,7 +49,7 @@
               "Genre: {{genre}}"
               ""
               "Synopsis: {{play}}"]
-   :play     (g/llm :openai)
+   :play     (g/llm :openai :llm/model-params {:model :gpt-4})
    :critique ["You are a play critic from the Moon City Times."
               "Given the synopsis of play, it is your job to write a review for that play."
               ""
@@ -58,7 +58,7 @@
               ""
               "Review from a New York Times play critic of the above play:"
               "{{review}}"]
-   :review   (g/llm :openai)})
+   :review   (g/llm :openai :llm/model-params {:model :gpt-4})})
 
 ;; Things to note:
 ;; * `play` and `review` define generation points, there you specify which LLM to use and which value from the map will be used as prompt context
@@ -82,11 +82,11 @@
              "Genre: {{genre}}"
              "Synopsis:"]]
      [:assistant (g/llm :openai
-                        wkk/model-params {:temperature 0.8 :max-tokens 120}
+                        wkk/model-params {:model :gpt-3.5-turbo :temperature 0.8 :max-tokens 120}
                         wkk/var-name :synopsis)]
      [:user "Now write a critique of the above synopsis:"]
      [:assistant (g/llm :openai
-                        wkk/model-params {:temperature 0.2 :max-tokens 120}
+                        wkk/model-params {:model :gpt-3.5-turbo :temperature 0.2 :max-tokens 120}
                         wkk/var-name     :critique)]]
     {:title "Mr. X"
     :genre "Sci-Fi"})
