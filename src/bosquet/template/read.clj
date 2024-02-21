@@ -42,7 +42,7 @@
   ;; and chats
   (let [templates     (cond
                         (string? tpl-chat-or-graph) [tpl-chat-or-graph]
-                        (map? tpl-chat-or-graph)    (vals tpl-chat-or-graph)
+                        (map? tpl-chat-or-graph)    (->> tpl-chat-or-graph vals (map u/join-coll))
                         (vector? tpl-chat-or-graph) (map (fn [[_ content]]
                                                        (u/join-coll content)) tpl-chat-or-graph))
         non-data-refs (set (cond
