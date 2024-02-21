@@ -70,7 +70,7 @@
 ;; ```
 ;; or with custom host and port
 ;; ```bash
-;; clojure -M -m bosquet.cli "2+2=" --proxy-host localhost --proxy-port 8080
+;; clojure -M -m bosquet.cli "2+2=" --proxy-host localhost --proxy-port 8080 --keystore-password changeit
 ;; ```
 ;; ---
 ;; *With many thanks to [Fuck You, Show Me The Prompt](https://hamel.dev/blog/posts/prompt/)*

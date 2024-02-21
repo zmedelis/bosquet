@@ -1,5 +1,6 @@
 (ns bosquet.cli
   (:require
+   [bosquet.env :as env]
    [bosquet.llm.generator :as gen]
    [bosquet.llm.http :as http]
    [bosquet.template.read :as read]
@@ -34,6 +35,7 @@
    [nil "--proxy" "Use localy configured (localhost:8080) proxy for request/response logging"]
    [nil "--proxy-host HOST" "Hostname for the proxy"]
    [nil "--proxy-port PORT" "Port for the proxy"]
+   [nil "--keystore-password PSW" "Password to Bosquet keystore (defaults to 'changeit')"]
 
    ["-h" "--help" nil]])
 
@@ -64,40 +66,7 @@
        (string/join \newline)
        println))
 
-(def config-file (io/file (System/getProperty "user.home") ".bosquet/config.edn"))
-(def secrets-file (io/file (System/getProperty "user.home") ".bosquet/secrets.edn"))
 
-(def ^:private model-default
-  "A key in config edn pointing to a default LLM model props"
-  :default-model)
-
-(defn- read-edn
-  [file]
-  (when (.exists file)
-    (-> file slurp read-string)))
-
-(defn- merge-config [cfg conf-path value]
-  (merge cfg (assoc-in cfg conf-path value)))
-
-(defn- update-props-file
-  [file conf-path value]
-  (let [cfg (read-edn file)]
-    (try
-      (io/make-parents file)
-      (spit file
-            (-> cfg
-                (merge-config conf-path value)
-                u/pp-str))
-      (catch Exception ex
-        (println "Failed to update config file: " (.getMessage ex))
-        (println "Restoring config.")
-        (spit file cfg)))))
-
-(def ^:private update-config-file
-  (partial update-props-file config-file))
-
-(def ^:private update-secrets-file
-  (partial update-props-file secrets-file))
 
 (defn- read-input [label]
   (printf "%s: " (name label))
@@ -108,22 +77,22 @@
   (print "Enter key:")
   (flush)
   (when-let [api-key (String. (.readPassword (System/console)))]
-    (update-secrets-file [llm-name :api-key] api-key)))
+    (env/update-secrets-file [llm-name :api-key] api-key)))
 
 (defn- list-set-keys []
-  (doseq [llm (-> secrets-file (read-edn) keys)]
+  (doseq [llm (env/configured-api-keys)]
     (println (name llm))))
 
 (defn- config-path
   []
-  (println (str config-file)))
+  (println (str env/config-file)))
 
 (defn show-defaults
   []
-  (println (-> config-file read-edn :default-model)))
+  (println (env/get-defaults)))
 
 (defn- set-default [options]
-  (update-config-file [model-default] options)
+  (env/update-config-file [env/model-default] options)
   (println "Defaults:")
   (show-defaults))
 
@@ -144,9 +113,10 @@
 
 (defn- call-llm
   "Do the call to LLM and print out the results"
-  [prompt {:keys [prompt-file data-file proxy proxy-host proxy-port]}]
+  [prompt {:keys [prompt-file data-file proxy proxy-host proxy-port keystore-password]
+           :or   {keystore-password "changeit"}}]
   (when proxy (http/use-local-proxy))
-  (when (and proxy-host proxy-port) (http/use-local-proxy proxy-host proxy-port))
+  (when (and proxy-host proxy-port) (http/use-local-proxy proxy-host proxy-port keystore-password))
   (let [prompts   (if prompt prompt (-> prompt-file slurp read-string))
         user-data (if data-file
                     (-> data-file slurp read-string)
