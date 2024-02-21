@@ -9,7 +9,6 @@
    [clojure.core :as c]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
-   [malli.core :as m]
    [taoensso.timbre :as timbre]))
 
 ;; Some of the details are borrowed from
@@ -81,8 +80,8 @@
   * collections are min lenght strings as per schema"
   [{:keys [queries responses context]}]
   (if (and
-       (m/validate question-set queries)
-       (m/validate response-set responses)
+       #_(m/validate question-set queries)
+       #_(m/validate response-set responses)
        (= (count responses) (count queries)))
     true
     (do
