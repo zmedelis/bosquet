@@ -4,8 +4,8 @@
    [bosquet.llm.generator :as gen]
    [bosquet.llm.http :as http]
    [bosquet.template.read :as read]
-   [bosquet.utils :as u]
    [clojure.java.io :as io]
+   [clojure.pprint :as pp]
    [clojure.string :as string]
    [clojure.tools.cli :refer [parse-opts]]
    [taoensso.timbre :as timbre])
@@ -123,7 +123,7 @@
                     (collect-data prompts))]
     (if prompt-file
       (doseq [data (if (vector? user-data) user-data [user-data])]
-        (println (u/pp-str (gen/generate prompts data))))
+        (pp/pprint (gen/generate prompts data)))
       (println (gen/generate prompt user-data)))))
 
 (defn- action [options arguments]
@@ -145,6 +145,7 @@
   (timbre/set-min-level! :error)
   (let [{:keys [options arguments errors summary] :as x} (parse-opts args cli-options)]
     (cond
-      (seq errors)       (doseq [err errors] (println err))
-      (empty? arguments) (usage summary)
-      :else              (action options arguments))))
+      (seq errors)           (doseq [err errors] (println err))
+      (and (empty? arguments)
+           (empty? options)) (usage summary)
+      :else                  (action options arguments))))

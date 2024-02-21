@@ -1,12 +1,12 @@
 {:paths ["src" "test" "dev"]
  :tasks {:init             (do (def standalone-jar-file "target/antq-standalone.jar")
-                          (def jar-file "target/antq.jar"))
+                               (def jar-file "target/antq.jar"))
          rebel             (clojure "-M:dev:rebel")
          outdated          (clojure "-M:outdated")
          test:watch        (do (clojure "-M:outdated")
-                          (clojure "-M:kaocha:test"))
+                               (clojure "-M:kaocha:test"))
          lint              (do (shell "echo cljstyle") ;; I don't have clj-style
-                          (shell "clj-kondo --lint src:test"))
+                               (shell "clj-kondo --lint src:test"))
          format            (shell "cljfmt check")
          format:fix        (shell "cljfmt fix")
          pom               (clojure "-Spom")
@@ -21,6 +21,21 @@
                                (shell (str "mkdir -p " bsq-dir))
                                (shell (format "keytool -import -alias mitproxy -keystore %s/keystore -file %s/mitmproxy-ca-cert.pem -storepass changeit"
                                               bsq-dir mtp-dir))))
+         native:build      (shell
+                            "native-image"
+                            "--report-unsupported-elements-at-runtime"
+                            "--features=clj_easy.graal_build_time.InitClojureClasses"
+                            #_"--initialize-at-build-time=."
+                            "--initialize-at-run-time=org.apache.http.impl.auth.NTLMEngineImpl"
+                            #_"--trace-object-instantiation=java.lang.Thread"
+                            #_"--trace-object-instantiation=java.security.SecureRandom"
+                            "--initialize-at-build-time"
+                            "--no-server"
+                            "-O1"
+                            "-H:+UnlockExperimentalVMOptions"
+                            "-H:+AllowDeprecatedBuilderClassesOnImageClasspath"
+                            "-jar" "target/bosquet-2024.01.29-standalone.jar"
+                            "-H:Name=" "bllm")
          lang:sent:en      (do
                              (shell "mkdir -p lang/en")
                              (shell (str "wget -O models/lang/en/sentence-detector.bin "
