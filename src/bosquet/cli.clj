@@ -29,9 +29,7 @@
     :validate [#(<= 0 % 1) "Temperature value must be between 0.0 and 1.0"]]
    ["-s" "--service SERVICE" "LLM service provider"
     :id :service
-    :parse-fn keyword
-    :validate [#{:openai :mistral :cohere :local-oai}
-               "LLM not supported. Supporting keys for: opeanai, mistral, cohere, and local-oai"]]
+    :parse-fn keyword]
    [nil "--proxy" "Use localy configured (localhost:8080) proxy for request/response logging"]
    [nil "--proxy-host HOST" "Hostname for the proxy"]
    [nil "--proxy-port PORT" "Port for the proxy"]
@@ -43,7 +41,7 @@
   [summary]
   (->> ["Bosquet CLI tool. Run LLM generations based on suplied prompts and data."
         ""
-        "Usage: bllm action [options]"
+        "Usage: bllm action-or-prompt [options]"
         ""
         "Options:"
         summary
@@ -143,9 +141,10 @@
 
 (defn -main [& args]
   (timbre/set-min-level! :error)
-  (let [{:keys [options arguments errors summary] :as x} (parse-opts args cli-options)]
+  (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)]
     (cond
       (seq errors)           (doseq [err errors] (println err))
-      (and (empty? arguments)
-           (empty? options)) (usage summary)
+      (:prompt-file options) (action options arguments)
+      (or (empty? arguments)
+          (:help options))   (usage summary)
       :else                  (action options arguments))))
