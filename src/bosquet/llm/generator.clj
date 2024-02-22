@@ -368,11 +368,11 @@
 
   (generate
    {:question-answer "Question: {{question}}  Answer: {{answer}}"
-    :answer          (llm :lmstudio)
+    :answer          (llm :mistral)
     :self-eval       ["{{question-answer}}"
                       "Is this a correct answer?"
                       "{{test}}"]
-    :test            (llm :lmstudio)}
+    :test            (llm :mistral)}
    {:question "What is the distance from Moon to Io?"})
 
   (generate "Extract name from this russian text. TEXT: Напомним, Вячеслав Дондоков занимал пост главного врача БСМП")
