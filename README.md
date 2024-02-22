@@ -47,6 +47,11 @@ Or using files
 clojure -M -m bosquet.cli -p demo/play-writer-prompt.edn -d demo/play-writer-data.edn
 ```
 
+CLI is demo in this video
+
+[![CLI](https://img.youtube.com/vi/ywlNGiD9gCg/0.jpg)](https://www.youtube.com/watch?v=ywlNGiD9gCg)
+
+
 
 ### Prompt completion
 
