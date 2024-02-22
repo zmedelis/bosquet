@@ -18,8 +18,35 @@ Bosquet provides instruments to work with those AI application concepts:
 
 ## Use
 
-Secrets and other local parameters are kept in `config.edn`. Make a copy of `config.edn.sample` and enter your account API KEYS from OpenAI, Cohere,
-or other providers.
+Secrets like keys are stored in `secrets.edn` file and local parameters are kept in `config.edn`. Make a copy of `config.edn.sample` and `config.edn.sample` files. Change as needed.
+
+### CLI
+
+Run the following command do get CLI options
+```
+clojure -M -m bosquet.cli
+```
+
+Set the default model with
+```
+clojure -M -m bosquet.cli llms set --service openai --temperature 0 --model gpt-4
+```
+
+Do not forget to set the API KEY for your service (change 'openai' to different name if needed)
+```
+clojure -M -m bosquet.cli keys set openai
+```
+
+With that set, you can run generations:
+
+```
+clojure -M -m bosquet.cli "2+{{x}}="
+```
+Or using files
+```
+clojure -M -m bosquet.cli -p demo/play-writer-prompt.edn -d demo/play-writer-data.edn
+```
+
 
 ### Prompt completion
 
