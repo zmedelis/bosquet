@@ -1,0 +1,12 @@
+[[:system "You are an amazing writer."]
+ [:user ["Write a synopsis for the play:"
+         "Title: {{title}}"
+         "Genre: {{genre}}"
+         "Synopsis:"]]
+ [:assistant #:llm{:service      :openai
+                   :model-params {:model :gpt-4 :temperature 0.8 :max-tokens 120}
+                   :var-name     :synopsis}]
+ [:user "Now write a critique of the above synopsis:"]
+ [:assistant #:llm{:service      :mistral
+                   :model-params {:model :mistral-small :temperature 0.2 :max-tokens 120}
+                   :var-name     :critique}]]

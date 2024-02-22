@@ -1,0 +1,8 @@
+{:question-answer ["Question: {{question}}"
+                   "Answer: {{answer}}"]
+ :answer          #:llm{:service :openai :model-params {:model :gpt-4 :max-tokens 240}}
+ :eval            ["{{question-answer}}"
+                   ""
+                   "Is this a correct answer?"
+                   "{{assessment}}"]
+ :assessment      #:llm{:service :cohere :model-params {:model :command :max-tokens 80}}}

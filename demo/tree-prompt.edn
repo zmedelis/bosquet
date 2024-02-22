@@ -1,0 +1,32 @@
+{:calc       ["Lets solve math problems."
+              "Answer only with calculated result. Abstain from explanations or rephrasing the task!"
+              "You are given the values:"
+              "A = {{a}}; B = {{b}}; C = {{c}}"
+              "Solve the following equations:"
+              "{{tasks}}"
+              "{{grade}}"]
+ :p1         "A + B = {{x}}"
+ :p2         "A - B = {{y}}"
+ :p3         "({{x}} + {{y}}) / C = {{z}}"
+ :tasks      ["{{p1}}" "{{p2}}" "{{p3}}"]
+ ; Those two can run in parallel
+ :eval1-role ["Evaluate if the solutions to the above equations are correct"
+              "{{eval1}}"]
+ :eval2-role ["Evaluate if the solutions to the above equations are calulated optimaly"
+              "{{eval2}}"]
+ ; Maybe an agent will want to add another evaluator if those two dissagree a lot
+ :grade      ["Evaluation A: {{eval1-role}}"
+              "Evaluation B: {{eval2-role}}"
+              "Based on this work grade (from 1 to 10) student's math knowledge."
+              "Give only grade number like '7' abstain from further explanations."
+              "{{score}}"]
+
+ :x          #:llm{:service :mistral :model-params {:model :mistral-small :max-tokens 50}}
+ :y          #:llm{:service :mistral :model-params {:model :mistral-small :max-tokens 50}}
+ :z          #:llm{:service :mistral :model-params {:model :mistral-small :max-tokens 50}}
+ :eval1      #:llm{:service :openai :model-params {:model :gpt-4 :max-tokens 100}}
+ :eval2      #:llm{:service :openai :model-params {:model :gpt-4 :max-tokens 100}}
+ :score      #:llm{:service       :openai
+                   :model-params  {:model :gpt-3.5-turbo :max-tokens 2}
+                   :output-format :number ; NOTE: output format spec
+                   }}
