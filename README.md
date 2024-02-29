@@ -22,7 +22,11 @@ Secrets like keys are stored in `secrets.edn` file and local parameters are kept
 
 ### CLI
 
-Run the following command do get CLI options
+Command line interface demo
+
+[![CLI](https://img.youtube.com/vi/ywlNGiD9gCg/0.jpg)](https://www.youtube.com/watch?v=ywlNGiD9gCg)
+
+Run the following command to get CLI options
 ```
 clojure -M -m bosquet.cli
 ```
@@ -32,7 +36,7 @@ Set the default model with
 clojure -M -m bosquet.cli llms set --service openai --temperature 0 --model gpt-4
 ```
 
-Do not forget to set the API KEY for your service (change 'openai' to different name if needed)
+Do not forget to set the API KEY for your service (change 'openai' to a different name if needed)
 ```
 clojure -M -m bosquet.cli keys set openai
 ```
@@ -46,12 +50,6 @@ Or using files
 ```
 clojure -M -m bosquet.cli -p demo/play-writer-prompt.edn -d demo/play-writer-data.edn
 ```
-
-CLI is demo in this video
-
-[![CLI](https://img.youtube.com/vi/ywlNGiD9gCg/0.jpg)](https://www.youtube.com/watch?v=ywlNGiD9gCg)
-
-
 
 ### Prompt completion
 
