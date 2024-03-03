@@ -1,4 +1,4 @@
-(ns bosquet.generator-test
+(ns bosquet.llm.generator-test
   (:require
    [bosquet.db.cache :as cache]
    [bosquet.llm.generator :as gen]
@@ -120,3 +120,8 @@
   (is (= [{:role :user :content "Hi!"}] (gen/->chatml [[:user "Hi!"]])))
   (is (= [{:role :user :content "{\"lon\":54.1,\"lat\":50.3}"}]
          (gen/->chatml [[:user {:lon 54.1 :lat 50.3}]]))))
+
+(deftest llm-spec-construction
+  (is (= {wkk/service :openai} (gen/llm :openai)))
+  (is (= {wkk/model-params {:model :command} wkk/service :cohere}
+         (gen/llm :command))))

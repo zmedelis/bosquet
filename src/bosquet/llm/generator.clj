@@ -33,15 +33,23 @@
 
 (defn llm
   "A helper function to create LLM spec for calls during the generation process.
-  It comes back with a map constructed from `service` and `args`:
-
+  It comes back with a map constructed from `service-or-model` and `args`.
+  `service-or-model` can be one of:
+  - `serivice` (like openai, mistral, ...), in this case args need to specify
+     {:llm/model-params {:model :x}}
+  - `model` in this case `service` will be determined from `llm/model-providers`,
+    no need to specify {:llm/model-params {:model :x}}
   ```
   {:llm/service      service
    :llm/cache        true
    :llm/model-params params}
   ```"
-  [service & args]
-  (assoc (apply hash-map args) wkk/service service))
+  [service-or-model & args]
+  (if-let [service (llm/model-providers service-or-model)]
+    (-> (apply hash-map args)
+        (assoc wkk/service service)
+        (assoc-in [wkk/model-params :model] service-or-model))
+    (assoc (apply hash-map args) wkk/service service-or-model)))
 
 (defn default-llm
   []
@@ -368,11 +376,11 @@
 
   (generate
    {:question-answer "Question: {{question}}  Answer: {{answer}}"
-    :answer          (llm :mistral)
+    :answer          (llm :mistral-small)
     :self-eval       ["{{question-answer}}"
                       "Is this a correct answer?"
                       "{{test}}"]
-    :test            (llm :mistral)}
+    :test            (llm :mistral-medium)}
    {:question "What is the distance from Moon to Io?"})
 
   (generate "Extract name from this russian text. TEXT: Напомним, Вячеслав Дондоков занимал пост главного врача БСМП")
