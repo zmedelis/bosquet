@@ -38,3 +38,4 @@ qdrant_storage
 .cache
 data
 models
+bllm
