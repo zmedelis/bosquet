@@ -383,7 +383,11 @@
     :test            (llm :mistral-medium)}
    {:question "What is the distance from Moon to Io?"})
 
-  (generate "Extract name from this russian text. TEXT: Напомним, Вячеслав Дондоков занимал пост главного врача БСМП")
+  (generate
+   (str
+    "Extract name from this russian text. "
+    "TEXT: Напомним, Вячеслав Дондоков занимал пост главного врача БСМП"))
+
 
   (generate
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
@@ -426,10 +430,9 @@
   (generate g {:a 5 :b 2 :c 1})
 
   (generate
-   {:q1   ["Q: When I was {{age}} my sister was {{age-relation}} my age. Now I’m 70 how old is my sister? A: {{a}}"
-           "Is this answer correct? {{eval}}"]
-    :eval (llm wkk/openai)
-    :a    (llm wkk/openai wkk/model-params {:max-tokens 100})})
+   {:q1   ["Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{a}}"]
+    :a    (llm :lmstudio wkk/model-params {:max-tokens 10})}
+   {:age 10})
 
   (generate [[:system "You are an amazing writer."]
              [:user ["Write a synopsis for the play:"

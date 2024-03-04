@@ -6,18 +6,6 @@
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]))
 
-(defn- ->completion
-  [{choices :choices {prompt_tokens     :prompt_tokens
-                      completion_tokens :completion_tokens
-                      total_tokens      :total_tokens} :usage}
-   generation-type]
-  (let [result (-> choices first :message chat/chatml->bosquet)]
-    {wkk/generation-type generation-type
-     wkk/content         result
-     wkk/usage           {:prompt     prompt_tokens
-                          :completion completion_tokens
-                          :total      total_tokens}}))
-
 (defn- prep-params
   ;; TODO is it so copy/paste accross oai, mistral and this ns
   [params]
@@ -36,7 +24,7 @@
      (-> params
          prep-params
          lm-call
-         (->completion :chat)))))
+         (chat/->completion :chat)))))
 
 (defn complete
   ([params] (complete (wkk/lmstudio env/config) params))
@@ -47,11 +35,10 @@
          prep-params
          (assoc :messages [{:role :user :content prompt}])
          lm-call
-         (->completion :completion)))))
+         (chat/->completion :completion)))))
 
 (comment
-  (complete
-   {:prompt "2+2="})
+  (complete {:prompt "2+2="})
   (chat
    {:messages [{:role :system :content "You are a calculator. You only converse in this format: expression = answer"}
                {:role :user :content "2-2="}]})

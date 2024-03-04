@@ -1,7 +1,7 @@
 (ns bosquet.llm.chat
   (:require
-   [clojure.set :as set]
-   [clojure.string :as string]))
+   [bosquet.llm.wkk :as wkk]
+   [clojure.set :as set]))
 
 ;; ## ChatML
 
@@ -29,29 +29,21 @@
                assistant :assistant}]
     (merge roles (set/map-invert roles))))
 
-(defn bosquet->chatml
-  [{r role c content}]
-  {:role (role-mapping r) :content c})
-
 (defn chatml->bosquet
   [{r :role c :content}]
   {role (role-mapping (keyword r)) content c})
 
-(defn speak
-  "Helper function to create a chat message. If content is a collection
-   it will be joined with newlines.
 
-  ```clojure
-  {:role    :assistant
-   :content \"Hello, I am your assistant\"
-  ```"
-  [speaker-role speaker-content]
-  {role    speaker-role
-   content
-   (if (coll? speaker-content)
-     (string/join "\n" speaker-content)
-     speaker-content)})
-
-(def conversation
-  "Key to reference complete `conversation` - a history"
-  :bosquet.chat/conversation)
+(defn ->completion
+  "Build Bosquet completion data structure from
+  the OAI-shaped responses"
+  [{choices :choices {prompt_tokens     :prompt_tokens
+                      completion_tokens :completion_tokens
+                      total_tokens      :total_tokens} :usage}
+   generation-type]
+  (let [result (-> choices first :message chatml->bosquet)]
+    {wkk/generation-type generation-type
+     wkk/content         result
+     wkk/usage           {:prompt     prompt_tokens
+                          :completion completion_tokens
+                          :total      total_tokens}}))

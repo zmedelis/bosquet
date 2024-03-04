@@ -2,7 +2,8 @@
   (:require
    [bosquet.utils :as u]
    [clojure.string :as string]
-   [hato.client :as hc]))
+   [hato.client :as hc]
+   [taoensso.timbre :as timbre]))
 
 (defn use-local-proxy
   "Use local proxy to log LLM API requests"
@@ -34,12 +35,24 @@
         {})
        u/write-json))
 
+(defn- log-call
+  [url params]
+  (timbre/infof "💬 Calling %s with:" url)
+  (doseq [[k v] (dissoc params :messages)]
+    (timbre/infof "   %-15s%s" k v)))
+
 (defn post
   [url api-key params]
-  (-> url
-      (hc/post (merge {:content-type :json
-                       :body         (-> params json-params u/snake_case)
-                       :http-client  (client)}
-                      (when api-key {:oauth-token api-key})))
-      :body
-      (u/read-json)))
+  (log-call url params)
+  (try
+    (-> url
+        (hc/post (merge {:content-type :json
+                         :body         (-> params json-params u/snake_case)
+                         :http-client  (client)}
+                        (when api-key {:oauth-token api-key})))
+        :body
+        (u/read-json))
+    (catch Exception e
+      (let [{:keys [body status]} (ex-data e)]
+        (timbre/errorf "LLM Call failed with HTTP status '%s' and error message '%s'" status (-> body u/read-json :message))
+        (timbre/error "Call parameters:" (prn-str params))))))

@@ -47,15 +47,14 @@
             "planet name and the value is the string distance in millions of kilometers."
             "{{analysis}}"]]
   [:user ["Generate only JSON omit any other prose and explanations."]]
-  [:assistant (g/llm :openai
+  [:assistant (g/llm :gpt-4
                      :llm/var-name :distances
                      :llm/output-format :json
-                     :llm/model-params {:max-tokens 300 :model :gpt-4})]
+                     :llm/model-params {:max-tokens 300})]
   [:user ["Based on the JSON distances data"
           "provide me with​ a) average distance b) max distance c) min distance"]]
-  [:assistant (g/llm :mistral
-                     :llm/var-name :analysis
-                     :llm/model-params {:model :mistral-small})]])
+  [:assistant (g/llm :mistral-small
+                     :llm/var-name :analysis)]])
 
 ;; The *Mitproxy* console should show logged calls, where request, response, and latency data can be examined.
 ;;

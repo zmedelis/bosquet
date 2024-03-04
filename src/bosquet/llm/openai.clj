@@ -2,6 +2,7 @@
   (:require
    [bosquet.env :as env]
    [bosquet.llm.chat :as chat]
+   [bosquet.llm.oai-shaped-llm :as oai]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
    [jsonista.core :as j]
@@ -45,17 +46,6 @@
 
 (def default-model :gpt-3.5-turbo)
 
-(defn- with-default [{:keys [model] :as params}]
-  (if model params (assoc params :model default-model)))
-
-(defn- prep-params
-  ;; TODO this is repeated in other LLMs like mistral ns,
-  ;; needs to be normalized (more things around chat/complete)
-  [params]
-  (-> params
-      with-default
-      (dissoc wkk/model-params)
-      (merge (wkk/model-params params))))
 
 (defn chat
   "Run 'chat' type completion. Pass in `messages` in ChatML format."
@@ -63,7 +53,7 @@
   ([service-cfg params]
    (u/log-call service-cfg params "OAI chat")
    (try
-     (->completion (api/create-chat-completion (prep-params params) service-cfg))
+     (->completion (api/create-chat-completion (oai/prep-params params default-model) service-cfg))
      (catch Exception e
        (throw (->error e))))))
 
@@ -75,7 +65,7 @@
   ([params] (complete (wkk/openai env/config) params))
   ([service-cfg params]
    (u/log-call service-cfg params "OAI completion")
-   (->completion (api/create-completion (prep-params params) service-cfg))))
+   (->completion (api/create-completion (oai/prep-params params default-model) service-cfg))))
 
 (comment
   (chat
