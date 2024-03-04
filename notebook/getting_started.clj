@@ -6,9 +6,11 @@
 ;; ## Getting Started
 ;;
 ;; First, you need to provide configuration parameters to make LLM service calls.
-;; Find `config.edn.sample` at the root of the project, rename it to `config.edn`
-;; and set necessary parameters. The `resources/env.edn` file shows how the config
-;; is loaded and what defaults are available.
+;;
+;; Find `secrets.edn.sample` at the root of the project, rename it to `secrets.edn`
+;; and set necessary API keys for the services you will be using.
+;;
+;; The `resources/env.edn` file shows how the config is loaded and what defaults are available.
 ;;
 ;; ### Simple prompt
 
@@ -49,7 +51,7 @@
               "Genre: {{genre}}"
               ""
               "Synopsis: {{play}}"]
-   :play     (g/llm :openai :llm/model-params {:model :gpt-4})
+   :play     (g/llm :gpt-4)
    :critique ["You are a play critic from the Moon City Times."
               "Given the synopsis of play, it is your job to write a review for that play."
               ""
@@ -58,13 +60,13 @@
               ""
               "Review from a New York Times play critic of the above play:"
               "{{review}}"]
-   :review   (g/llm :openai :llm/model-params {:model :gpt-4})})
+   :review   (g/llm :gpt-4)})
 
 ;; Things to note:
 ;; * `play` and `review` define generation points, there you specify which LLM to use and which value from the map will be used as prompt context
 ;; * `{{title}}` (and other slots in that form) is where supplied inputs will be injected
 
-;; *Bosquet* will be invoking *OpenAI API* thus make sure that `OPENAI_API_KEY` is present as the environment variable.
+;; *Bosquet* will be invoking *OpenAI API* thus make sure that `OPENAI_API_KEY` is set in your `secrets.edn`
 
 ;; With the prerequisite data set, let's run the generation.
 
@@ -81,12 +83,12 @@
              "Title: {{title}}"
              "Genre: {{genre}}"
              "Synopsis:"]]
-     [:assistant (g/llm :openai
-                        wkk/model-params {:model :gpt-3.5-turbo :temperature 0.8 :max-tokens 120}
+     [:assistant (g/llm :gpt-3.5-turbo
+                        wkk/model-params {:temperature 0.8 :max-tokens 120}
                         wkk/var-name :synopsis)]
      [:user "Now write a critique of the above synopsis:"]
-     [:assistant (g/llm :openai
-                        wkk/model-params {:model :gpt-3.5-turbo :temperature 0.2 :max-tokens 120}
+     [:assistant (g/llm :gpt-3.5-turbo
+                        wkk/model-params {:temperature 0.2 :max-tokens 120}
                         wkk/var-name     :critique)]]
     {:title "Mr. X"
     :genre "Sci-Fi"})
