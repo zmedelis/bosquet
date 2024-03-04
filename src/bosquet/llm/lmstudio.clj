@@ -3,15 +3,9 @@
    [bosquet.env :as env]
    [bosquet.llm.chat :as chat]
    [bosquet.llm.http :as http]
+   [bosquet.llm.oai-shaped-llm :as oai]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]))
-
-(defn- prep-params
-  ;; TODO is it so copy/paste accross oai, mistral and this ns
-  [params]
-  (-> params
-      (dissoc :prompt wkk/model-params)
-      (merge (wkk/model-params params))))
 
 (defn- call-fn [{:keys [api-endpoint api-key]}]
   (partial http/post (str api-endpoint "/chat/completions") api-key))
@@ -22,7 +16,7 @@
    (u/log-call service-cfg params "LM Studio chat")
    (let [lm-call (call-fn service-cfg)]
      (-> params
-         prep-params
+         oai/prep-params
          lm-call
          (chat/->completion :chat)))))
 
@@ -32,7 +26,7 @@
    (u/log-call service-cfg params "LM Studio completion")
    (let [lm-call (call-fn service-cfg)]
      (-> params
-         prep-params
+         oai/prep-params
          (assoc :messages [{:role :user :content prompt}])
          lm-call
          (chat/->completion :completion)))))
