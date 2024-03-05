@@ -1,6 +1,7 @@
 (ns bosquet.llm.oai-shaped-llm
   (:require
-   [bosquet.llm.wkk :as wkk]))
+   [bosquet.llm.wkk :as wkk]
+   [clojure.set :as set]))
 
 (defn with-default
   "If no model is given in `params` add the default"
@@ -20,3 +21,53 @@
        (with-default default-model)
        (dissoc wkk/model-params)
        (merge (wkk/model-params params)))))
+
+;; ## ChatML
+
+(def role
+  :role)
+
+(def content
+  :content)
+
+(def system
+  "Key to reference `system` role in ChatML format"
+  :system)
+
+(def user
+  "Key to reference `user` role in ChatML format"
+  :user)
+
+(def assistant
+  "Key to reference `assistant` role in ChatML format"
+  :assistant)
+
+(def ^:private role-mapping
+  (let [roles {system    :system
+               user      :user
+               assistant :assistant}]
+    (merge roles (set/map-invert roles))))
+
+(defn chatml->bosquet
+  [{r :role c :content}]
+  {role (role-mapping (keyword r)) content c})
+
+
+(defn ->completion
+  "Build Bosquet completion data structure from
+  the OAI-shaped responses.
+
+  Gets only the first of completion `choices`"
+  [{[{:keys [text message]} & _choices]    :choices
+    {total_tokens      :total_tokens
+     prompt_tokens     :prompt_tokens
+     completion_tokens :completion_tokens} :usage}]
+  (assoc
+   (cond
+     message {wkk/generation-type :chat
+              wkk/content         (chatml->bosquet message)}
+     text    {wkk/generation-type :completion
+              wkk/content         text})
+   wkk/usage   {:prompt     prompt_tokens
+                :completion completion_tokens
+                :total      total_tokens}))

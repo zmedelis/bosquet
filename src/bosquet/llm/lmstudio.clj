@@ -1,14 +1,15 @@
 (ns bosquet.llm.lmstudio
   (:require
    [bosquet.env :as env]
-   [bosquet.llm.chat :as chat]
    [bosquet.llm.http :as http]
    [bosquet.llm.oai-shaped-llm :as oai]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]))
 
+
 (defn- call-fn [{:keys [api-endpoint api-key]}]
   (partial http/post (str api-endpoint "/chat/completions") api-key))
+
 
 (defn chat
   ([params] (chat (wkk/lmstudio env/config) params))
@@ -18,7 +19,8 @@
      (-> params
          oai/prep-params
          lm-call
-         (chat/->completion :chat)))))
+         oai/->completion))))
+
 
 (defn complete
   ([params] (complete (wkk/lmstudio env/config) params))
@@ -29,7 +31,8 @@
          oai/prep-params
          (assoc :messages [{:role :user :content prompt}])
          lm-call
-         (chat/->completion :completion)))))
+         oai/->completion))))
+
 
 (comment
   (complete {:prompt "2+2="})

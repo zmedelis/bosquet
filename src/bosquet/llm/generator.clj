@@ -451,19 +451,18 @@
 
   (generate
    [[:system ["As a brilliant astronomer, list distances between planets and the Sun"
-              "in the Solar System. Provide the answer in JSON map where the key is the"
+              "in the Solar System. Provide the answer in EDN map where the key is the"
               "planet name and the value is the string distance in millions of kilometers."
               "{{analysis}}"]]
-    [:user ["Generate only JSON omit any other prose and explanations."]]
-    [:assistant (llm wkk/openai
+    [:user ["Generate only EDN omit any other prose and explanations."]]
+    [:assistant (llm :gpt-4
                      wkk/var-name :distances
-                     wkk/output-format :json
-                     wkk/model-params {:max-tokens 300 :model :gpt-4})]
-    [:user ["Based on the JSON distances data"
+                     wkk/output-format :edn
+                     wkk/model-params {:max-tokens 300})]
+    #_[:user ["Based on the JSON distances data"
             "provide me with​ a) average distance b) max distance c) min distance"]]
-    [:assistant (llm wkk/mistral
-                     wkk/var-name :analysis
-                     wkk/model-params {:model :mistral-small})]])
+    #_[:assistant (llm :mistral-small
+                     wkk/var-name :analysis)]])
 
   (generate
    {:astronomer ["As a brilliant astronomer, list distances between planets and the Sun"
