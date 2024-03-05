@@ -1,5 +1,6 @@
 (ns bosquet.llm.oai-shaped-llm
   (:require
+   [bosquet.llm.http :as http]
    [bosquet.llm.wkk :as wkk]
    [clojure.set :as set]))
 
@@ -71,3 +72,25 @@
    wkk/usage   {:prompt     prompt_tokens
                 :completion completion_tokens
                 :total      total_tokens}))
+
+(defn completion-fn [{:keys [api-endpoint api-key]}]
+  (partial http/post (str api-endpoint "/chat/completions") api-key))
+
+
+(defn create-completion
+  ([service-cfg params content default-model]
+   (create-completion service-cfg
+                      (-> params
+                          (assoc :messages content)
+                          (dissoc :prompt))
+                      default-model))
+  ([service-cfg params]
+   (create-completion service-cfg
+                      params
+                      nil))
+  ([service-cfg params default-model]
+   (let [lm-call (completion-fn service-cfg)]
+     (-> params
+         (prep-params default-model)
+         lm-call
+         ->completion))))

@@ -1,13 +1,8 @@
 (ns bosquet.llm.mistral
   (:require
    [bosquet.env :as env]
-   [bosquet.llm.http :as http]
    [bosquet.llm.oai-shaped-llm :as oai]
    [bosquet.llm.wkk :as wkk]))
-
-
-(defn- call-fn [{:keys [api-endpoint api-key]}]
-  (partial http/post (str api-endpoint "/chat/completions") api-key))
 
 
 (def default-model
@@ -18,22 +13,18 @@
 (defn chat
   ([params] (chat (wkk/mistral env/config) params))
   ([service-cfg params]
-   (let [lm-call (call-fn service-cfg)]
-     (-> params
-         (oai/prep-params default-model)
-         lm-call
-         (oai/->completion)))))
+   (oai/create-completion service-cfg
+                          params
+                          default-model)))
 
 
 (defn complete
   ([params] (complete (wkk/mistral env/config) params))
   ([service-cfg {prompt :prompt :as params}]
-   (let [lm-call (call-fn service-cfg)]
-     (-> params
-         (oai/prep-params default-model)
-         (assoc :messages [{:role :user :content prompt}])
-         lm-call
-         (oai/->completion)))))
+   (oai/create-completion service-cfg
+                          params
+                          [{:role :user :content prompt}]
+                          default-model)))
 
 
 (comment
