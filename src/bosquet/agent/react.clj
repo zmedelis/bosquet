@@ -2,10 +2,8 @@
   (:require
    [bosquet.agent.agent-mind-reader :as mind-reader]
    [bosquet.agent.tool :as t]
-   [bosquet.llm :as llm]
    [bosquet.llm.generator :as gen]
-   [bosquet.template.read :as template]
-   [clojure.string :as string]))
+   [bosquet.template.read :as template]))
 
 #_(timbre/merge-config!
    {:appenders {:println {:enabled? false}
@@ -43,7 +41,7 @@
   - `task` is a quesiton ar task formulation for the agent
   - `max-steps` specifies how many thinking steps agent is allowed to do
   it either reaches that number of steps or 'Finish' action, and then terminates."
-  [{:bosquet/keys [max-steps tools services task-prompts]
+  [{:bosquet/keys [max-steps tools task-prompts]
     :or           {max-steps 5}
     :as           cfg}
    task]
@@ -53,7 +51,7 @@
         _                 (t/print-thought
                            (format "'%s' tool has the following task" (t/my-name tool)) task)
         {{:react/keys [memory thought action] :as x}
-         gen/completions} (gen/generate services task-prompts initial-ctx)]
+         gen/completions} (gen/generate task-prompts initial-ctx)]
     (tap> x)
     #_(loop [step            1
              ctx             initial-ctx
@@ -98,8 +96,7 @@
     "Author David Chanoff has collaborated with a U.S. Navy admiral who served as the ambassador to the United Kingdom under which President?")
 
   (solve-task
-   {:bosquet/services     llm/default-services
-    :bosquet/tools        [(Wikipedia.)]
+   {:bosquet/tools        [(Wikipedia.)]
     :bosquet/task-prompts prompt-palette
     :bosquet/max-steps    5}
    question)

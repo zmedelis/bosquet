@@ -1,25 +1,21 @@
 (ns bosquet.llm.oai-shaped-llm
   (:require
+   [bosquet.env :as env]
    [bosquet.llm.http :as http]
    [bosquet.llm.wkk :as wkk]
+   [bosquet.utils :as u]
    [clojure.set :as set]))
 
-(defn with-default
-  "If no model is given in `params` add the default"
-  [{:keys [model] :as params} default-model]
-  (if (or model (nil? default-model))
-    params
-    (assoc params :model default-model)))
 
 (defn prep-params
   "Shape `params` into the LLM API service required structure.
   Remove or move `Bosquet` parameters.
 
-  If `params` has no `model` specified `default-model` will be used."
+  If `params` has no `model` specified model in `default-parms` will be used."
   ([params] (prep-params params nil))
-  ([params default-model]
+  ([params defaults]
    (-> params
-       (with-default default-model)
+       (u/mergex defaults params)
        (dissoc wkk/model-params)
        (merge (wkk/model-params params)))))
 
@@ -78,19 +74,30 @@
 
 
 (defn create-completion
-  ([service-cfg params content default-model]
+  "Make a call to OAI API shaped service.
+
+  - `service-cfg` will contain props needed to make call: endpoint, model defaults, etc
+  - `params` is the main payload of the call containing model params, and prompt in `messages`
+  - `content` is intended for `complete` workflow where we do not have chat `messages` in `params`"
+  ([service-cfg params content]
    (create-completion service-cfg
                       (-> params
                           (assoc :messages content)
-                          (dissoc :prompt))
-                      default-model))
-  ([service-cfg params]
-   (create-completion service-cfg
-                      params
-                      nil))
-  ([service-cfg params default-model]
+                          (dissoc :prompt))))
+  ([{default-params :model-params :as service-cfg} params]
    (let [lm-call (completion-fn service-cfg)]
      (-> params
-         (prep-params default-model)
+         (prep-params default-params)
          lm-call
          ->completion))))
+
+
+(defn chat
+  [service-cfg params]
+  (create-completion service-cfg params))
+
+
+(defn complete
+  [service-cfg {prompt :prompt :as params}]
+  (create-completion service-cfg params
+                     [{:role :user :content prompt}]))

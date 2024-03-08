@@ -3,7 +3,6 @@
    [bosquet.converter :as converter]
    [bosquet.db.cache :as cache]
    [bosquet.env :as env]
-   [bosquet.llm :as llm]
    [bosquet.llm.gen-data :as gd]
    [bosquet.llm.wkk :as wkk]
    [bosquet.template.selmer :as selmer]
@@ -45,15 +44,12 @@
    :llm/model-params params}
   ```"
   [service-or-model & args]
-  (if-let [service (llm/model-providers service-or-model)]
+  (if-let [service (env/model-providers service-or-model)]
     (-> (apply hash-map args)
         (assoc wkk/service service)
         (assoc-in [wkk/model-params :model] service-or-model))
     (assoc (apply hash-map args) wkk/service service-or-model)))
 
-(defn default-llm
-  []
-  (assoc (env/default-model-params) wkk/service (env/default-service)))
 
 (defn- resolver-error-wrapper
   [env]
@@ -79,6 +75,7 @@
                  content)})
    messages))
 
+
 (defn call-llm
   "Make a call to the LLM service.
   - `llm-config` provides a map containing LLM service configurations, the
@@ -93,11 +90,17 @@
    messages]
   (if-let [chat-impl (get-in llm-config [llm-impl wkk/chat-fn])]
     (let [format-fn      (partial converter/coerce (wkk/output-format properties))
-          service-config (dissoc (llm-impl llm-config) wkk/gen-fn wkk/chat-fn)
-          chat-fn        (partial chat-impl service-config)
+          service-config (dissoc (llm-impl llm-config) wkk/complete-fn wkk/chat-fn)
+          chat-fn        (partial (if (symbol? chat-impl)
+                                    ;; symbol comes from edn configs
+                                    (resolve chat-impl)
+                                    ;; this is when llm config has fn ref
+                                    chat-impl)
+                                  service-config)
           params         (merge
-                          (env/default-model-params)
+                          (get-in llm-config [llm-impl :model-params])
                           (assoc model-params :messages (->chatml messages)))
+
           result         (if use-cache
                            (cache/lookup-or-call chat-fn params)
                            (chat-fn params))]
@@ -226,7 +229,7 @@
   "If template does not specify generation function append the default one."
   [string-template]
   {default-template-prompt     (selmer/append-slot string-template default-template-completion)
-   default-template-completion (default-llm)})
+   default-template-completion (env/default-service)})
 
 (defn gen-environment
   [llm-config context vars-map]
@@ -361,16 +364,14 @@
     ```
   - A `string` results in a `template` completion mode
 
-  `llm-config` holds configuration to make LLM calls and `inputs` has a data map
+  `env/config` holds configuration to make LLM calls and `inputs` has a data map
   for template slot filling."
-  ([messages] (generate llm/default-services messages {}))
+  ([messages] (generate messages {}))
   ([messages inputs]
-   (generate llm/default-services messages inputs))
-  ([llm-config messages vars-map]
    (cond
-     (vector? messages) (chat llm-config messages vars-map)
-     (map? messages)    (complete-graph llm-config messages vars-map)
-     (string? messages) (complete-template llm-config messages vars-map))))
+     (vector? messages) (chat env/config messages inputs)
+     (map? messages)    (complete-graph env/config messages inputs)
+     (string? messages) (complete-template env/config messages inputs))))
 
 (comment
 
@@ -431,8 +432,8 @@
 
   (generate
    {:q1   ["Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{a}}"]
-    :a    (llm :lmstudio wkk/model-params {:max-tokens 10})}
-   {:age 10})
+    :a    (llm :openai wkk/model-params {:max-tokens 10})}
+   {:age 5})
 
   (generate [[:system "You are an amazing writer."]
              [:user ["Write a synopsis for the play:"
@@ -460,9 +461,9 @@
                      wkk/output-format :edn
                      wkk/model-params {:max-tokens 300})]
     #_[:user ["Based on the JSON distances data"
-            "provide me with​ a) average distance b) max distance c) min distance"]]
+              "provide me with​ a) average distance b) max distance c) min distance"]]
     #_[:assistant (llm :mistral-small
-                     wkk/var-name :analysis)]])
+                       wkk/var-name :analysis)]])
 
   (generate
    {:astronomer ["As a brilliant astronomer, list distances between planets and the Sun"
@@ -478,5 +479,4 @@
                      wkk/model-params {:max-tokens 300 :model :gpt-4})
     :analysis   (llm wkk/mistral
                      wkk/model-params {:model :mistral-small})})
-
   #__)

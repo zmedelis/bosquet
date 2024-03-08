@@ -21,18 +21,13 @@
 (def mistral :mistral)
 
 (def model-params :llm/model-params)
-(def gen-fn :llm/gen-fn)
-(def chat-fn :llm/chat-fn)
-(def complete-fn :llm/complete-fn)
+(def chat-fn :chat-fn)
+(def complete-fn :complete-fn)
 (def var-name :llm/var-name)
 
 (def output-format
   "Type of generation output format: json, xml, text, etc"
   :llm/output-format)
-
-(def context
-  "When generating from a prompt map specify which key contains full context for generation."
-  :llm/context)
 
 (def cache
   :llm/cache)

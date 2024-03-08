@@ -7,16 +7,13 @@
    [wkok.openai-clojure.api :as api]))
 
 
-(def default-model :gpt-3.5-turbo)
-
-
 (defn chat
   "Run 'chat' type completion. Pass in `messages` in ChatML format."
   ([params] (chat (wkk/openai env/config) params))
-  ([service-cfg params]
+  ([{default-params :model-params :as service-cfg} params]
    (u/log-call service-cfg params "OAI chat")
    (-> params
-       (oai/prep-params default-model)
+       (oai/prep-params default-params)
        (api/create-chat-completion service-cfg)
        oai/->completion)))
 
@@ -27,10 +24,10 @@
 
   *Deprecated* by OAI?"
   ([params] (complete (wkk/openai env/config) params))
-  ([service-cfg params]
+  ([{default-params :model-params :as service-cfg} params]
    (u/log-call service-cfg params "OAI completion")
    (-> params
-       (oai/prep-params default-model)
+       (oai/prep-params default-params)
        (api/create-completion service-cfg)
        oai/->completion)))
 

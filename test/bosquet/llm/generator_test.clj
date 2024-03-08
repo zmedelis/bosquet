@@ -1,6 +1,7 @@
 (ns bosquet.llm.generator-test
   (:require
    [bosquet.db.cache :as cache]
+   [bosquet.env :as env]
    [bosquet.llm.generator :as gen]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
@@ -19,51 +20,52 @@
      {:role :assistant :content (-> msg first :content)}}))
 
 (deftest chat-generation
-  (is (= {:bosquet/conversation [[:system "You are a brilliant writer."]
-                                 [:user (u/join-lines
-                                         "Write a synopsis for the play:"
-                                         "Title: Mr. O")]
-                                 [:assistant "You are a brilliant writer."]
-                                 [:user "Now write a critique of the above synopsis:"]
-                                 [:assistant "Now write a critique of the above synopsis:"]]
-          :bosquet/completions  {:synopsis "You are a brilliant writer."
-                                 :critique "Now write a critique of the above synopsis:"}
-          :bosquet/usage {:synopsis      nil
-                          :critique      nil
-                          :bosquet/total {:prompt 0 :completion 0 :total 0}}}
-         (gen/generate
-          {:service-last  {wkk/chat-fn echo-service-chat-last}
-           :service-first {wkk/chat-fn echo-service-chat-first}}
-          [[:system "You are a brilliant writer."]
-           [:user ["Write a synopsis for the play:"
-                   "Title: {{title}}"]]
-           [:assistant (gen/llm :service-first wkk/var-name :synopsis)]
-           [:user "Now write a critique of the above synopsis:"]
-           [:assistant (gen/llm :service-last wkk/var-name :critique)]]
-          {:title "Mr. O"}))))
+  (with-redefs [env/config {:service-last  {:chat-fn echo-service-chat-last}
+                            :service-first {:chat-fn echo-service-chat-first}}]
+    (is (= {:bosquet/conversation [[:system "You are a brilliant writer."]
+                                   [:user (u/join-lines
+                                           "Write a synopsis for the play:"
+                                           "Title: Mr. O")]
+                                   [:assistant "You are a brilliant writer."]
+                                   [:user "Now write a critique of the above synopsis:"]
+                                   [:assistant "Now write a critique of the above synopsis:"]]
+            :bosquet/completions  {:synopsis "You are a brilliant writer."
+                                   :critique "Now write a critique of the above synopsis:"}
+            :bosquet/usage {:synopsis      nil
+                            :critique      nil
+                            :bosquet/total {:prompt 0 :completion 0 :total 0}}}
+           (gen/generate
+            [[:system "You are a brilliant writer."]
+             [:user ["Write a synopsis for the play:"
+                     "Title: {{title}}"]]
+             [:assistant (gen/llm :service-first wkk/var-name :synopsis)]
+             [:user "Now write a critique of the above synopsis:"]
+             [:assistant (gen/llm :service-last wkk/var-name :critique)]]
+            {:title "Mr. O"})))))
 
 (deftest map-generation
-  (is (= {gen/completions {:question-answer "Question: What is the distance from Moon to Io? Answer: !!!"
-                           :answer          "!!!"
-                           :self-eval       (u/join-lines
-                                             "Question: What is the distance from Moon to Io? Answer: !!!"
-                                             "Is this a correct answer?"
-                                             "!!!")
-                           :test            "!!!"}
-          gen/usage       {:answer        {:prompt 1 :completion 3 :total 4}
-                           :test          {:prompt 1 :completion 3 :total 4}
-                           :bosquet/total {:prompt 2 :completion 6 :total 8}}}
-         (gen/generate
-          {:service-const {wkk/chat-fn (fn [_ _]
-                                         {wkk/content {:content "!!!" :role :assistant}
-                                          wkk/usage   {:prompt 1 :completion 3 :total 4}})}}
-          {:question-answer "Question: {{question}} Answer: {{answer}}"
-           :answer          (gen/llm :service-const)
-           :self-eval       ["{{question-answer}}"
-                             "Is this a correct answer?"
-                             "{{test}}"]
-           :test            (gen/llm :service-const)}
-          {:question "What is the distance from Moon to Io?"}))))
+  (with-redefs [env/config {:service-const
+                            {:chat-fn (fn [_ _]
+                                        {wkk/content {:content "!!!" :role :assistant}
+                                         wkk/usage   {:prompt 1 :completion 3 :total 4}})}}]
+    (is (= {gen/completions {:question-answer "Question: What is the distance from Moon to Io? Answer: !!!"
+                             :answer          "!!!"
+                             :self-eval       (u/join-lines
+                                               "Question: What is the distance from Moon to Io? Answer: !!!"
+                                               "Is this a correct answer?"
+                                               "!!!")
+                             :test            "!!!"}
+            gen/usage       {:answer        {:prompt 1 :completion 3 :total 4}
+                             :test          {:prompt 1 :completion 3 :total 4}
+                             :bosquet/total {:prompt 2 :completion 6 :total 8}}}
+           (gen/generate
+            {:question-answer "Question: {{question}} Answer: {{answer}}"
+             :answer          (gen/llm :service-const)
+             :self-eval       ["{{question-answer}}"
+                               "Is this a correct answer?"
+                               "{{test}}"]
+             :test            (gen/llm :service-const)}
+            {:question "What is the distance from Moon to Io?"})))))
 
 (deftest fail-generation
   (is (= {gen/completions {:in "How are you? {{out}}" :out nil}
@@ -76,7 +78,7 @@
 
 (deftest appending-gen-instruction
   (is (= {gen/default-template-prompt     "What is the distance from Moon to Io? {{bosquet..template/completion}}"
-          gen/default-template-completion (gen/default-llm)}
+          gen/default-template-completion (env/default-service)}
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
 
@@ -84,31 +86,31 @@
   (let [call-counter (atom 0)
         cached-props (atom [])
         question     "What is the distance from Moon to Io?"
+        env-config {:service-const
+                    {:chat-fn (fn [_ props]
+                                (swap! cached-props conj (cache/cache-props props))
+                                (swap! call-counter inc) {})}}
         generate     (fn [cache q]
                        (gen/generate
-                        {:service-const {wkk/chat-fn (fn [_ props]
-                                                       (swap! cached-props conj
-                                                              (cache/cache-props props))
-                                                       (swap! call-counter inc) {})}}
                         {:qna "Question: {{q}}  Answer: {{a}}"
                          :a   (gen/llm :service-const wkk/cache cache)}
                         {:q q}))]
-    ;; cache is off
-    (generate false question)
-    (is (= 1 @call-counter))
-    (generate false question)
-    (is (= 2 @call-counter))
-    ;; cache is on
-    (generate true question)
-    (is (= 3 @call-counter))
-    (generate true question)
-    (is (= 3 @call-counter))
-    (generate true "What is the distance between X and Y?")
-    (is (= 4 @call-counter))
-
-    ;; clear cache
-    (doseq [p @cached-props]
-      (cache/evict p))))
+    (with-redefs [env/config env-config]
+      ;; cache is off
+      (generate false question)
+      (is (= 1 @call-counter))
+      (generate false question)
+      (is (= 2 @call-counter))
+      ;; cache is on
+      (generate true question)
+      (is (= 3 @call-counter))
+      (generate true question)
+      (is (= 3 @call-counter))
+      (generate true "What is the distance between X and Y?")
+      (is (= 4 @call-counter))
+      ;; clear cache
+      (doseq [p @cached-props]
+        (cache/evict p)))))
 
 (deftest find-var-references
   (is (= [:y :z] (gen/find-refering-templates :x {:x "aaa" :y "{{x}}" :z "{{x}} {{y}}"})))
