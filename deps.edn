@@ -1,5 +1,5 @@
 {:paths   ["src" "resources"]
- :deps    {org.clojure/clojure                           {:mvn/version "1.11.1"}
+ :deps    {org.clojure/clojure                           {:mvn/version "1.11.2"}
            io.github.zmedelis/hfds-clj                   {:mvn/version "2023.12.11"}
            io.github.zmedelis/selmer                     {:mvn/version "0.7.9"}
            com.wsscode/pathom3                           {:mvn/version "2023.08.22-alpha"}
@@ -44,8 +44,8 @@
            :kaocha     {:main-opts   ["-m" "kaocha.runner"]
                         :extra-paths ["test"]
                         :extra-deps  {lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
-           :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.9.6"
-                                                                    :git/sha "8e78bcc"}
+           :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.10.0"
+                                                                    :git/sha "3a2c484"}
                                      slipset/deps-deploy           {:mvn/version "0.2.2"}}
                         :ns-default build}
            :ns-default build}}
