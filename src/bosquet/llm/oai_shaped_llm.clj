@@ -1,6 +1,5 @@
 (ns bosquet.llm.oai-shaped-llm
   (:require
-   [bosquet.env :as env]
    [bosquet.llm.http :as http]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
