@@ -432,8 +432,8 @@
 
   (generate
    {:q1   ["Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{a}}"]
-    :a    (llm :openai wkk/model-params {:max-tokens 10})}
-   {:age 5})
+    :a    (llm :ollama wkk/model-params {:model :llama2})}
+   {:age 10})
 
   (generate [[:system "You are an amazing writer."]
              [:user ["Write a synopsis for the play:"

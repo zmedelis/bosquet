@@ -3,26 +3,22 @@
    [bosquet.env :as env]
    [bosquet.llm.http :as http]
    [bosquet.llm.oai-shaped-llm :as oai]
-   [bosquet.utils :as u]))
+   [bosquet.llm.wkk :as wkk]))
 
 
 (defn ->completion
-  [{:keys [response message] :as x}
-   #_{[{:keys [text message]} & _choices]    :choices
-      {total_tokens      :total_tokens
-       prompt_tokens     :prompt_tokens
-       completion_tokens :completion_tokens} :usage}]
-  (u/pp x)
-  (if response response (oai/chatml->bosquet message))
-  #_(assoc
-     (cond
-       message {wkk/generation-type :chat
-                wkk/content         (chatml->bosquet message)}
-       text    {wkk/generation-type :completion
-                wkk/content         text})
-     wkk/usage   {:prompt     prompt_tokens
-                  :completion completion_tokens
-                  :total      total_tokens}))
+  [{:keys [response message prompt_eval_count eval_count]
+                                        ; ollama returns 0 for prompt eval if the prompt was cached
+    :or   {prompt_eval_count 0}}]
+  (assoc
+   (cond
+     message  {wkk/generation-type :chat
+               wkk/content         (oai/chatml->bosquet message)}
+     response {wkk/generation-type :completion
+               wkk/content         response})
+   wkk/usage {:prompt     prompt_eval_count
+              :completion eval_count
+              :total      (+ eval_count prompt_eval_count)}))
 
 
 (defn chat-fn [{:keys [api-endpoint]}]
@@ -33,44 +29,21 @@
   (partial http/post (str api-endpoint "/generate") nil))
 
 
-#_(defn create-completion
-  "Make a call to Ollama
+(defn- generate
+  [default-params params gen-fn]
+  (-> params
+      ;; no support for streaming for now
+      (assoc :stream false)
+      (oai/prep-params default-params)
+      gen-fn
+      ->completion))
 
-  - `service-cfg` will contain props needed to make call: endpoint, model defaults, etc
-  - `params` is the main payload of the call containing model params, and prompt in `messages`
-  - `content` is intended for `complete` workflow where we do not have chat `messages` in `params`"
-  [{default-params :model-params :as service-cfg} params]
-  (let [lm-call (completion-fn service-cfg)]
-    (-> params
-        #_(prep-params default-params)
-        lm-call
-        ->completion)))
 
 (defn chat
   [service-cfg params]
-  (let [lm-call (chat-fn service-cfg)]
-    (-> params
-        #_(prep-params default-params)
-        lm-call
-        ->completion)))
+  (generate service-cfg params (chat-fn service-cfg)))
 
 
 (defn complete
   [service-cfg params]
-  (let [lm-call (completion-fn service-cfg)]
-    (-> params
-        #_(prep-params default-params)
-        lm-call
-        ->completion)))
-
-(comment
-  (complete (:ollama env/config)
-            {:prompt "3/2="
-             :stream false
-             :model "llama2"})
-
-  (chat (:ollama env/config)
-        {:messages [{:role "user" :content "3/2="}]
-         :stream false
-         :model  "llama2"})
-  #__)
+  (generate service-cfg params (completion-fn service-cfg)))
