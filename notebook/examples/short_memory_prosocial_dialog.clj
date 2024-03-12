@@ -1,9 +1,17 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (ns short-memory-prosocial-dialog
   (:require
+   [bosquet.llm.generator :as gen]
+   [bosquet.memory.memory :as m]
+   [bosquet.memory.retrieval :as r]
+   [bosquet.memory.simple-memory :as sm]
+   [bosquet.utils :as u]
+   [bosquet.wkk :as wkk]
    [helpers :as h]
    [hfds-clj.core :as hfds]
-   [nextjournal.clerk :as clerk]))
+   [nextjournal.clerk :as clerk])
+  (:import
+   bosquet.memory.simple_memory.SimpleMemory))
 
 ;; TODO NEEDS UPDATING
 
@@ -34,7 +42,7 @@
 ;; To simplify the example, let's only use the first round of the dialog, ignoring the subsequent dialog steps.
 
 (def dialog-ds-subset
-  (filter #(zero? (:response_id %))
+  (filter #(-> % :response_id zero?)
     prosocial-dialog-dataset))
 
 ;; Relevant data from the loaded dataset:
@@ -60,7 +68,7 @@
 
 ;; Defined memory can be retrieved from the Integrant system
 
-;; (def mem-sys (system/get-memory wkk/simple-short-term-memory))
+(def mem-sys (SimpleMemory. sm/memory-store))
 
 ;; Memory configuration defines how memories are stored and how they are retrieved:
 ;; * *recall-function* - defines how to retrieve the memories, cue will be used to fetch memory by similarity to the query (user message)
@@ -68,68 +76,68 @@
 ;; * *memory-token-limit* - specifies how many tokens to retrieve from the memory, this way we can make sure that the LLM window does not overflow if lots of memories match the recall function
 
 ;; ^{:nextjournal.clerk/visibility {:result :hide}}
-;; (def mem-config
-;;   {wkk/memory-system     mem-sys
-;;    wkk/recall-function   r/recall-cue
-;;    wkk/recall-parameters {r/memory-tokens-limit          500
-;;                           r/content-similarity-threshold 0.3
-;;                           r/memory-content-fn            :context}})
+(def mem-config
+  {wkk/memory-system     mem-sys
+   wkk/recall-function   r/recall-cue
+   wkk/recall-parameters {r/memory-tokens-limit          500
+                          r/content-similarity-threshold 0.3
+                          r/memory-content-fn            :context}})
 
-;; ;; **The important part** - commit the Prosocial Dialogues to the memory.
+;; **The important part** - commit the Prosocial Dialogues to the memory.
 
-;; ^{:nextjournal.clerk/visibility {:result :hide}}
-;; (doseq [prosoc-observation dialog-ds-subset]
-;;   (.remember mem-sys prosoc-observation {}))
+^{:nextjournal.clerk/visibility {:result :hide}}
+(doseq [prosoc-observation dialog-ds-subset]
+  (.remember mem-sys prosoc-observation {}))
 
 ;;
 ;; ### Chat
 ;; Let's define generation parameters. See *Configuration* and *Getting Started* documents for details on how to define generation properties.
 ;;
-;; ^{:nextjournal.clerk/visibility {:result :hide}}
-;; (def params {chat/conversation {wkk/service          [:llm/openai :provider/openai]
-;;                                 wkk/model-parameters {:temperature 0.5
-;;                                                       :max-tokens  300
-;;                                                       :model       "gpt-4"}}})
+^{:nextjournal.clerk/visibility {:result :hide}}
+(def params {wkk/model-parameters {:temperature 0.5
+                                   :max-tokens  300
+                                   :model       :gpt-4}})
 
 ;; ;; A not-so-nice message somone in not so nice mood wants to post:
 
 ;; ^{:nextjournal.clerk/visibility {:result :hide}}
-;; (def user-post "Got a Christmas present from a friend. Should I say something stupid?")
+(def user-post "Got a Christmas present from a friend. Should I say something stupid?")
 
-;; ;; Let's find out if anything can be remembered in Prosocial Dialog.
+;; Let's find out if anything can be remembered in Prosocial Dialog.
 
-;; ^{:nextjournal.clerk/visibility {:result :show}
-;;   :nextjournal.clerk/auto-expand-results? true}
-;; (def prosocial-memory (m/available-memories mem-config user-post))
+^{:nextjournal.clerk/visibility {:result :show}
+  :nextjournal.clerk/auto-expand-results? true}
+(def prosocial-memory (m/available-memories mem-config user-post))
 
 ;; ;; Once the relevant memory is retrieved it will be injected into the conversation stream. It's up to the user how to do this. Here, I will define how safety
 ;; ;; annotations and rots are to be used to generate an appropriate response.
 ;; ^{:nextjournal.clerk/visibility {:result :hide}}
-;; (def prosocial-check
-;;   (h/join
-;;     "The message above is potentialy harmfull."
-;;     "It likely contains the following violations of socially safe conversation:"
-;;     "{% for reason in safety_annotation_reasons %}"
-;;     "* {{reason}}"
-;;     "{% endfor %}"
-;;     ""
-;;     "Please respond with a question or suggestion urgin user to reconsider."
-;;     "Please use the following rules of thumb when writing a reply in the form of a suggestion or question:"
-;;     "{% for rot in rots %}"
-;;     "* {{rot}}"
-;;     "{% endfor %}"))
+(def prosocial-check
+  ["The message above is potentialy harmfull."
+   "It likely contains the following violations of socially safe conversation:"
+   "{% for reason in safety_annotation_reasons %}"
+   "* {{reason}}"
+   "{% endfor %}"
+   ""
+   "Please respond with a question or suggestion urging the user to reconsider."
+   "Please use the following rules of thumb when writing a reply in the form of a suggestion or question:"
+   "{% for rot in rots %}"
+   "* {{rot}}"
+   "{% endfor %}"])
 
-;; ;; `prosocial-check` needs to be injected into the conversation stream. Note that Selmer constructions and slot filling works in chat mode as well.
+;; `prosocial-check` needs to be injected into the conversation stream. Note that Selmer constructions and slot filling works in chat mode as well.
 
-;; (def chat-msg
-;;   (utils/concatv
-;;     [(chat/speak chat/user user-post)]
-;;     (when-not (empty? prosocial-memory)
-;;       [(chat/speak chat/user prosocial-check)])))
+(def chat-msg
+  [[:user user-post]
+   [:user prosocial-check]
+   [:assistant (gen/llm :gpt-4
+                        :llm/var-name :suggestion
+                        :llm/model-params {:max-tokens 300})]])
 
 ;; ;; **Finally**, the assistant response should suggest how not to speak.
 
-;; (def result (gen/chat chat-msg (first prosocial-memory) params))
+(def result (gen/generate chat-msg
+                          (first prosocial-memory)))
 
 ;; ^{:nextjournal.clerk/visibility {:code :hide}}
 ;; (clerk/html

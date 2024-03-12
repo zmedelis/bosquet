@@ -463,7 +463,7 @@
                      wkk/output-format :edn
                      wkk/model-params {:max-tokens 300})]
     [:user ["Based on the EDN distances data"
-              "provide me with​ a) average distance b) max distance c) min distance"]]
+            "provide me with​ a) average distance b) max distance c) min distance"]]
     [:assistant (llm :mistral-small
                      wkk/var-name :analysis)]])
 
