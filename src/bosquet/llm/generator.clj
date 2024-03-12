@@ -93,7 +93,7 @@
           service-config (dissoc (llm-impl llm-config) wkk/complete-fn wkk/chat-fn)
           chat-fn        (partial (if (symbol? chat-impl)
                                     ;; symbol comes from edn configs
-                                    (resolve chat-impl)
+                                    (requiring-resolve chat-impl)
                                     ;; this is when llm config has fn ref
                                     chat-impl)
                                   service-config)
@@ -386,8 +386,10 @@
 
   (generate
    (str
-    "Extract name from this russian text. "
-    "TEXT: Напомним, Вячеслав Дондоков занимал пост главного врача БСМП"))
+    "Extract name from this text. "
+    "TEXT: Į Europos čempionatus išleidęs "
+    "Laimutį Adomaitį, Aldą Lukošaitį, Vladimiras sako, dirbs ir toliau ne vien todėl, "
+    "kad tai mylimas darbas."))
 
 
   (generate
@@ -460,10 +462,10 @@
                      wkk/var-name :distances
                      wkk/output-format :edn
                      wkk/model-params {:max-tokens 300})]
-    #_[:user ["Based on the JSON distances data"
+    [:user ["Based on the EDN distances data"
               "provide me with​ a) average distance b) max distance c) min distance"]]
-    #_[:assistant (llm :mistral-small
-                       wkk/var-name :analysis)]])
+    [:assistant (llm :mistral-small
+                     wkk/var-name :analysis)]])
 
   (generate
    {:astronomer ["As a brilliant astronomer, list distances between planets and the Sun"
