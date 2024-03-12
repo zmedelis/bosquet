@@ -5,7 +5,7 @@
    [clojure.test :as t]))
 
 (t/deftest simple-memory-operations
-  (let [mem (m/->SimpleMemory (atom []))]
+  (let [mem (m/->SimpleMemory)]
     (.remember mem "1" nil)
     (.remember mem ["2" "3" "4" "5"] nil)
     ;; no limits specified return all
@@ -22,7 +22,7 @@
                                                     r/memory-content-fn    identity})))))
 
 (t/deftest cue-recall
-  (let [mem        (m/->SimpleMemory (atom []))
+  (let [mem        (m/->SimpleMemory)
         sim-params {r/memory-content-fn            identity
                     r/content-similarity-threshold 0.3}]
     (.remember mem ["This is a car" "This is a bar" "The sky is dark" "Dark is the sky"] {})

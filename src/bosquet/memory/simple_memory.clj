@@ -5,7 +5,7 @@
    [bosquet.memory.retrieval :as r]
    [bosquet.nlp.similarity :as nlp]))
 
-(def memory-store
+(def ^:private memory-store
   "This type of mem is mainly for dev purposes. Expose the atom for easy debuging."
   (atom []))
 
@@ -23,20 +23,20 @@
 
 (deftype
  SimpleMemory
- [in-memory-memory] mem/Memory
+ [] mem/Memory
 
  (forget [_this _params]
-   (reset! in-memory-memory []))
+   (reset! memory-store []))
 
  (remember [_this observation _params]
    (doseq [item (if (vector? observation) observation [observation])]
-     (swap! in-memory-memory conj item)))
+     (swap! memory-store conj item)))
 
  (free-recall [_this {object-limit r/memory-objects-limit :or {object-limit 5}} _cue]
-   (->> @in-memory-memory shuffle (take object-limit)))
+   (->> @memory-store shuffle (take object-limit)))
 
  (sequential-recall [_this params]
-   (retrieve-in-sequnce params @in-memory-memory))
+   (retrieve-in-sequnce params @memory-store))
 
  (cue-recall [_this {mem-content-fn r/memory-content-fn
                      threshold      r/content-similarity-threshold
@@ -45,6 +45,6 @@
    (retrieve-in-sequnce
     params
     (filter #(> threshold (nlp/cosine-distance cue (mem-content-fn %)))
-            @in-memory-memory)))
+            @memory-store)))
 
  (volume [_this _params]))
