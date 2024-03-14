@@ -1,17 +1,33 @@
 (ns bosquet.db.qdrant
   (:require
    [bosquet.db.vector-db :as vdb]
+   [bosquet.env :as env]
    [bosquet.utils :as utils]
    [clojure.walk :as walk]
    [hato.client :as hc]
    [jsonista.core :as j]))
 
 (def ^:private qdrant-endpoint
-  "http://localhost:6333")
+  (env/val :qdrant :api-endpoint))
+
+
+(defn collections
+  "URL endpoint for collection with the `name` operations."
+  [name]
+  (str  qdrant-endpoint "/collections/" name))
+
+
+(defn collection-info
+  [collection-name]
+  (let [{:keys [body status]} (hc/get (collections collection-name)
+                                      {:throw-exceptions? false})]
+    (condp = status
+      200 (-> body (j/read-value j/keyword-keys-object-mapper) :result)
+      404 nil)))
 
 (defn create-collection
   "Create a collection with `name` and `config`"
-  [collection-name {:keys [vectors-on-disk vectors-size vectors-distance]}]
+  [{:keys [vectors-on-disk vectors-size vectors-distance]} collection-name]
   (hc/put (str  qdrant-endpoint "/collections/" collection-name)
           {:content-type :json
            :body         (j/write-value-as-string
@@ -24,7 +40,11 @@
   (hc/delete (str qdrant-endpoint "/collections/" collection-name)))
 
 (defn add-docs
+  "Add docs to the `collection-name` if collection does not exist, create it."
   [collection-name data]
+  (when-not (collection-info collection-name)
+    (create-collection collection-name (env/val :qdrant)))
+
   (let [points {:points (mapv (fn [{:keys [payload embedding]}]
                                 {:id      (utils/uuid)
                                  :vector  embedding
@@ -42,10 +62,10 @@
    (let [res (-> (format "%s/collections/%s/points/search" qdrant-endpoint collection-name)
                  (hc/post
                   {:content-type :json
-                   :body (j/write-value-as-string
-                          {:vector embeds-vector
-                           :top top-n
-                           :with_payload true})})
+                   :body         (j/write-value-as-string
+                                  {:vector       embeds-vector
+                                   :top          top-n
+                                   :with_payload true})})
                  :body
                  j/read-value
                  (get "result")

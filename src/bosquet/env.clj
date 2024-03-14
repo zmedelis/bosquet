@@ -37,6 +37,12 @@
    {:resolver aero/root-resolver}))
 
 
+(defn val
+  "Get configuration at path"
+  [& path]
+  (get-in config path))
+
+
 (defn- merge-config [cfg conf-path value]
   (merge cfg (assoc-in cfg conf-path value)))
 

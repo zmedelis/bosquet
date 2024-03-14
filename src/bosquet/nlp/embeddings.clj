@@ -1,5 +1,6 @@
 (ns bosquet.nlp.embeddings
   (:require
+   [bosquet.env :as env]
    [bosquet.memory.encoding :as encoding]
    [wkok.openai-clojure.api :as api]))
 
@@ -11,14 +12,12 @@
                         opts))
 
 (deftype
- OpenAIEmbeddings
+ OAIEmbeddings
  [opts]
   encoding/Encoder
   (encode [_this text] (oai-embeddings text opts)))
 
 (comment
-
-  (require '[bosquet.system :as system])
   (require '[bosquet.db.qdrant :as qd])
 
   (def embeddings-collection-config
@@ -29,7 +28,7 @@
   (qd/delete-collection qd-coll-name)
   (qd/create-collection qd-coll-name embeddings-collection-config)
 
-  (def oai-emb (system/get-service :embedding/openai))
+  (def oai-emb (OAIEmbeddings. (:openai env/config)))
   (def texts ["Hello world"
               "Hello town"
               "Goodmorning fields"
@@ -48,7 +47,9 @@
 
   ;; Same but via Memory component
 
-  (def qd (system/get-service :db/qdrant))
+  (import 'bosquet.db.qdrant.Qdrant)
+
+  (def qd (Qdrant. (:qdrant env/config)))
 
   (.create qd qd-coll-name)
   (.add qd qd-coll-name embeds)

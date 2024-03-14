@@ -17,7 +17,7 @@
   (cond->> memories
     object-limit (take-last object-limit)
     token-limit  (r/take-while-tokens
-                  (merge {wkk/model   "gpt-3.5-turbo"
+                  (merge {wkk/model   :gpt-3.5-turbo
                           wkk/service wkk/openai}
                          params))))
 

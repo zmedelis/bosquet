@@ -199,7 +199,7 @@ Respond with unnumbered bullet list and nothing else.
 EMOTIONS: {{emotions}}
 
 {{summary}}"
-   :summary (g/llm :openai wkk/model-params {:model :gpt-4})})
+   :summary (g/llm :gpt-4)})
 
 (defn summarize [analysis]
   (->
