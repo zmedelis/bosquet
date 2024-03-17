@@ -1,7 +1,6 @@
 (ns bosquet.memory.retrieval
   (:require
    [bosquet.llm.wkk :as wkk]
-   [bosquet.llm.openai :as openai]
    [bosquet.llm.openai-tokens :as oai.tokenizer]
    [taoensso.timbre :as timbre]))
 
@@ -48,8 +47,8 @@
   different memory objects. "
   :memory.retrieval/token-limit)
 
-(def memory-content-fn
-  :memory.retrieval/content-fn)
+(def memory-content
+  :memory.retrieval/content)
 
 (def content-similarity-threshold
   :memory.retrieval/similarity-threshold)
@@ -64,7 +63,7 @@
 (defn take-while-tokens
   [{object-limit memory-objects-limit
     token-limit  memory-tokens-limit
-    content-fn   memory-content-fn
+    content-fn   memory-content
     model        wkk/model
     llm          wkk/service
     :or          {object-limit 100

@@ -29,7 +29,7 @@
    (reset! memory-store []))
 
  (remember [_this observation _params]
-   (doseq [item (if (vector? observation) observation [observation])]
+   (doseq [item (if (sequential? observation) observation [observation])]
      (swap! memory-store conj item)))
 
  (free-recall [_this {object-limit r/memory-objects-limit :or {object-limit 5}} _cue]
@@ -38,7 +38,7 @@
  (sequential-recall [_this params]
    (retrieve-in-sequnce params @memory-store))
 
- (cue-recall [_this {mem-content-fn r/memory-content-fn
+ (cue-recall [_this {mem-content-fn r/memory-content
                      threshold      r/content-similarity-threshold
                      :as            params}
               cue]

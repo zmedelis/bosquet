@@ -27,19 +27,19 @@
            (.sequential-recall mem nil)))
     (is (= ["Four monkeys" "Five monkeys"]
            (.sequential-recall mem {r/memory-objects-limit 2
-                                    r/memory-content-fn    identity})))))
+                                    r/memory-content    identity})))))
 
 (deftest retrieval-token-limit
   (let [mem (->memory)]
     (is (= ["Four monkeys" "Five monkeys"]
            (.sequential-recall mem {r/memory-tokens-limit 5
-                                    r/memory-content-fn   identity})))))
+                                    r/memory-content   identity})))))
 
 (deftest cue-retrieval
   (let [mem (->memory)]
     (.remember mem "10 jumping donkeys" nil)
     (is (= ["Four monkeys"]
            (.cue-recall mem {r/memory-tokens-limit          100
-                             r/memory-content-fn            identity
+                             r/memory-content            identity
                              r/content-similarity-threshold 0.01}
                         "Four monkeys")))))

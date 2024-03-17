@@ -10,21 +10,21 @@
     (.remember mem "1" nil)
     (.remember mem ["2" "3" "4" "5"] nil)
     ;; no limits specified return all
-    (t/is (= ["1" "2" "3" "4" "5"] (.sequential-recall mem {r/memory-content-fn identity})))
+    (t/is (= ["1" "2" "3" "4" "5"] (.sequential-recall mem {r/memory-content identity})))
     ;; last 3 objects returned, no token limit
-    (t/is (= ["3" "4" "5"] (.sequential-recall mem {r/memory-content-fn    identity
+    (t/is (= ["3" "4" "5"] (.sequential-recall mem {r/memory-content    identity
                                                     r/memory-objects-limit 3})))
     ;; object and token limitation
     (t/is (= ["4" "5"] (.sequential-recall mem {r/memory-objects-limit 3
                                                 r/memory-tokens-limit  3
-                                                r/memory-content-fn    identity})))
+                                                r/memory-content    identity})))
     (t/is (= ["3" "4" "5"] (.sequential-recall mem {r/memory-objects-limit 3
                                                     r/memory-tokens-limit  1000
-                                                    r/memory-content-fn    identity})))))
+                                                    r/memory-content    identity})))))
 
 (t/deftest cue-recall
   (let [mem        (m/->SimpleMemory)
-        sim-params {r/memory-content-fn            identity
+        sim-params {r/memory-content            identity
                     r/content-similarity-threshold 0.3}]
     (.forget mem nil)
     (.remember mem ["This is a car" "This is a bar" "The sky is dark" "Dark is the sky"] {})

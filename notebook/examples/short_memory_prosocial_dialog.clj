@@ -77,13 +77,12 @@
    wkk/recall-function   r/recall-cue
    wkk/recall-parameters {r/memory-tokens-limit          500
                           r/content-similarity-threshold 0.3
-                          r/memory-content-fn            :context}})
+                          r/memory-content               :context}})
 
 ;; **The important part** - commit the Prosocial Dialogues to the memory.
 
 ^{:nextjournal.clerk/visibility {:result :hide}}
-(doseq [prosoc-observation dialog-ds-subset]
-  (.remember memory prosoc-observation {}))
+(.remember memory dialog-ds-subset {})
 
 ;;
 ;; ### Chat
