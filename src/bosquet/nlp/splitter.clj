@@ -3,7 +3,6 @@
    [bosquet.llm.openai-tokens :as oai]
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [flatland.useful.seq :as useq]
    [taoensso.timbre :as timbre])
   (:import
    [opennlp.tools.sentdetect SentenceDetectorME SentenceModel]))
@@ -37,38 +36,6 @@
   "Text splitter by tokens. Tokenization is done based on the provided model."
   :splitter/token-split)
 
-(defn ^{:deprecated true} split-max-tokens
-  "DEPRECATED use `text-chunker` instead with `split-unit` set to `token`.
-
-  Splits a given string `text` in several sub-strings.
-  Each split will have maximum length, while having less tokens then `max-token`.
-  The numer of tokens of a substring gets obtained by calling `token-count-fn` with the current string repeatedly
-  while growing the string.
-  Initialy the text is split by `split-char`, which should nearly always be a form of whitespace.
-  Then the substring are grown by the result of the splitting.
-  Keeping `split-char` as whitespace avoids that words get split in the middle.
-
-  In very rare situations where the text has words longer then `max-token`, the function
-  might return substrings which have more tokens then `max-token`. In this case `split-char` could be modified
-  to split on something else then word boundaries, which will then eventualy break words in the middle,
-  but would guaranty that substrings do not have more then `max-token` tokens."
-  ([text max-tokens model split-char]
-   (let [batches
-         (useq/glue
-          (fn [s c]
-            (concat s [c]))
-          []
-          (fn [current-batch item]
-            (let [s (string/join split-char (concat current-batch [item]))
-                  c (oai/token-count s model)]
-              (< c max-tokens)))
-
-          (string/split text (re-pattern split-char)))]
-     (map
-      #(string/join split-char %)
-      batches)))
-  ([text max-tokens model]
-   (split-max-tokens text max-tokens model " ")))
 
 (defn- load-splitter-model
   "Load OpenNLP model for a `lang` sentence boundary detection.
