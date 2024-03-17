@@ -12,7 +12,8 @@
   (is (= 6 (r/memory-object-size "Call me Ishmael." "gpt-3.5-turbo" wkk/openai))))
 
 (defn- ->memory []
-  (let [mem (SimpleMemory. (atom []))]
+  (let [mem (SimpleMemory.)]
+    (.forget mem nil)
     (.remember mem "One monkey" nil)
     (.remember mem "Two monkeys" nil)
     (.remember mem "Three monkeys" nil)

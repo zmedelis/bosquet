@@ -6,6 +6,7 @@
 
 (t/deftest simple-memory-operations
   (let [mem (m/->SimpleMemory)]
+    (.forget mem nil)
     (.remember mem "1" nil)
     (.remember mem ["2" "3" "4" "5"] nil)
     ;; no limits specified return all
@@ -25,6 +26,7 @@
   (let [mem        (m/->SimpleMemory)
         sim-params {r/memory-content-fn            identity
                     r/content-similarity-threshold 0.3}]
+    (.forget mem nil)
     (.remember mem ["This is a car" "This is a bar" "The sky is dark" "Dark is the sky"] {})
     (t/is (= ["This is a car" "This is a bar"]
              (.cue-recall mem sim-params "This is a fox")))
