@@ -93,13 +93,13 @@
   [instruction]
   {:instruction     instruction
    :prompt-template (u/join-lines
-                      "{{instruction}}"
-                      "Context information is below."
-                      u/separator
-                      "{{context}}"
-                      u/separator
-                      "Query: {{query}}"
-                      "Answer:")
+                     "{{instruction}}"
+                     "Context information is below."
+                     "~~~~~"
+                     "{{context}}"
+                      "~~~~~"
+                     "Query: {{query}}"
+                     "Answer:")
    :generation      (u/join-lines
                       "{{prompt-template}}"
                       "{% gen var-name=answer %}")})

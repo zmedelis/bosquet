@@ -12,7 +12,7 @@
 (defn- props->cohere
   "Convert general LLM model properties to Cohere specific ones."
   [{:keys [n stop] :as props}]
-  (u/snake_case
+  (u/snake-case
    (u/mergex
     (dissoc  props :n :stop)
     {:num_generations n}
@@ -25,9 +25,9 @@
    schema/usage-total-count (+ output_tokens input_tokens)})
 
 (defn complete
-  ([{api-key :api-key :as cfg} params]
+  ([{api-key :api-key url :api-endpoint} params]
    (set-api-key api-key)
-   (u/log-call cfg params "Cohere completion")
+   (u/log-call url params)
    (let [{{usage :billed_units} :meta generations :generations}
          (client/generate (props->cohere params))]
      {wkk/generation-type :completion
@@ -46,9 +46,9 @@
 
 (defn chat
   ([params] (chat (wkk/cohere env/config) params))
-  ([{api-key :api-key :as cfg} {messages :messages :as params}]
+  ([{api-key :api-key url :api-endpoint} {messages :messages :as params}]
    (set-api-key api-key)
-   (u/log-call cfg params "Cohere chat")
+   (u/log-call url params)
    (let [params   (dissoc params :messages)
          messages (chatml->cohere messages)
          message  (-> messages last :text)

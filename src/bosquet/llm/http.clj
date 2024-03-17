@@ -1,9 +1,9 @@
 (ns bosquet.llm.http
   (:require
    [bosquet.utils :as u]
-   [clojure.string :as string]
    [hato.client :as hc]
    [taoensso.timbre :as timbre]))
+
 
 (defn use-local-proxy
   "Use local proxy to log LLM API requests"
@@ -14,6 +14,7 @@
    (System/setProperty "https.proxyHost" host)
    (System/setProperty "https.proxyPort" (str port))))
 
+
 (defn client
   ([] (client nil))
   ([{:keys [connect-timeout]
@@ -23,32 +24,15 @@
     (merge opts
            {:connect-timeout connect-timeout}))))
 
-(defn- json-params
-  "Snake case keys from `:max-tokens` to `:max_tokens`"
-  [params]
-  (->> params
-       (reduce-kv
-        (fn [m k v]
-          (assoc m
-                 (-> k name (string/replace "-" "_") keyword)
-                 v))
-        {})
-       u/write-json))
-
-(defn- log-call
-  [url params]
-  (timbre/infof "💬 Calling %s with:" url)
-  (doseq [[k v] (dissoc params :messages)]
-    (timbre/infof "   %-15s%s" k v)))
 
 (defn post
   ([url params] (post url nil params))
   ([url api-key params]
-   (log-call url params)
+   (u/log-call url params)
    (try
      (-> url
          (hc/post (merge {:content-type :json
-                          :body         (-> params json-params u/snake_case)
+                          :body         (->> params u/snake-case u/write-json)
                           :http-client  (client)}
                          (when api-key {:oauth-token api-key})))
          :body

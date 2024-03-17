@@ -79,7 +79,8 @@
                  knowledge)
         _       (timbre/debugf "Got %s cunks to remember" (count chunks))]
     (.forget memory opts)
-    (.create storage collection-name)
+    ;; FIXME
+    (.create nil #_storage collection-name)
     (doseq [chunk chunks]
       (.remember memory chunk opts))))
 

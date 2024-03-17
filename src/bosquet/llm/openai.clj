@@ -10,8 +10,8 @@
 (defn chat
   "Run 'chat' type completion. Pass in `messages` in ChatML format."
   ([params] (chat (wkk/openai env/config) params))
-  ([{default-params :model-params :as service-cfg} params]
-   (u/log-call service-cfg params "OAI chat")
+  ([{url :api-endpoint default-params :model-params :as service-cfg} params]
+   (u/log-call url params)
    (-> params
        (oai/prep-params default-params)
        (api/create-chat-completion service-cfg)
@@ -24,8 +24,8 @@
 
   *Deprecated* by OAI?"
   ([params] (complete (wkk/openai env/config) params))
-  ([{default-params :model-params :as service-cfg} params]
-   (u/log-call service-cfg params "OAI completion")
+  ([{url :api-endpoint default-params :model-params :as service-cfg} params]
+   (u/log-call url params)
    (-> params
        (oai/prep-params default-params)
        (api/create-completion service-cfg)

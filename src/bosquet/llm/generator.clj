@@ -90,7 +90,8 @@
    messages]
   (if-let [chat-impl (get-in llm-config [llm-impl wkk/chat-fn])]
     (let [format-fn      (partial converter/coerce (wkk/output-format properties))
-          service-config (dissoc (llm-impl llm-config) wkk/complete-fn wkk/chat-fn)
+          service-config (dissoc (llm-impl llm-config)
+                                 wkk/complete-fn wkk/chat-fn wkk/embed-fn)
           chat-fn        (partial (if (symbol? chat-impl)
                                     ;; symbol comes from edn configs
                                     (requiring-resolve chat-impl)

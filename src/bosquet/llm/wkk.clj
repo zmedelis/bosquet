@@ -23,6 +23,7 @@
 (def model-params :llm/model-params)
 (def chat-fn :chat-fn)
 (def complete-fn :complete-fn)
+(def embed-fn :embed-fn)
 (def var-name :llm/var-name)
 
 (def output-format

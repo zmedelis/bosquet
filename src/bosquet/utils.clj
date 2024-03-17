@@ -36,30 +36,32 @@
   ([x & ys]
    (into (vec x) cat ys)))
 
+
 (defn join-lines [& lines]
   (apply str (interpose "\n" lines)))
+
 
 (defn join-coll [content]
   (if (coll? content) (string/join "\n" content) content))
 
-(def separator
-  "A separator to be used in prompts to indicate data bloks."
-  "~~~~~~~~~~~~~~")
 
 (defn read-json
   "Read JSON from a string keywordizing keys"
   [s]
   (j/read-value s j/keyword-keys-object-mapper))
 
+
 (defn write-json
   "Write JSON to a string"
   [s]
   (j/write-value-as-string s))
 
+
 (defn flattenx
   "Flatten a nested collection"
   [coll]
   (remove nil? (flatten coll)))
+
 
 (defn mergex
   "Merge maps filtering nil values"
@@ -73,12 +75,15 @@
            a-map))
         maps)))
 
-(defn snake_case
+
+(defn snake-case
+  "Snake case keys from `:max-tokens` to `:max_tokens`"
   [m]
   (cske/transform-keys csk/->snake_case_keyword m))
 
+
 (defn log-call
-  [service-cfg params service-name]
-  (timbre/infof "💬 Calling %s with:" service-name)
-  (timbre/infof "\tParams: '%s'" (dissoc params :messages))
-  (timbre/infof "\tConfig: '%s'" (dissoc service-cfg :api-key :llm/complete-fn :llm/chat-fn)))
+  [url params]
+  (timbre/infof "💬 Calling %s with:" url)
+  (doseq [[k v] (dissoc params :messages)]
+    (timbre/infof "   %-15s%s" k v)))
