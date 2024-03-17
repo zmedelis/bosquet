@@ -42,17 +42,20 @@
     (timbre/infof "   %-15s%s" k v)))
 
 (defn post
-  [url api-key params]
-  (log-call url params)
-  (try
-    (-> url
-        (hc/post (merge {:content-type :json
-                         :body         (-> params json-params u/snake_case)
-                         :http-client  (client)}
-                        (when api-key {:oauth-token api-key})))
-        :body
-        (u/read-json))
-    (catch Exception e
-      (let [{:keys [body status]} (ex-data e)]
-        (timbre/errorf "LLM Call failed with HTTP status '%s' and error message '%s'" status (-> body u/read-json :message))
-        (timbre/error "Call parameters:" (prn-str params))))))
+  ([url params] (post url nil params))
+  ([url api-key params]
+   (log-call url params)
+   (try
+     (-> url
+         (hc/post (merge {:content-type :json
+                          :body         (-> params json-params u/snake_case)
+                          :http-client  (client)}
+                         (when api-key {:oauth-token api-key})))
+         :body
+         (u/read-json))
+     (catch Exception e
+       (let [{:keys [body status]}   (ex-data e)
+             {:keys [message error]} (u/read-json body)]
+         (timbre/error "Call failed")
+         (timbre/errorf "- HTTP status '%s'" status)
+         (timbre/errorf "- Error message '%s'" (or message error)))))))
