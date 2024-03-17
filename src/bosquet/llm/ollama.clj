@@ -21,12 +21,16 @@
               :total      (+ eval_count prompt_eval_count)}))
 
 
-(defn chat-fn [{:keys [api-endpoint]}]
-  (partial http/post (str api-endpoint "/chat") nil))
+(defn- chat-fn [{:keys [api-endpoint]}]
+  (partial http/post (str api-endpoint "/chat")))
 
 
-(defn completion-fn [{:keys [api-endpoint]}]
-  (partial http/post (str api-endpoint "/generate") nil))
+(defn- completion-fn [{:keys [api-endpoint]}]
+  (partial http/post (str api-endpoint "/generate")))
+
+
+(defn- embedding-fn [{:keys [api-endpoint]}]
+  (partial http/post (str api-endpoint "/embeddings")))
 
 
 (defn- generate
@@ -47,3 +51,26 @@
 (defn complete
   [service-cfg params]
   (generate service-cfg params (completion-fn service-cfg)))
+
+
+(defn create-embedding
+  "Works as the equivalent of this:
+
+  ```
+  curl http://localhost:11434/api/embeddings -d '{
+  \"model\": \"all-minilm\",
+  \"prompt\": \"Here is an article about llamas...\"}'
+  ```
+
+  https://github.com/ollama/ollama/blob/main/docs/api.md#generate-embeddings"
+  [service-cfg model text]
+  ((embedding-fn service-cfg)
+   {:model  model
+    :prompt text}))
+
+(comment
+  (create-embedding
+   (env/config :ollama)
+   :all-minilm
+   "Here is an article about llamas...")
+  #__)

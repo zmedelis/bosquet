@@ -17,6 +17,21 @@
   encoding/Encoder
   (encode [_this text] (oai-embeddings text opts)))
 
+
+(def openai :openai)
+
+
+(def ollama :ollama)
+
+
+(def ^:private handlers
+  {openai oai-embeddings})
+
+
+(defn encode
+  [embedder]
+  (-> embedder handlers encode))
+
 (comment
   (require '[bosquet.db.qdrant :as qd])
 
