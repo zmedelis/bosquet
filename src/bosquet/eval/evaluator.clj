@@ -71,7 +71,7 @@
       (timbre/errorf "Failed to parse evaluation answer - %s" (ex-message e)))))
 
 ;; TODO this does not belong here
-(defn remember-knowledge
+(defn store-knowledge
   [{collection-name :collection-name :as opts}
    memory knowledge]
   (let [chunks  (splitter/chunk-text
@@ -99,7 +99,7 @@
                (OAIEmbeddings. (:openai env/config))))
   (def text (:text (document/parse "data/llama2.pdf")))
 
-  (remember-knowledge opts memory text)
+  (store-knowledge opts memory text)
   (query opts memory "What are the inputs and outputs to Reward Modeling?")
 
   (evaluate-answer
