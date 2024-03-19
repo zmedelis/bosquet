@@ -18,10 +18,6 @@
   (encode [_this text] (oai-embeddings text opts)))
 
 
-
-(defn encode
-  [])
-
 (comment
   (require '[bosquet.db.qdrant :as qd])
 
