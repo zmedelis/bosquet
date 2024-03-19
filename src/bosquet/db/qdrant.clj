@@ -2,84 +2,97 @@
   (:require
    [bosquet.db.vector-db :as vdb]
    [bosquet.env :as env]
-   [bosquet.utils :as utils]
    [clojure.walk :as walk]
    [hato.client :as hc]
-   [jsonista.core :as j]))
-
-(def ^:private qdrant-endpoint
-  (env/val :qdrant :api-endpoint))
+   [jsonista.core :as j]
+   [bosquet.utils :as u]))
 
 
-(defn collections
+(defn- collections-path
   "URL endpoint for collection with the `name` operations."
-  [name]
-  (str  qdrant-endpoint "/collections/" name))
+  [{:keys [api-endpoint]} {:keys [collection-name]}]
+  (str  api-endpoint "/collections/" collection-name))
+
+
+(defn- points-path
+  "URL endpoint for collection with the `points` operations."
+  [{:keys [api-endpoint]} {:keys [collection-name]}]
+  (format "%s/collections/%s/points?wait=true"
+          api-endpoint collection-name))
+
+
+(defn- search-path
+  "URL endpoint for collection with the `points` operations."
+  [{:keys [api-endpoint]} {:keys [collection-name]}]
+  (format "%s/collections/%s/points/search" api-endpoint collection-name))
 
 
 (defn collection-info
-  [collection-name]
-  (let [{:keys [body status]} (hc/get (collections collection-name)
+  [opts params]
+  (let [{:keys [body status]} (hc/get (collections-path opts params)
                                       {:throw-exceptions? false})]
     (condp = status
       200 (-> body (j/read-value j/keyword-keys-object-mapper) :result)
       404 nil)))
 
+
 (defn create-collection
   "Create a collection with `name` and `config`"
-  [{:keys [vectors-on-disk vectors-size vectors-distance]} collection-name]
-  (hc/put (str  qdrant-endpoint "/collections/" collection-name)
+  [opts params]
+  (hc/put (collections-path opts params)
           {:content-type :json
            :body         (j/write-value-as-string
-                          {:vectors {:size     vectors-size
-                                     :distance vectors-distance
-                                     :on_disk  vectors-on-disk}})}))
+                          {:vectors (u/snake-case (dissoc opts :api-endpoint))})}))
+
 
 (defn delete-collection
-  [collection-name]
-  (hc/delete (str qdrant-endpoint "/collections/" collection-name)))
+  [opts params]
+  (hc/delete opts params))
+
 
 (defn add-docs
   "Add docs to the `collection-name` if collection does not exist, create it."
-  [collection-name data]
-  (when-not (collection-info collection-name)
-    (create-collection collection-name (env/val :qdrant)))
+  [opts params data]
+  (when-not (collection-info opts params)
+    (create-collection opts params))
 
   (let [points {:points (mapv (fn [{:keys [payload embedding]}]
-                                {:id      (utils/uuid)
+                                {:id      (u/uuid)
                                  :vector  embedding
                                  :payload payload})
                               data)}]
-    (hc/put (format "%s/collections/%s/points?wait=true"
-                    qdrant-endpoint collection-name)
+    (hc/put (points opts params)
             {:content-type :json
              :body         (j/write-value-as-string points)})))
 
+
 (defn search
-  ([collection-name embeds-vector]
-   (search collection-name embeds-vector 3))
-  ([collection-name embeds-vector top-n]
-   (let [res (-> (format "%s/collections/%s/points/search" qdrant-endpoint collection-name)
+  ([opts params embeds-vector]
+   (search opts params embeds-vector nil))
+  ([opts params embeds-vector {:keys [limit]
+                               :or   {limit 3}}]
+   (let [res (-> (search-path opts params)
                  (hc/post
                   {:content-type :json
                    :body         (j/write-value-as-string
                                   {:vector       embeds-vector
-                                   :top          top-n
+                                   :top          limit
                                    :with_payload true})})
-                 :body
-                 j/read-value
-                 (get "result")
-                 (walk/keywordize-keys))]
+                 :body u/read-json :result)]
      (map #(select-keys % [:id :score :payload]) res))))
 
 (deftype Qdrant
-         [opts]
-  vdb/VectorDB
-  (create [_this collection-name]
-    (create-collection collection-name opts))
-  (delete [_this collection-name]
-    (delete-collection collection-name))
-  (add [_this collection-name docs]
-    (add-docs collection-name docs))
-  (search [_this collection-name embeddings limit]
-    (search collection-name embeddings limit)))
+    [params]
+    vdb/VectorDB
+
+    (create [_this]
+      (create-collection (env/val :qdrant) params))
+
+    (delete [_this]
+      (delete-collection (env/val :qdrant) params))
+
+    (add [_this docs]
+      (add-docs (env/val :qdrant) params docs))
+
+    (search [_this embeddings search-opts]
+      (search (env/val :qdrant) params embeddings search-opts)))
