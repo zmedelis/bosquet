@@ -1,11 +1,14 @@
 (ns papers.llms-as-optimizers
   (:require
-    [bosquet.eval.evaluator :as eval]
-    [bosquet.eval.qna-generator :as qna]
-    [bosquet.llm.generator :as gen]
-    [bosquet.read.document :as document]
-    [bosquet.utils :as u]
-    [bosquet.wkk :as wkk]))
+   [bosquet.env :as env]
+   [bosquet.eval.evaluator :as eval]
+   [bosquet.eval.qna-generator :as qna]
+   [bosquet.llm.generator :as gen]
+   [bosquet.read.document :as document]
+   [bosquet.utils :as u]
+   [bosquet.wkk :as wkk])
+  (:import [bosquet.db.qdrant Qdrant]
+           [bosquet.memory.long_term_memory LongTermMemory]))
 
 ;; https://arxiv.org/pdf/2309.03409.pdf
 ;;
@@ -22,14 +25,16 @@
 ;; ## Setup
 ;;
 
+(def memory (LongTermMemory.
+             (Qdrant. {:collection-name "llama2-qna-eval"})
+             (env/val :ollama)))
+
+
 ;; Create evaluation QnA dataset
 (comment
-  (qna/document->dataset {eval/query-count 4}
-    "data/llama2.pdf" "data/llama2-eval.edn"))
-
-(def mem-opts {:collection-name "llama2-qna-eval"
-               :encoder         :embedding/openai
-               :storage         :db/qdrant})
+  (qna/document->dataset {qna/query-count 4}
+                         "data/llama2.pdf" "data/llama2-eval.edn")
+  #__)
 
 
 ;; Commit document contents to memory, it will be chunked, chunks turned into embeddings,
@@ -39,7 +44,7 @@
 ;; http://localhost:6333/dashboard#/collections/llama2-qna-eval
 (comment
   (def text (:text (document/parse "data/llama2.pdf")))
-  (eval/store-knowledge mem-opts text))
+  #_(eval/store-knowledge mem-opts text))
 
 
 ;; Questions and answers golden dataset. Will be used to eval against and optimize the prompts

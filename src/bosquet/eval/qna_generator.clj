@@ -17,6 +17,7 @@
 (def query-count :eval/query-count)
 (def max-chunks :eval/max-chunks)
 
+
 (def context-prompt-block
   (u/join-lines
    "CONTEXT INFORMATION is below:"
@@ -24,47 +25,48 @@
    "{{context}}"
    "~~~~~~"))
 
+
 (def format-constraints
   #_"Write your response as numbered list, one item per line."
   (u/join-lines
    "Write your response in JSON. Resulting JSON is a vector containing generated items one vector element per generated item."
    "Example JSON output: [\"Item 1\", \"Item 2\", \"Item 3\", \"Item 4\"]"))
 
-(def question-building-prompts
-  {:role
-   (u/join-lines
-    "You are an excelent Teacher who understands subject material perfectly."
-    "Your ability to analyze text is astonishing. Based on that your task is to setup"
-    "{{question-count}} questions for the upcoming student examination."
-    "The questions should be diverse and cover interesting and important topics and facts across the document."
-    "Restrict the {{question-count}} questions you are writing to the CONTEXT INFORMATION provided.")
 
-   :format
-   "Write your response as numbered list, one question per line."
-
+(defn question-building-prompts
+  [question-count]
+  {:role                ["You are an excelent Teacher who understands subject material perfectly."
+                         "Your ability to analyze text is astonishing. Based on that your task is to setup"
+                         "{{question-count}} questions for the upcoming student examination."
+                         "The questions should be diverse and cover interesting and important topics and facts across the document."
+                         "Restrict the {{question-count}} questions you are writing to the CONTEXT INFORMATION provided."]
+   :format              "Write your response as numbered list, one question per line."
    :question-generation context-prompt-block
+   :qna                 ["{{role}}"
+                         "{{question-generation}}"
+                         "{{format}}"
+                         ""
+                         "QUESTIONS:"
+                         "{{questions}}"]
+   :questions (gen/llm :gpt-4
+                       wkk/output-format    :list
+                       wkk/model-parameters {:max-tokens (* question-count 100)})})
 
-   :qna
-   (u/join-lines
-    "{{role}}"
-    "{{question-generation}}"
-    "{{format}}"
-    ""
-    "QUESTIONS:"
-    "{% gen var-name=questions%}")})
 
-(def answering-prompt
-  (u/join-lines
-   context-prompt-block
-   "Given the CONTEXT INFORMATION and using zero prior knowledge, answer the following QUESTIONS."
-   "QUESTIONS"
-   "{% for q in queries %}"
-   "* {{q}}{% endfor %}"
-   ""
-   "Answer questions in exact same order as they are listed in QUESTIONS. Answer exactly the same list of questions as provided."
-   format-constraints
-   "ANSWERS:"
-   "{% gen %}"))
+(defn answering-prompt
+  [question-count]
+  {:questions [context-prompt-block
+               "Given the CONTEXT INFORMATION and using zero prior knowledge, answer the following QUESTIONS."
+               "QUESTIONS"
+               "{% for q in queries %}"
+               "* {{q}}{% endfor %}"
+               ""
+               "Answer questions in exact same order as they are listed in QUESTIONS. Answer exactly the same list of questions as provided."
+               format-constraints
+               "ANSWERS:"]
+   :answers   (gen/llm :gpt-4
+                       wkk/output-format    :json
+                       wkk/model-parameters {:max-tokens (* question-count 400)})})
 
 (def question-set
   [:sequential [:string {:min 2 :max 1000}]])
@@ -98,36 +100,22 @@
   - `query-count`: how many queries per chunk to generate
   - `max-chunks`: how many chunks to take, nil will take them all"
   [{q-count query-count chunk-count max-chunks} document]
-  (let [n-sentence   45
+  (let [n-sentence   35
         chunks       (splitter/chunk-text
                       {splitter/chunk-size (* q-count n-sentence)
                        splitter/split-unit splitter/sentence}
                       document)
-        model        "gpt-4-1106-preview"
-        q-gen-params {:questions
-                      {wkk/service          wkk/oai-service
-                       wkk/output-format    :list
-                       wkk/model-parameters {:temperature 0.0 :max-tokens (* q-count 100) :model model}}}
-        a-gen-params {:gen
-                      {wkk/service          wkk/oai-service
-                       wkk/output-format    :json
-                       wkk/model-parameters {:temperature 0.0 :max-tokens (* q-count 400) :model model}}}
-
+        model        :gpt-4
         xf (comp
             (map
              (fn [chunk]
                (timbre/debugf "QnA for chunk with token count -  %s" (otok/token-count chunk model))
-               (let [{questions :questions :as g}
-                     (gen/generate
-                      question-building-prompts
-                      {:question-count q-count :context chunk}
-                      q-gen-params)
-
-                     resp
-                     (gen/generate
-                      answering-prompt
-                      {:queries questions :context chunk}
-                      a-gen-params)]
+               (let [{:keys [questions]} (gen/generate
+                                          (question-building-prompts q-count)
+                                          {:question-count q-count :context chunk})
+                     resp                (gen/generate
+                                          (answering-prompt q-count)
+                                          {:queries questions :context chunk})]
                  {:queries   questions
                   :responses resp
                   :context   chunk})))
@@ -177,14 +165,9 @@
   (tap> qna)
 
   (gen/generate
-   question-building-prompts
+   (question-building-prompts 3)
    {:question-count 3
-    :context
-    (second (splitter/text-splitter
-             {:chunk-size 25 :splitter splitter/sentence-splitter}
-             text))}
-   {:questions
-    {wkk/service          wkk/oai-service
-     wkk/output-format    :list
-     wkk/model-parameters {:temperature 0.0 :max-tokens 500 :model "gpt-3.5-turbo-1106"}}})
+    :context (second (splitter/text-splitter
+                      {:chunk-size 25 :splitter splitter/sentence-splitter}
+                      text))})
   #__)
