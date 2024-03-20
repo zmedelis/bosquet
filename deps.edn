@@ -10,7 +10,7 @@
            hato/hato                                     {:mvn/version "0.9.0"}
            metosin/jsonista                              {:mvn/version "0.3.8"}
            org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
-           com.taoensso/encore                           {:mvn/version "3.94.0"}
+           com.taoensso/encore                           {:mvn/version "3.96.1"}
            io.aviso/pretty                               {:mvn/version "1.4.4"}
            aero/aero                                     {:mvn/version "1.1.6"}
            org.clojure/core.cache                        {:mvn/version "1.1.234"}
@@ -20,19 +20,17 @@
                                                                                             org.slf4j/slf4j-reload4j ch.qos.logback/logback-core ch.qos.logback/logback-classic
                                                                                             ch.qos.reload4j/reload4j]}
            org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.1"}
-           org.apache.poi/poi                            {:mvn/version "5.2.5"}
            org.apache.tika/tika-parsers-standard-package {:mvn/version "2.9.1"}
            org.apache.opennlp/opennlp-tools              {:mvn/version "2.3.2"}
            camel-snake-kebab/camel-snake-kebab           {:mvn/version "0.4.3"}
            org.clojure/tools.cli                         {:mvn/version "1.1.230"}
-           com.fzakaria/slf4j-timbre                     {:mvn/version "0.4.1"}
-           com.github.clj-easy/graal-build-time          {:mvn/version "1.0.5"}}
+           com.fzakaria/slf4j-timbre                     {:mvn/version "0.4.1"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
-                        :extra-deps  {io.github.nextjournal/clerk      {:mvn/version "0.15.957"}
-                                      criterium/criterium              {:mvn/version "0.4.6"}
-                                      com.wsscode/pathom-viz-connector {:mvn/version "2022.02.14"}
-                                      djblue/portal                    {:mvn/version "0.52.2"}
-                                      integrant/repl                   {:mvn/version "0.3.3"}}}
+                        :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.15.957"}
+                                      criterium/criterium                  {:mvn/version "0.4.6"}
+                                      com.wsscode/pathom-viz-connector     {:mvn/version "2022.02.14"}
+                                      djblue/portal                        {:mvn/version "0.52.2"}
+                                      com.github.clj-easy/graal-build-time {:mvn/version "1.0.5"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "2024.02.22"}}
            :rebel      {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}

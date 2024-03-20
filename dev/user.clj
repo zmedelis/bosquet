@@ -2,8 +2,6 @@
   #_{:clj-kondo/ignore [:unused-namespace]}
   (:require
    [clojure.string :as string]
-   [integrant.core :as ig]
-   [integrant.repl :as ir]
    [nextjournal.clerk :as clerk]
    [portal.api :as p]
    [taoensso.timbre :as timbre]))
@@ -50,14 +48,8 @@
 (defn clear-portal []
   (p/clear))
 
-(defn reset-ig []
-  (ir/reset))
-
 (comment
   (open-portal)
-
-  (ir/go)
-  (reset-ig)
 
   (clerk/serve! {:watch-paths ["notebook"]})
 
