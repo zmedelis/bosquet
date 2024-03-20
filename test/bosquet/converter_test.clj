@@ -46,3 +46,6 @@
   (is (= 1.1 (c/string->number "1.1")))
   (is (= 101.09 (c/string->number "101.09")))
   (is (= 0.1 (c/coerce :number "0.100"))))
+
+(deftest failing-conversions
+  (is (= "[1" (c/coerce :json "[1"))))

@@ -1,7 +1,8 @@
 (ns bosquet.converter
   (:require
    [clojure.string :as s]
-   [jsonista.core :as j]))
+   [jsonista.core :as j]
+   [taoensso.timbre :as timbre]))
 
 ;; WIP - a place to start building output conversion functions
 
@@ -46,8 +47,7 @@
   ```json
   GOOD JSON CONTENT
   ```
-  Strip that markdown
-  "
+  Strip that markdown"
   [completion]
   (-> completion
       (s/replace #"(?ms).*?```json" "")
@@ -69,9 +69,14 @@
 
 (defn coerce
   [format completion]
-  (condp = format
-    :json (json-reader completion)
-    :edn  (edn-reader completion)
-    :list (list-reader completion)
-    :number (string->number completion)
-    completion))
+  (try
+    (condp = format
+      :json (json-reader completion)
+      :edn  (edn-reader completion)
+      :list (list-reader completion)
+      :number (string->number completion)
+      completion)
+    (catch Exception e
+      (timbre/error e)
+      (timbre/error "Returning generated data withouth coercion")
+      completion)))
