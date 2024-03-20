@@ -11,7 +11,6 @@
            metosin/jsonista                              {:mvn/version "0.3.8"}
            org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
            com.taoensso/encore                           {:mvn/version "3.96.1"}
-           io.aviso/pretty                               {:mvn/version "1.4.4"}
            aero/aero                                     {:mvn/version "1.1.6"}
            org.clojure/core.cache                        {:mvn/version "1.1.234"}
            org.apache.commons/commons-text               {:mvn/version "1.11.0"}
@@ -27,8 +26,6 @@
            com.fzakaria/slf4j-timbre                     {:mvn/version "0.4.1"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.15.957"}
-                                      criterium/criterium                  {:mvn/version "0.4.6"}
-                                      com.wsscode/pathom-viz-connector     {:mvn/version "2022.02.14"}
                                       djblue/portal                        {:mvn/version "0.52.2"}
                                       com.github.clj-easy/graal-build-time {:mvn/version "1.0.5"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet

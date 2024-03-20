@@ -1,7 +1,6 @@
 (ns bosquet.agent.tool
   (:require
    [taoensso.timbre :as timbre]
-   [io.aviso.ansi :as ansi]
    [taoensso.timbre.appenders.core :as appenders]))
 
 #_(timbre/merge-config!
@@ -27,27 +26,25 @@
 ;;
 
 (defn print-indexed-step [action plan step]
-  (println (ansi/compose [:bold (format "%s: %s" (name action) step)]))
-  (println (ansi/compose [:italic plan])))
+  (println (format "%s: %s" (name action) step))
+  (println plan))
 
 (defn print-action [action parameters step]
   (println)
-  (println (ansi/compose [:bold "Act: " step]))
-  (println (ansi/compose [:bold "- Action: "] [:italic (name action)]))
-  (println (ansi/compose [:bold "- Parameters: "] [:italic parameters])))
+  (println "Act: " step)
+  (println "- Action: " (name action))
+  (println "- Parameters: " parameters))
 
 (defn print-thought [plan content]
   (println)
-  (println (ansi/compose [:bold (str plan ":")]))
-  (println (ansi/compose [:italic content])))
+  (println (str plan ":"))
+  (println content))
 
 (defn print-result [result]
   (println)
-  (println (ansi/compose [:bold "Agent found the solution: "] result)))
+  (println "Agent found the solution: " result))
 
 (defn print-too-much-thinking-error [steps]
   (println)
   (println
-   (ansi/compose
-    [:bold.red
-     (format "Agent was thinking for %s steps and failed to find a solution" steps)])))
+   (format "Agent was thinking for %s steps and failed to find a solution" steps)))
