@@ -5,10 +5,6 @@
 ;; system components, etc.
 ;;
 
-(def llm-config
-  "Key to reference LLM service components in props when making `generate` calls."
-  :bosquet.llm/llm-config)
-
 (def service
   "Key to reference LLM service name in gen call parameters"
   :bosquet.llm/service)
@@ -24,15 +20,6 @@
 (def cache
   :bosquet.llm/cache)
 
-(def default-gen-var-name
-  "`gen` template tag is allowed to not specify `var` name parameter.
-   In this case this name will be used"
-  :gen)
-
-(def gen-var-name
-  "Key to reference LLM generation var name in gen call parameters"
-  :bosquet.llm/gen-var-name)
-
 ;;
 ;; Memory
 ;;
@@ -40,10 +27,6 @@
 (def memory-config
   "Key to reference memory in configuration"
   :bosquet.memory/config)
-
-(def simple-short-term-memory :memory/simple-short-term)
-
-(def long-term-embeddings-memory :memory/long-term-embeddings)
 
 (def recall-parameters
   "Memory parameters to be used when creating and retrieving a memory"

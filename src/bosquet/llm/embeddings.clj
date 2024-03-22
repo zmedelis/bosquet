@@ -26,7 +26,6 @@
      :vectors-distance :Dot})
 
   (def qd-coll-name "test-embs")
-  (qd/delete-collection qd-coll-name)
   (qd/create-collection qd-coll-name embeddings-collection-config)
 
   (def oai-emb (OAIEmbeddings. (:openai env/config)))

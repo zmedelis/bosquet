@@ -63,14 +63,18 @@
   ```
 
   https://github.com/ollama/ollama/blob/main/docs/api.md#generate-embeddings"
-  [service-cfg model text]
+  [service-cfg {:keys [model content]
+                :or   {content identity}} payload]
   ((embedding-fn service-cfg)
    {:model  model
-    :prompt text}))
+    :prompt (content payload)}))
 
 (comment
-  (create-embedding
-   (env/config :ollama)
-   :all-minilm
-   "Here is an article about llamas...")
+  (create-embedding (env/config :ollama) {:model :all-minilm}
+                    "Here is an article about llamas...")
+
+  (create-embedding (env/config :ollama) {:model :all-minilm
+                                          :content :text}
+                    {:text "Here is an article about llamas..."
+                     :score 100})
   #__)
