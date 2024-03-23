@@ -2,7 +2,6 @@
   (:require
    [bosquet.db.vector-db :as vdb]
    [bosquet.env :as env]
-   [clojure.walk :as walk]
    [hato.client :as hc]
    [jsonista.core :as j]
    [bosquet.utils :as u]))
@@ -39,10 +38,14 @@
 (defn create-collection
   "Create a collection with `name` and `config`"
   [opts params]
-  (hc/put (collections-path opts params)
-          {:content-type :json
-           :body         (j/write-value-as-string
-                          {:vectors (u/snake-case (dissoc opts :api-endpoint))})}))
+  (when-not (collection-info opts params)
+    (hc/put (collections-path opts params)
+            {:content-type :json
+             :body         (j/write-value-as-string
+                            {:vectors (u/snake-case
+                                       (merge
+                                        (dissoc opts :api-endpoint)
+                                        params))})})))
 
 
 (defn delete-collection
@@ -53,17 +56,15 @@
 (defn add-docs
   "Add docs to the `collection-name` if collection does not exist, create it."
   [opts params data]
-  (when-not (collection-info opts params)
-    (create-collection opts params))
-
-  (let [points {:points (mapv (fn [{:keys [payload embedding]}]
-                                {:id      (u/uuid)
-                                 :vector  embedding
-                                 :payload payload})
-                              data)}]
-    (hc/put (points opts params)
-            {:content-type :json
-             :body         (j/write-value-as-string points)})))
+  (when (seq data)
+        (let [points {:points (mapv (fn [{:keys [payload embedding]}]
+                                      {:id      (u/uuid)
+                                       :vector  embedding
+                                       :payload payload})
+                                    data)}]
+          (hc/put (points-path opts params)
+                  {:content-type :json
+                   :body         (j/write-value-as-string points)}))))
 
 
 (defn search
