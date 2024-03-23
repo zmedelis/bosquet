@@ -34,7 +34,7 @@
                             "notebook/using_llms.clj"
                             "notebook/observability.clj"
                             "notebook/math_generate_code.clj"
-                            "notebook/examples/short_memory_prosocial_dialog.clj"
+                            "notebook/memory_prosocial_dialog.clj"
                             "notebook/papers/chain_of_density.clj"
                             "notebook/papers/chain_of_verification.clj"]
                  :index    "notebook/index.clj"

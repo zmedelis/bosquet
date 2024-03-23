@@ -1,7 +1,6 @@
 (ns configuration
   {:nextjournal.clerk/toc true}
   (:require
-   [bosquet.llm :as llm]
    [bosquet.llm.generator :as g]
    [bosquet.llm.wkk :as wkk]))
 
@@ -29,10 +28,10 @@
 ;; When generating using a prompt map, a LLM call is defined a node in the map.
 
 (def prompt {:question-answer "Question: {{question}}  Answer: {{answer}}"
-             :answer          (g/llm :openai wkk/model-params {:model :gpt-4})
+             :answer          (g/llm :gpt-4)
              :self-eval       ["{{question-answer}}"
                                "Is this a correct answer?"]
-             :test            (g/llm wkk/openai wkk/model-params {:model :gpt-4})})
+             :test            (g/llm :gpt-4)})
 
 ;; `self-eval` and `test` nodes define LLM calls, both request `openai` to be used as the LLM service.
 ;; `llm/context` specifies which map key holds a prompt to be used as the LLM context.
@@ -55,8 +54,7 @@
 ;; A call with this configuration:
 ;;
 ^{:nextjournal.clerk/auto-expand-results? true}
-(g/generate llm/default-services
-            prompt
+(g/generate prompt
             {:question "What is the distance from Moon to Io?"})
 
 ;; Generating with chat mode is similar
@@ -68,12 +66,12 @@
           "Title: {{title}}"
           "Genre: {{genre}}"
           "Synopsis:"]]
-  [:assistant (g/llm :openai
-                     wkk/model-params {:model :gpt-4 :temperature 0.8 :max-tokens 120}
+  [:assistant (g/llm :gpt-4
+                     wkk/model-params {:temperature 0.8 :max-tokens 120}
                      wkk/var-name :synopsis)]
   [:user "Now write a critique of the above synopsis:"]
-  [:assistant (g/llm :openai
-                     wkk/model-params {:model :gpt-4 :temperature 0.2 :max-tokens 120}
+  [:assistant (g/llm :gpt-4
+                     wkk/model-params {:temperature 0.2 :max-tokens 120}
                      wkk/var-name :critique)]]
  {:title "Mr. X"
   :genre "Sci-Fi"})
@@ -89,30 +87,21 @@
 ;; and if a call is made with the same model params and the same prompt, the generation will
 ;; be returned from the cache. The call to LLM service will not be made.
 
-(g/generate llm/default-services
-            {:qna    "Question: {{question}}  Answer: {{answer}}"
-             :answer (g/llm :openai
-                            wkk/model-params {:model :gpt-3.5-turbo}
-                            wkk/cache true)}
+(g/generate {:qna    "Question: {{question}}  Answer: {{answer}}"
+             :answer (g/llm :gpt-3.5-turbo wkk/cache true)}
             {:question "What is the distance from Moon to Io?"})
 
 ;; Second call with exactly the same context will return fast and with exact same response
 ;; as above
 
 ^{:nextjournal.clerk/auto-expand-results? true}
-(g/generate llm/default-services
-            {:qna    "Question: {{question}}  Answer: {{answer}}"
-             :answer (g/llm :openai
-                            wkk/model-params {:model :gpt-3.5-turbo}
-                            wkk/cache true)}
+(g/generate {:qna    "Question: {{question}}  Answer: {{answer}}"
+             :answer (g/llm :gpt-3.5-turbo wkk/cache true)}
             {:question "What is the distance from Moon to Io?"})
 
 ;; Once more with different model parameters, and cache lookup misses forcing a fresh call to LLM.
 
 ^{:nextjournal.clerk/auto-expand-results? true}
-(g/generate llm/default-services
-            {:qna    "Question: {{question}}  Answer: {{answer}}"
-             :answer (g/llm :openai
-                            wkk/model-params {:temperature 1 :model :gpt-3.5-turbo}
-                            wkk/cache true)}
+(g/generate {:qna    "Question: {{question}}  Answer: {{answer}}"
+             :answer (g/llm :gpt-3.5-turbo wkk/cache true)}
             {:question "What is the distance from Moon to Io?"})

@@ -30,7 +30,7 @@
 ;; When in REPL, this call will set JVM parameters forcing HTTP libs to use a configured proxy.
 
 ^{:nextjournal.clerk/visibility {:result :hide}}
-(http/use-local-proxy)
+#_(http/use-local-proxy)
 
 ;; This function sets the following JVM properties
 ;; ```clojure
