@@ -77,6 +77,7 @@
       (timbre/warnf "Memory system is not specified. Using 'context' as memories.")
       context)))
 
+
 (defn available-memories
   [{system        wkk/memory-system
     recall-fn     wkk/recall-function

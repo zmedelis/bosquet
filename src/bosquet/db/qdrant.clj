@@ -2,9 +2,10 @@
   (:require
    [bosquet.db.vector-db :as vdb]
    [bosquet.env :as env]
+   [bosquet.utils :as u]
    [hato.client :as hc]
    [jsonista.core :as j]
-   [bosquet.utils :as u]))
+   [taoensso.timbre :as log]))
 
 
 (defn- collections-path
@@ -72,15 +73,18 @@
    (search opts params embeds-vector nil))
   ([opts params embeds-vector {:keys [limit]
                                :or   {limit 3}}]
-   (let [res (-> (search-path opts params)
-                 (hc/post
-                  {:content-type :json
-                   :body         (j/write-value-as-string
-                                  {:vector       embeds-vector
-                                   :top          limit
-                                   :with_payload true})})
-                 :body u/read-json :result)]
-     (map #(select-keys % [:id :score :payload]) res))))
+   (try
+     (let [res (-> (search-path opts params)
+                   (hc/post
+                    {:content-type :json
+                     :body         (j/write-value-as-string
+                                    {:vector       embeds-vector
+                                     :top          limit
+                                     :with_payload true})})
+                   :body u/read-json :result)]
+       (map #(select-keys % [:id :score :payload]) res))
+     (catch Exception e
+       (log/error e)))))
 
 (deftype Qdrant
     [params]
