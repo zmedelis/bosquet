@@ -77,9 +77,15 @@
 
 
 (defn default-service
-  "Get default LLM service as defiened in config.edn"
+  "Get default LLM service as defiened in config.edn.
+  In case default is not defined, fall back to OpenAI"
   []
-  (let [{params :model-params}
-        (config (:bosquet/default-llm config) config)]
-    {wkk/service (-> params :model model-providers)
-     wkk/model-params params}))
+  (let [default-llm (:default-llm config)
+        default-llm (if default-llm
+                      default-llm
+                      (-> config :openai :model-params))]
+    {wkk/service      (-> default-llm :model model-providers)
+     wkk/model-params (dissoc default-llm
+                              :service :default-for-models
+                              :api-key :api-endpoint :impl
+                              wkk/service wkk/chat-fn wkk/complete-fn wkk/embed-fn)}))
