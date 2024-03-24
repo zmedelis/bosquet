@@ -1,8 +1,1 @@
-;; See `resources/env.edn` it shows how the defaults are handled, and
-;; this config is merged with system env
-
-{:openai  {:api-key "<YOUR KEY>"
-           :api-endpoint "<GENERATION API URL>"
-           :any-other-config ""}
- :cohere  {:api-key "<YOUR KEY>"}
- :mistral {:api-key "<YOUR KEY"}}
+{:default-llm {:temperature 0 :model :mistral-small}}
