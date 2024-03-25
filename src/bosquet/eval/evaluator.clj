@@ -5,11 +5,8 @@
    [bosquet.memory.long-term-memory]
    [bosquet.nlp.splitter :as splitter]
    [bosquet.read.document :as document]
-   [bosquet.utils :as u]
    [bosquet.wkk :as wkk]
-   [taoensso.timbre :as timbre])
-  (:import
-   [bosquet.memory.long_term_memory LongTermMemory]))
+   [taoensso.timbre :as timbre]))
 
 ;; Prompts taken from
 ;; https://github.com/run-llama/llama_index/blob/f065b6c103677b33990cdd3054a7918c0fe793f8/llama_index/evaluation/correctness.py
@@ -92,16 +89,16 @@
    first :payload :text))
 
 (comment
-  (import 'bosquet.db.qdrant.Qdrant)
-  (import 'bosquet.nlp.embeddings.OAIEmbeddings)
+  #_(import 'bosquet.db.qdrant.Qdrant)
+  #_(import 'bosquet.nlp.embeddings.OAIEmbeddings)
   (def opts {:collection-name "llama2-qna-eval"})
-  (def memory (LongTermMemory.
+  #_(def memory (LongTermMemory.
                (Qdrant. (:qdrant env/config))
                (OAIEmbeddings. (:openai env/config))))
   (def text (:text (document/parse "data/llama2.pdf")))
 
-  (store-knowledge opts memory text)
-  (query opts memory "What are the inputs and outputs to Reward Modeling?")
+  #_(store-knowledge opts memory text)
+  #_(query opts memory "What are the inputs and outputs to Reward Modeling?")
 
   (evaluate-answer
    "What are the inputs and outputs to Reward Modeling?"
