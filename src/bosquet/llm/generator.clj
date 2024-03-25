@@ -210,7 +210,12 @@
       ;; Template node
       (let [message-content (selmer/render content-or-llm-cfg vars-map)]
         (->resolver "template" message-key
-                    (vec (filter #(string? (get context %)) (selmer/known-variables-in-order message-content)))
+                    ;; or num/str check is to allow numbers or strings
+                    ;; as template values, needs reviewing (remove map?)
+                    ;; should work better to drom all non generating nodes
+                    (vec (filter #(or (string? (get context %))
+                                      (number? (get context %)))
+                                 (selmer/known-variables-in-order message-content)))
                     (fn [{entry-tree ::pet/entity-tree*} _input]
                       (let [result (selmer/render message-content
                                                   (merge
