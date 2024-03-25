@@ -256,9 +256,13 @@
        ;; inside for loops and so on
        (reduce-kv
         (fn [m k v]
-          (assoc m k (if (string? v)
-                       (selmer/render v available-data)
-                       v)))
+          (assoc m k (cond
+                       (string? v) (selmer/render v available-data)
+                       (:fn v)     (let [args (reduce (fn [m k] (conj m (get available-data k)))
+                                                      []
+                                                      (mapv keyword (:args v)))]
+                                     (apply (:fn v) args))
+                       :else       v)))
         {})))
 
 (defn- template->chat
@@ -301,7 +305,7 @@
   [graph]
   (reduce-kv
    (fn [[templates generators] k v]
-     (if (map? v)
+     (if (and (map? v) (wkk/service v))
        [templates (assoc generators k v)]
        [(assoc templates k v) generators]))
    [{} {}]
