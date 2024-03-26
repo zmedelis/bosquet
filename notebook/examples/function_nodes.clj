@@ -1,11 +1,10 @@
-(ns examples.function-calls
+(ns examples.function-nodes
   (:require
    [bosquet.llm.generator :as g]))
 
 
 (def prompt
-  {:random-number {:fn   (fn [n] (rand-int n))
-                   :args ['n]}
+  {:random-number (g/fun (fn [n] (rand-int n)) ['n])
    :repeat        "Repeat 'X' {{random-number}} times: {{repeater}}"
    :repeater      (g/llm :mistral-small)})
 

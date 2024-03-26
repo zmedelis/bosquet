@@ -23,12 +23,14 @@
   This is a key for prompt entry"
   :bosquet.template/prompt)
 
+
 (def default-template-completion
   "Simple string template generation case does not create var names for the completions,
   compared to Map generation where map keys are the var names.
 
   This is a key for completion entry"
   :bosquet.template/completion)
+
 
 (defn llm
   "A helper function to create LLM spec for calls during the generation process.
@@ -49,6 +51,12 @@
         (assoc wkk/service service)
         (assoc-in [wkk/model-params :model] service-or-model))
     (assoc (apply hash-map args) wkk/service service-or-model)))
+
+
+(defn fun
+  [impl args]
+  {wkk/fun-impl impl
+   wkk/fun-args args})
 
 
 (defn- resolver-error-wrapper
@@ -225,11 +233,13 @@
                                                     @entry-tree)))]
                         {message-key result})))))))
 
+
 (defn- prompt-indexes [llm-config context vars-map]
   (pci/register
    (mapv (fn [prompt-key]
            (generation-resolver llm-config prompt-key context vars-map))
          (keys context))))
+
 
 (defn append-generation-instruction
   "If template does not specify generation function append the default one."
@@ -237,10 +247,23 @@
   {default-template-prompt     (selmer/append-slot string-template default-template-completion)
    default-template-completion (env/default-service)})
 
+
 (defn gen-environment
   [llm-config context vars-map]
   (-> (prompt-indexes llm-config context vars-map)
       (resolver-error-wrapper)))
+
+
+(defn run-node-function
+  "Run a function definition in the prompt tree.
+  - `node` is the function defining node in the tree
+  - `available-data` already resolved data, must contain function params"
+  [node available-data]
+  (let [args (reduce (fn [m k] (conj m (get available-data k)))
+                     []
+                     (mapv keyword (wkk/fun-args node)))]
+    (apply (wkk/fun-impl node) args)))
+
 
 (defn- prep-graph
   "Join strings if tempalte is provided as collection"
@@ -257,12 +280,9 @@
        (reduce-kv
         (fn [m k v]
           (assoc m k (cond
-                       (string? v) (selmer/render v available-data)
-                       (:fn v)     (let [args (reduce (fn [m k] (conj m (get available-data k)))
-                                                      []
-                                                      (mapv keyword (:args v)))]
-                                     (apply (:fn v) args))
-                       :else       v)))
+                       (string? v)      (selmer/render v available-data)
+                       (wkk/fun-impl v) (run-node-function v available-data)
+                       :else            v)))
         {})))
 
 (defn- template->chat

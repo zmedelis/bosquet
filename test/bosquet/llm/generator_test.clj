@@ -145,3 +145,10 @@
           (gen/generate
            {:z "{{y}} + {{x}} = {{a}}" :a 4} {:x 1 :y 3})
           [gen/completions :z]))))
+
+
+(deftest run-node-function-test
+  (is (= 3 (gen/run-node-function
+            {wkk/fun-impl (fn [x y] (+ x y))
+             wkk/fun-args '[x y]}
+            {:x 1 :y 2}))))

@@ -30,5 +30,15 @@
   "Type of generation output format: json, xml, text, etc"
   :llm/output-format)
 
+
 (def cache
+  "LLM call parameter specifying if cached results should be used"
   :llm/cache)
+
+
+(def fun-impl
+  :fun/impl)
+
+
+(def fun-args
+  :fun/args)
