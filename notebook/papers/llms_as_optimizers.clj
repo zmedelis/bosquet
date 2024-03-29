@@ -44,7 +44,7 @@
 ;; http://localhost:6333/dashboard#/collections/llama2-qna-eval
 (comment
   (def text (:text (document/parse "data/llama2.pdf")))
-  #_(eval/store-knowledge mem-opts text))
+  (eval/store-knowledge mem-opts text))
 
 
 ;; Questions and answers golden dataset. Will be used to eval against and optimize the prompts

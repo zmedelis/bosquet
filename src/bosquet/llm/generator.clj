@@ -7,6 +7,7 @@
    [bosquet.llm.wkk :as wkk]
    [bosquet.template.selmer :as selmer]
    [bosquet.utils :as u]
+   [clojure.set :as set]
    [clojure.string :as string]
    [com.wsscode.pathom3.connect.indexes :as pci]
    [com.wsscode.pathom3.connect.operation :as pco]
@@ -161,6 +162,7 @@
                  accumulated-usage
                  ctx))))))
 
+
 (defn- ->resolver
   [name-sufix message-key input resolve-fn]
   (timbre/infof "resolver: (%s%s) => %s" name-sufix (if (seq input) (str " " (string/join " " input)) "") message-key)
@@ -169,6 +171,7 @@
     ::pco/output  [message-key]
     ::pco/input   (vec input)
     ::pco/resolve resolve-fn}))
+
 
 (defn find-refering-templates
   "Given all the templates in a `context-map` find out which ones are
@@ -182,11 +185,24 @@
    []
    context-map))
 
+
 (defn- entry
   [{entry-tree ::pet/entity-tree*} entry-key]
   (get @entry-tree entry-key))
 
 (selmer/set-missing-value-formatter)
+
+
+(defn run-node-function
+  "Run a function definition in the prompt tree.
+  - `node` is the function defining node in the tree
+  - `available-data` already resolved data, must contain function params"
+  [node available-data]
+  (let [args (reduce (fn [m k] (conj m (get available-data k)))
+                     []
+                     (mapv keyword (wkk/fun-args node)))]
+    (apply (wkk/fun-impl node) args)))
+
 
 (defn- render
   [{entry-tree ::pet/entity-tree*} content]
@@ -197,12 +213,32 @@
                    (fn [m k v] (assoc m k (completions v)))
                    @entry-tree))))
 
+
+(defn- llm-node?
+  "Is this node defining an LLM call?"
+  [node]
+  (and (map? node) (contains? node wkk/service)))
+
+
+(defn- fun-node?
+  "Is this node defining a custom function call?"
+  [node]
+  (and (map? node) (contains? node wkk/fun-impl)))
+
+
+(defn- template-node?
+  "Is this node defining a string template?"
+  [node]
+  (not (map? node)))
+
+
 (defn- generation-resolver
   [llm-config message-key context vars-map]
-  (let [content-or-llm-cfg (message-key context)
-        refs               (find-refering-templates message-key context)]
-    (if (map? content-or-llm-cfg)
+  (let [node (message-key context)
+        refs (find-refering-templates message-key context)]
+    (cond
       ;; Generation node
+      (llm-node? node)
       (mapv
        (fn [refering-template-key]
          (->resolver (str "ai-gen-" (name refering-template-key)) message-key
@@ -210,13 +246,28 @@
                      (fn [env _input]
                        (let [txt (render env (selmer/clear-gen-var-slot (entry env refering-template-key) message-key))
                              {gen-usage wkk/usage {gen-content :content} wkk/content}
-                             (call-llm llm-config content-or-llm-cfg [[:user txt]])]
+                             (call-llm llm-config node [[:user txt]])]
                          {message-key {completions gen-content
                                        usage       gen-usage}}))))
        refs)
 
+      ;; Function call node
+      (fun-node? node)
+      (mapv
+       (fn [refering-template-key]
+         (->resolver (str "fn-call-" (name refering-template-key)) message-key
+                     [refering-template-key]
+                     (fn [_env _input]
+                       {message-key
+                        (str
+                         (run-node-function node
+                                            (merge vars-map context)))})))
+       refs)
+
+
       ;; Template node
-      (let [message-content (selmer/render content-or-llm-cfg vars-map)]
+      (template-node? node)
+      (let [message-content (selmer/render node vars-map)]
         (->resolver "template" message-key
                     ;; or num/str check is to allow numbers or strings
                     ;; as template values, needs reviewing (remove map?)
@@ -254,17 +305,6 @@
       (resolver-error-wrapper)))
 
 
-(defn run-node-function
-  "Run a function definition in the prompt tree.
-  - `node` is the function defining node in the tree
-  - `available-data` already resolved data, must contain function params"
-  [node available-data]
-  (let [args (reduce (fn [m k] (conj m (get available-data k)))
-                     []
-                     (mapv keyword (wkk/fun-args node)))]
-    (apply (wkk/fun-impl node) args)))
-
-
 (defn- prep-graph
   "Join strings if tempalte is provided as collection"
   [graph available-data]
@@ -281,9 +321,10 @@
         (fn [m k v]
           (assoc m k (cond
                        (string? v)      (selmer/render v available-data)
-                       (wkk/fun-impl v) (run-node-function v available-data)
+                       #_ #_(wkk/fun-impl v) (run-node-function v available-data)
                        :else            v)))
         {})))
+
 
 (defn- template->chat
   "Convert Selmer template into chat structure. This
@@ -321,18 +362,21 @@
                      (conj chat [:user (apply str (mapv second elements))])))
                  []))))
 
+
 (defn- split-gen-graph
   [graph]
   (reduce-kv
    (fn [[templates generators] k v]
-     (if (and (map? v) (wkk/service v))
+     (if (and (map? v) #_(wkk/service v))
        [templates (assoc generators k v)]
        [(assoc templates k v) generators]))
    [{} {}]
    graph))
 
+
 (defn- index-keys [index key]
   (filter key (keys index)))
+
 
 (defn top-level-template
   [index context]
@@ -341,8 +385,9 @@
                {}
                index)
         root-nodes
-        (remove #(seq (index-keys graph %)) (->> graph vals (apply clojure.set/union)))]
+        (remove #(seq (index-keys graph %)) (->> graph vals (apply set/union)))]
     (select-keys context root-nodes)))
+
 
 (defn complete-graph
   "Completion case when we are processing prompt graph. Main work here is on constructing
@@ -370,12 +415,14 @@
      {completions gen-result}
      {usage gen-usage})))
 
+
 (defn complete-template
   "Completion for a case when we have simple string `prompt`"
   [llm-config template vars-map]
   (get-in
    (complete-graph llm-config (append-generation-instruction template) vars-map)
    [completions default-template-completion]))
+
 
 (defn generate
   "Generate completions for various modes. Generation mode is determined
@@ -496,19 +543,31 @@
             "provide me with​ a) average distance b) max distance c) min distance"]]
     [:assistant (llm :mistral-small
                      wkk/var-name :analysis)]])
-
-  (generate
-   {:astronomer ["As a brilliant astronomer, list distances between planets and the Sun"
-                 "in the Solar System. Provide the answer in JSON map where the key is the"
-                 "planet name and the value is the string distance in millions of kilometers."
-                 "Generate only JSON omit any other prose and explanations."
-                 "{{distances}}"
-                 "Based on the JSON distances data"
-                 "provide me with​ a) average distance b) max distance c) min distance"
-                 "{{analysis}}"]
-    :distances  (llm wkk/openai
-                     wkk/output-format :json
-                     wkk/model-params {:max-tokens 300 :model :gpt-4})
-    :analysis   (llm wkk/mistral
-                     wkk/model-params {:model :mistral-small})})
   #__)
+
+(comment
+  {:eq1 "{{a}} + {{b}} = {{x}}"
+   :eq2 "{{a}} - {{b}} = {{y}}"
+   :eq3 "{{eq1}} / {{eq2}} = {{z}}"
+   :x :gen
+   :y :gen
+   :z :fun
+   :a 4
+   :b 2}
+
+
+  {:eq1 "{{a}} + {{b}} = {{x}}"
+   :eq1.1 "{{a}}"
+   :eq1.2 "{{eq1.2}} + {{b}}"
+   :eq1.3 "{{eq1.3}} = {{x}}"
+   :eq1.4 "{{a}} + {{b}} = {{x}}"
+
+   :eq2 "{{a}} - {{b}} = {{y}}"
+   :eq3 "{{eq1}} / {{eq2}} = {{z}}"
+   :x :gen
+   :y :gen
+   :z :fun
+   :a 4
+   :b 2}
+
+  )
