@@ -35,7 +35,7 @@
            :test       {:extra-deps {nubank/matcher-combinators {:mvn/version "3.9.1"}}}
            :kaocha     {:main-opts   ["-m" "kaocha.runner"]
                         :extra-paths ["test"]
-                        :extra-deps  {lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
+                        :extra-deps  {lambdaisland/kaocha {:mvn/version "1.88.1376"}}}
            :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.10.0"
                                                                     :git/sha "3a2c484"}
                                      slipset/deps-deploy           {:mvn/version "0.2.2"}}
