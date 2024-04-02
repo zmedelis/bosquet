@@ -5,6 +5,7 @@
    [bosquet.env :as env]
    [bosquet.llm.gen-data :as gd]
    [bosquet.llm.wkk :as wkk]
+   [bosquet.prompt.context-tree :as context-tree]
    [bosquet.template.selmer :as selmer]
    [bosquet.utils :as u]
    [clojure.set :as set]
@@ -164,11 +165,11 @@
 
 
 (defn- ->resolver
-  [name-sufix message-key input resolve-fn]
-  (timbre/infof "resolver: (%s%s) => %s" name-sufix (if (seq input) (str " " (string/join " " input)) "") message-key)
+  [name-sufix output input resolve-fn]
+  (timbre/infof "resolver: (%s%s) => %s" name-sufix (if (seq input) (str " " (string/join " " input)) "") output)
   (pco/resolver
-   {::pco/op-name (-> message-key .-sym (str "-" name-sufix) symbol)
-    ::pco/output  [message-key]
+   {::pco/op-name (-> output first .-sym (str "-" name-sufix) symbol)
+    ::pco/output  output
     ::pco/input   (vec input)
     ::pco/resolve resolve-fn}))
 
@@ -189,6 +190,11 @@
 (defn- entry
   [{entry-tree ::pet/entity-tree*} entry-key]
   (get @entry-tree entry-key))
+
+
+(defn- update-entry
+  [{entry-tree ::pet/entity-tree*} entry-key value]
+  (swap! @entry-tree assoc entry-key value))
 
 (selmer/set-missing-value-formatter)
 
@@ -241,21 +247,44 @@
       (llm-node? node)
       (mapv
        (fn [refering-template-key]
-         (->resolver (str "ai-gen-" (name refering-template-key)) message-key
+         (->resolver (str "ai-gen-" (name refering-template-key)) [message-key usage refering-template-key]
                      [refering-template-key]
                      (fn [env _input]
+
                        (let [txt (render env (selmer/clear-gen-var-slot (entry env refering-template-key) message-key))
-                             {gen-usage wkk/usage {gen-content :content} wkk/content}
+                             {gen-usage wkk/usage {gen-content :content} wkk/content :as res}
                              (call-llm llm-config node [[:user txt]])]
-                         {message-key {completions gen-content
-                                       usage       gen-usage}}))))
+                         (tap> {'refering-template-key refering-template-key
+                                'env-ref               (entry env refering-template-key)
+                                'txt                   (render env (selmer/clear-gen-var-slot (entry env refering-template-key) message-key))
+                                'gen                   res
+                                'env                   env
+                                'rendered (selmer/render
+                                                  (entry env refering-template-key)
+                                                  {message-key gen-content})
+                                })
+
+                         #_(update-entry env refering-template-key
+                                       (selmer/render
+                                        (entry env refering-template-key)
+                                        {message-key gen-content}))
+
+
+                         {message-key gen-content
+                          refering-template-key  (selmer/render
+                                                  (entry env refering-template-key)
+                                                  {message-key gen-content})
+                          usage       (assoc (get (entry env usage) {})
+                                             message-key gen-usage)}
+                         #_{message-key {completions gen-content
+                                         usage       gen-usage}}))))
        refs)
 
       ;; Function call node
       (fun-node? node)
       (mapv
        (fn [refering-template-key]
-         (->resolver (str "fn-call-" (name refering-template-key)) message-key
+         (->resolver (str "fn-call-" (name refering-template-key)) [message-key]
                      [refering-template-key]
                      (fn [_env _input]
                        {message-key
@@ -268,7 +297,7 @@
       ;; Template node
       (template-node? node)
       (let [message-content (selmer/render node vars-map)]
-        (->resolver "template" message-key
+        (->resolver "template" [message-key]
                     ;; or num/str check is to allow numbers or strings
                     ;; as template values, needs reviewing (remove map?)
                     ;; should work better to drom all non generating nodes
@@ -277,11 +306,10 @@
                                  (selmer/known-variables-in-order message-content)))
                     (fn [{entry-tree ::pet/entity-tree*} _input]
                       (let [result (selmer/render message-content
-                                                  (merge
-                                                   @entry-tree
-                                                   (gd/reduce-gen-graph
-                                                    (fn [m k v] (assoc m k (completions v)))
-                                                    @entry-tree)))]
+                                                  (merge @entry-tree
+                                                         (gd/reduce-gen-graph
+                                                          (fn [m k v] (assoc m k (completions v)))
+                                                          @entry-tree)))]
                         {message-key result})))))))
 
 
@@ -393,27 +421,62 @@
   "Completion case when we are processing prompt graph. Main work here is on constructing
   the output format with `usage` and `completions` sections."
   [llm-config graph vars-map]
-  (let [[templates generators] (split-gen-graph graph)
-        tpl-graph              (prep-graph templates vars-map)
-        gen-env                (gen-environment llm-config tpl-graph vars-map)
-        pre-gen-res            (p.eql/process gen-env vars-map (vec (keys tpl-graph)))
-        ;; TODO what happens when more than one????
-        [_top-name top-tpl]    (first (top-level-template
-                                       (:com.wsscode.pathom3.connect.indexes/index-io gen-env)
-                                       pre-gen-res))
-        top-template           (chat llm-config (template->chat top-tpl generators) vars-map)
-        gen-result             (merge
-                                (reduce-kv (fn [m k v]
-                                             (assoc m k (selmer/render
-                                                         v
-                                                         (completions top-template))))
-                                           {}
-                                           pre-gen-res)
-                                (completions top-template))
-        gen-usage              (usage top-template)]
-    (u/mergex
-     {completions gen-result}
-     {usage gen-usage})))
+  (let [ctx-tree (context-tree/expand-dependencies graph)
+        gen-env  (gen-environment llm-config ctx-tree vars-map)
+        res      (p.eql/process gen-env vars-map (vec (conj (keys ctx-tree) usage)))
+        colapsed (context-tree/collapse-resolved-tree res)]
+
+    (tap> {'res      res
+           'tree     ctx-tree
+           'colapsed colapsed})
+
+    #_(reduce-kv (fn [m k v]
+                 (assoc m k
+                        (if (string? v)
+                          (selmer/render
+                           v
+                           colapsed)
+                          v)))
+               {}
+               colapsed)
+
+    colapsed)
+
+  #_(let [[templates generators] (split-gen-graph graph)
+          tpl-graph              (prep-graph templates vars-map)
+          gen-env                (gen-environment llm-config tpl-graph vars-map)
+          pre-gen-res            (p.eql/process gen-env vars-map (vec (keys tpl-graph)))
+          ;; TODO what happens when more than one????
+          [_top-name top-tpl]    (first (top-level-template
+                                         (:com.wsscode.pathom3.connect.indexes/index-io gen-env)
+                                         pre-gen-res))
+          top-template           (chat llm-config (template->chat top-tpl generators) vars-map)
+          gen-result             (merge
+                                  (reduce-kv (fn [m k v]
+                                               (assoc m k (selmer/render
+                                                           v
+                                                           (completions top-template))))
+                                             {}
+                                             pre-gen-res)
+                                  (completions top-template))
+          gen-usage              (usage top-template)]
+      (u/mergex
+       {completions gen-result}
+       {usage gen-usage})))
+
+(comment
+  (def ctx {:eq1 "{{a}} + {{b}} = {{x}}"
+            #_ #_:eq2 "{{eq1}} + 10 = {{y}}"
+            :x     (llm :ollama wkk/model-params {:model :mistral})
+            #_ #_:y     (llm :ollama wkk/model-params {:model :mistral})})
+  ;; TODO resolversis ant LLM node turi grazinti kitokia struktura
+  ;; gal merginti 'usage' dali tiesiai i Pathom env? complte-graph nebelieka
+  ;; to duomenu manglinimo i completions ir usage
+
+  (complete-graph env/config
+                  ctx
+                  {:a 1 :b 2})
+  )
 
 
 (defn complete-template
