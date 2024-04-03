@@ -1,48 +1,48 @@
+^{:nextjournal.clerk/visibility {:code :fold}}
 (ns user-guide
   (:require
-   [bosquet.llm :as llm]
+   [bosquet.env :as env]
    [bosquet.llm.generator :refer [generate llm]]
    [bosquet.llm.wkk :as wkk]
    [nextjournal.clerk :as clerk]))
 
 ;; # Bosquet Tutorial
 ;;
-;; This notebook will demonstrate the following things:
-;; - system configuration
+;; Topcis convered in this tutorial
+;; - system *configuration*
 ;; - define prompt *templates*
 ;; - resolve *dependencies* between prompts
-;; - produce AI *completions*.
+;; - produce AI *completions* with different LLMs
+;; - defining your own LLM provider
 ;;
 ;; ## Configuration
 ;;
-;; ### config.edn
+;; ### Service configuration
 ;;
-;; In order to use the library all you need is to specify your LLM service configuration. This is done in `config.edn` file.
-;; The file is not part of the repository. See `config.edn.sample` for configuration sample. Rename it to `config.edn` and fill in the values.
+;; *Bosquet* configuration is defined in `resources/env.edn` file. It defines configuration for
+;; supported LLMs and other components. At the bottom it includes two custom
+;; configuration files.
+;; - `config.edn` where you can define config for your own system, see `config.sample.edn`
+;; - `secrets.edn` is a place where you would put API_KEYS and other secret properties, see `secrets.sample.edn`
 ;;
-;; Your config can be as simple as:
+;; Access to configuration is managed through `bosquet.env` namespace.
+;;
+;; Example of *Ollama* configuration:
 
-{:llm/openai {:api-key "..."}}
+(:ollama env/config)
 
-;; `config.edn` is loaded from the root of the project. You can overide this with `BOSQUET_CONFIG` environment variable.
-;;
-;; ### resources/env.edn
-;;
-;; `env.edn` defines how configuration is loaded for various Bosquet components: LLMs, mempry, etc.
-;;
-;; It uses [Aero](https://github.com/juxt/aero) library to declare how different config options are merged together.
-;;
-;; This is how OpenAI service config is declared:
-;; ```clojure
-;; {:llm/openai {:api-endpoint #or [#env "OPENAI_API_ENDPOINT"
-;;                                  "https://api.openai.com/v1"]
-;;               :impl         :openai}}
+;; The *fn* functions: `chat-fn`, `complete-fn`, `embed-fn` define which functions will be called for
+;; chat and completion generation, and the one for embedding generation. More on that in **Defining your own LLM provider**.
+
+;; `config.edn` and `secrets.edn` are loaded from the root of the project or from *USER_HOME/.bosquet* folder.
 ;; ```
-;; `:api-endpoint` will take its value from `OPENAI_API_ENDPOINT` environment variable or use
-;; the default value of `https://api.openai.com/v1`. Since config map in `env.edn` merges with
-;; a config map declared in `config.edn`, you can override the value in `config.edn` file.
-;;
-;; Note that *Bosquet* be default is not reading secrets from [environment variables.](https://github.com/juxt/aero?tab=readme-ov-file#hide-passwords-in-local-private-files)
+;; #include #or ["./config.edn"
+;;               #join [#env HOME "/.bosquet/config.edn"]]
+;; #include #or ["./secrets.edn"
+;;               #join [#env HOME "/.bosquet/secrets.edn"]]
+;; ```
+;; * *Bosquet* uses [Aero](https://github.com/juxt/aero) library to declare how different config options are merged together.
+;; * *Bosquet* be default is not reading secrets from [environment variables.](https://github.com/juxt/aero?tab=readme-ov-file#hide-passwords-in-local-private-files)
 ;;
 ;; ## Generation
 ;;
@@ -51,7 +51,8 @@
 ;; Simpliest case of using the library is to generate a completion from a prompt.
 
 ^{:nextjournal.clerk/auto-expand-results? true}
-(generate "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?")
+(clerk/code
+ (generate "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?"))
 
 ;; Differently from other more complex cases, this returns only completion string and uses
 ;; default LLM service and model. The dafault of the default is *OpenAI* with *GPT-3.5*.
@@ -63,8 +64,8 @@
 ;; A more involved use case is to use linked prompt templates for text generation.
 ;;
 
-^{:nextjournal.clerk/auto-expand-results? true}
-(generate
+;; ^{:nextjournal.clerk/auto-expand-results? true}
+#_(generate
  llm/default-services
  {:question-answer "Question: {{question}}  Answer: {{answer}}"
   :answer          (llm :openai
@@ -85,8 +86,8 @@
 ;; ### Chat completion
 ;;
 ;; Bosquet also supports chat completion.
-^{:nextjournal.clerk/auto-expand-results? true}
-(generate
+;; ^{:nextjournal.clerk/auto-expand-results? true}
+#_(generate
  [:system "You are an amazing writer."
   :user ["Write a synopsis for the play:"
          "Title: {{title}}"
@@ -114,7 +115,7 @@
 ;;
 ;; A template for that:
 
-(def sentimental
+#_(def sentimental
   "Estimate the sentiment of the following batch of {{text-type|default:text}} as positive, negative or neutral:
 {% for t in tweets %}
 * {{t}}
@@ -134,10 +135,10 @@ Sentiments:")
     "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
     "The biggest disappointment of my life came a year ago."])
 
-(def sentiments (generate
+#_(def sentiments (generate
                  sentimental
                  {:text-type "tweets" :tweets tweets}))
 
 ;; Generation results in the same order as `tweets`
-^{::clerk/visibility {:code :hide}}
-(clerk/html [:pre sentiments])
+;; ^{::clerk/visibility {:code :hide}}
+;; (clerk/html [:pre sentiments])

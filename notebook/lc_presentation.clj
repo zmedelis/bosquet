@@ -12,6 +12,9 @@
 ;;         "Now I’m 70 how old is my sister? A: {{a}}"]
 ;;  :a    {:llm/service :ollama :llm/model-params {:model :llama2})}
 ;; ```
+;;
+;; More in /notebook/user_guide -> Define tempaltes
+;;
 ;; #### Environment setup
 ;; Why a simple call like this works
 ;; ```
