@@ -8,7 +8,7 @@
 
 ;; # Bosquet Tutorial
 ;;
-;; Topcis convered in this tutorial
+;; Topics discussed in this tutorial
 ;; - system *configuration*
 ;; - define prompt *templates*
 ;; - resolve *dependencies* between prompts
@@ -16,88 +16,112 @@
 ;; - defining your own LLM provider
 ;;
 ;; ## Configuration
-;;
 ;; ### Service configuration
 ;;
-;; *Bosquet* configuration is defined in `resources/env.edn` file. It defines configuration for
-;; supported LLMs and other components. At the bottom it includes two custom
-;; configuration files.
-;; - `config.edn` where you can define config for your own system, see `config.sample.edn`
+;; *Bosquet* configuration is defined in `resources/env.edn` file. It defines the
+;; configuration for supported LLMs and other components. At the bottom, it
+;; includes two custom configuration files.
+;;
+;; - `config.edn` where you can define config for your system (see `config.sample.edn`)
 ;; - `secrets.edn` is a place where you would put API_KEYS and other secret properties, see `secrets.sample.edn`
 ;;
 ;; Access to configuration is managed through `bosquet.env` namespace.
 ;;
 ;; Example of *Ollama* configuration:
 
+^{:nextjournal.clerk/auto-expand-results? true}
 (:ollama env/config)
 
-;; The *fn* functions: `chat-fn`, `complete-fn`, `embed-fn` define which functions will be called for
-;; chat and completion generation, and the one for embedding generation. More on that in **Defining your own LLM provider**.
-
+;; The *fn* functions: `chat-fn`, `complete-fn`, `embed-fn` define which
+;; functions will be called for chat and completion generation, and the one for
+;; embedding generation. More on that in **Defining your own LLM provider**.
+;;
 ;; `config.edn` and `secrets.edn` are loaded from the root of the project or from *USER_HOME/.bosquet* folder.
+;;
 ;; ```
 ;; #include #or ["./config.edn"
 ;;               #join [#env HOME "/.bosquet/config.edn"]]
 ;; #include #or ["./secrets.edn"
 ;;               #join [#env HOME "/.bosquet/secrets.edn"]]
 ;; ```
-;; * *Bosquet* uses [Aero](https://github.com/juxt/aero) library to declare how different config options are merged together.
-;; * *Bosquet* be default is not reading secrets from [environment variables.](https://github.com/juxt/aero?tab=readme-ov-file#hide-passwords-in-local-private-files)
+;; * *Bosquet* uses [Aero](https://github.com/juxt/aero) library to declare how different config options are merged
+;; * *Bosquet* by default is not reading secrets from [environment variables.](https://github.com/juxt/aero?tab=readme-ov-file#hide-passwords-in-local-private-files)
 ;;
 ;; ## Generation
-;;
 ;; ### Prompt string completion
 ;;
-;; Simpliest case of using the library is to generate a completion from a prompt.
+;; The simplest case of using the library is to generate a completion from a prompt.
 
 ^{:nextjournal.clerk/auto-expand-results? true}
 (clerk/code
  (generate "When I was 6 my sister was half my age. Now I’m 70 how old is my sister?"))
 
-;; Differently from other more complex cases, this returns only completion string and uses
-;; default LLM service and model. The dafault of the default is *OpenAI* with *GPT-3.5*.
+;; Differently from other more complex prompting cases, this returns only the
+;; completion string and uses the default LLM service and model. The default LLM
+;; service is defined in `config.edn`
 ;;
-;; Default LLM is specified in `:llm/default` config key.
+;; ```
+;; {:default-llm {:temperature 0 :model :mistral-small}}
+;; ```
 ;;
-;; ### Prompt graph completion
+;; ### Prompt tree completion
 ;;
-;; A more involved use case is to use linked prompt templates for text generation.
+;; A more involved use case is to use linked prompt templates for text
+;; generation. This allows us to:
 ;;
-
-;; ^{:nextjournal.clerk/auto-expand-results? true}
-#_(generate
- llm/default-services
+;; * define *dependencies* between different prompt blocks
+;; * create *multiple* generations
+;; * *pipe* generation and templating results
+;; * get token *usage* counts
+;; * provide input data to *fill* in template slots
+;;
+^{:nextjournal.clerk/auto-expand-results? true}
+(generate
  {:question-answer "Question: {{question}}  Answer: {{answer}}"
-  :answer          (llm :openai
-                        wkk/model-params {:temperature 0.8 :max-tokens 120})
-  :self-eval       ["Question: {{question}}"
-                    "Answer: {{answer}}"
+  :answer          (llm :gpt-3.5-turbo wkk/model-params {:temperature 0.8 :max-tokens 120})
+  :self-eval       ["{{question-answer}}"
                     ""
                     "Is this a correct answer? {{test}}"]
-  :test            (llm :openai
-                        wkk/model-params {:temperature 0.2 :max-tokens 120})}
+  :test            (llm :mistral-small wkk/model-params {:temperature 0.2 :max-tokens 120})}
  {:question "What is the distance from Moon to Io?"})
 
-;; This shows how to use `generate` with all the parameters:
-;; - `services` is a map of LLM services to use for generation. Default services can be replaced with your own LLM call implementations.
-;; - `prompts` is a map of prompt templates. The map key is a variable name that can be used to reference templates from each other.
-;; - `data` to be filled in in the prompt slots.
+;; Using *tree* generation we can define separate question-answering and answer
+;; evaluation prompt blocks.
+;;
+;; Furthermore, LLM generation is defined as separate
+;; nodes in the map and referred to from the templates. The input data (question
+;; in this case) is supplied through a separate parameter.
+;;
+;; The input data (*question* in this case) is supplied through a separate parameter.
+;; This allows to define a prompt genereation function
+
+(def quiz (partial generate
+                   {:question-answer "Question: {{question}}  Answer: {{answer}}"
+                    :answer          (llm :ollama wkk/model-params {:model :llama2})}))
+
+;; That can be used to process a batch of input data
+;;
+^{:nextjournal.clerk/auto-expand-results? true}
+(mapv quiz [{:question "What is a point?"}
+            {:question "What is a space?"}
+            {:question "What is an angle?"}])
+
 ;;
 ;; ### Chat completion
 ;;
 ;; Bosquet also supports chat completion.
-;; ^{:nextjournal.clerk/auto-expand-results? true}
-#_(generate
+^{:nextjournal.clerk/auto-expand-results? true}
+(generate
  [:system "You are an amazing writer."
   :user ["Write a synopsis for the play:"
          "Title: {{title}}"
          "Genre: {{genre}}"
          "Synopsis:"]
-  :assistant (llm :openai
+  :assistant (llm :gpt-3.5-turbo
                   wkk/model-params {:temperature 0.8 :max-tokens 120}
                   wkk/var-name :synopsis)
   :user "Now write a critique of the above synopsis:"
-  :assistant (llm :openai
+  :assistant (llm :gpt-3.5-turbo
                   wkk/model-params {:temperature 0.2 :max-tokens 120}
                   wkk/var-name     :critique)]
  {:title "Mr. X"
