@@ -2,7 +2,7 @@
 (ns user-guide
   (:require
    [bosquet.env :as env]
-   [bosquet.llm.generator :refer [generate llm]]
+   [bosquet.llm.generator :refer [generate llm] :as g]
    [bosquet.llm.wkk :as wkk]
    [nextjournal.clerk :as clerk]))
 
@@ -109,25 +109,29 @@
 ;;
 ;; ### Chat completion
 ;;
-;; Bosquet also supports chat completion.
+;; Constructing prompts as linear chats is also supported. Chats are constructed
+;; as a vector of tuples - `[role message]`.
+;; LLM node definition is slightly different from the one done in the tree
+;; prompt, there it has an additional `:llm/var-name` parameter. It specifies the
+;; key in the result map where the generation will be stored.
+
 ^{:nextjournal.clerk/auto-expand-results? true}
 (generate
- [:system "You are an amazing writer."
-  :user ["Write a synopsis for the play:"
-         "Title: {{title}}"
-         "Genre: {{genre}}"
-         "Synopsis:"]
-  :assistant (llm :gpt-3.5-turbo
-                  wkk/model-params {:temperature 0.8 :max-tokens 120}
-                  wkk/var-name :synopsis)
-  :user "Now write a critique of the above synopsis:"
-  :assistant (llm :gpt-3.5-turbo
-                  wkk/model-params {:temperature 0.2 :max-tokens 120}
-                  wkk/var-name     :critique)]
+ [[:system "You are an amazing writer."]
+  [:user ["Write a synopsis for the play:"
+          "Title: {{title}}"
+          "Genre: {{genre}}"
+          "Synopsis:"]]
+  [:assistant (llm :gpt-3.5-turbo
+                   wkk/model-params {:temperature 0.8 :max-tokens 120}
+                   wkk/var-name :synopsis)]
+  [:user "Now write a critique of the above synopsis:"]
+  [:assistant (llm :gpt-3.5-turbo
+                   wkk/model-params {:temperature 0.2 :max-tokens 120}
+                   wkk/var-name     :critique)]]
  {:title "Mr. X"
   :genre "Sci-Fi"})
 
-;;
 ;; ### Selmer templating language
 ;;
 ;; [*Selmer*](https://github.com/yogthos/Selmer) provides lots of great templating
@@ -137,21 +141,17 @@
 ;;
 ;; Lets say we want to get a batch sentiment processor for Tweets.
 ;;
-;; A template for that:
+;; A template for that showing Selmer's `for` loop:
 
-#_(def sentimental
-  "Estimate the sentiment of the following batch of {{text-type|default:text}} as positive, negative or neutral:
-{% for t in tweets %}
-* {{t}}
-{% endfor %}
-
-Sentiments:")
-
-;; First, *Selmer* provides [for tag](https://github.com/yogthos/Selmer#for)
-;; to process collections of data.
-;;
-;; Then, `{{text-type|default:text}}` shows how defaults can be used. In this case
-;; if `text-type` is not specified `"text"` will be used.
+(def sentimental
+  {:text     ["Estimate the sentiment of the following batch of {{text-type}}"
+              "as positive, negative or neutral:"
+              "{% for t in tweets %}"
+              "* {{t}}"
+              "{% endfor %}"
+              "Sentiments:"
+              "{{classify}}"]
+   :classify (llm :ollama :llm/model-params {:model :llama2})})
 
 ;; Tweets to be processed
 (def tweets
@@ -159,10 +159,8 @@ Sentiments:")
     "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
     "The biggest disappointment of my life came a year ago."])
 
-#_(def sentiments (generate
-                 sentimental
-                 {:text-type "tweets" :tweets tweets}))
+(def sentiments (generate sentimental {:tweets tweets :text-type "tweets"}))
 
 ;; Generation results in the same order as `tweets`
-;; ^{::clerk/visibility {:code :hide}}
-;; (clerk/html [:pre sentiments])
+^{::clerk/visibility {:code :hide}}
+(clerk/code (-> sentiments g/completions :text))
