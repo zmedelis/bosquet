@@ -87,3 +87,7 @@
   (timbre/infof "💬 Calling %s with:" url)
   (doseq [[k v] (dissoc params :messages)]
     (timbre/infof "   %-15s%s" k v)))
+
+
+(defn now []
+  (inst-ms (java.time.Instant/now)))

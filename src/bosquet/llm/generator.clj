@@ -445,10 +445,15 @@
   for template slot filling."
   ([messages] (generate messages {}))
   ([messages inputs]
-   (cond
-     (vector? messages) (chat env/config messages inputs)
-     (map? messages)    (complete-graph env/config messages inputs)
-     (string? messages) (complete-template env/config messages inputs))))
+   (let [start-time (u/now)
+         gen-result (cond
+                      (vector? messages) (chat env/config messages inputs)
+                      (map? messages)    (complete-graph env/config messages inputs)
+                      (string? messages) (complete-template env/config messages inputs))]
+     (if (usage gen-result)
+       (assoc gen-result
+              :bosquet/time (- (u/now) start-time))
+       gen-result))))
 
 (comment
 
@@ -544,30 +549,3 @@
     [:assistant (llm :mistral-small
                      wkk/var-name :analysis)]])
   #__)
-
-(comment
-  {:eq1 "{{a}} + {{b}} = {{x}}"
-   :eq2 "{{a}} - {{b}} = {{y}}"
-   :eq3 "{{eq1}} / {{eq2}} = {{z}}"
-   :x :gen
-   :y :gen
-   :z :fun
-   :a 4
-   :b 2}
-
-
-  {:eq1 "{{a}} + {{b}} = {{x}}"
-   :eq1.1 "{{a}}"
-   :eq1.2 "{{eq1.2}} + {{b}}"
-   :eq1.3 "{{eq1.3}} = {{x}}"
-   :eq1.4 "{{a}} + {{b}} = {{x}}"
-
-   :eq2 "{{a}} - {{b}} = {{y}}"
-   :eq3 "{{eq1}} / {{eq2}} = {{z}}"
-   :x :gen
-   :y :gen
-   :z :fun
-   :a 4
-   :b 2}
-
-  )

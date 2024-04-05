@@ -1,5 +1,6 @@
 (ns bosquet.llm.generator-test
   (:require
+   [matcher-combinators.test]
    [bosquet.db.cache :as cache]
    [bosquet.env :as env]
    [bosquet.llm.generator :as gen]
@@ -25,26 +26,31 @@
 (deftest chat-generation
   (with-redefs [env/config {:service-last  {:chat-fn echo-service-chat-last}
                             :service-first {:chat-fn echo-service-chat-first}}]
-    (is (= {:bosquet/conversation [[:system "You are a brilliant writer."]
-                                   [:user (u/join-lines
-                                           "Write a synopsis for the play:"
-                                           "Title: Mr. O")]
-                                   [:assistant "You are a brilliant writer."]
-                                   [:user "Now write a critique of the above synopsis:"]
-                                   [:assistant "Now write a critique of the above synopsis:"]]
-            :bosquet/completions  {:synopsis "You are a brilliant writer."
-                                   :critique "Now write a critique of the above synopsis:"}
-            :bosquet/usage {:synopsis      nil
-                            :critique      nil
-                            :bosquet/total {:prompt 0 :completion 0 :total 0}}}
-           (gen/generate
-            [[:system "You are a brilliant writer."]
-             [:user ["Write a synopsis for the play:"
-                     "Title: {{title}}"]]
-             [:assistant (gen/llm :service-first wkk/var-name :synopsis)]
-             [:user "Now write a critique of the above synopsis:"]
-             [:assistant (gen/llm :service-last wkk/var-name :critique)]]
-            {:title "Mr. O"})))))
+    (let [{:bosquet/keys [conversation completions usage time]}
+          (gen/generate
+           [[:system "You are a brilliant writer."]
+            [:user ["Write a synopsis for the play:"
+                    "Title: {{title}}"]]
+            [:assistant (gen/llm :service-first wkk/var-name :synopsis)]
+            [:user "Now write a critique of the above synopsis:"]
+            [:assistant (gen/llm :service-last wkk/var-name :critique)]]
+           {:title "Mr. O"})]
+      (is (number? time))
+      (is (= [[:system "You are a brilliant writer."]
+              [:user (u/join-lines
+                      "Write a synopsis for the play:"
+                      "Title: Mr. O")]
+              [:assistant "You are a brilliant writer."]
+              [:user "Now write a critique of the above synopsis:"]
+              [:assistant "Now write a critique of the above synopsis:"]]
+             conversation))
+      (is (= {:synopsis "You are a brilliant writer."
+              :critique "Now write a critique of the above synopsis:"}
+             completions))
+      (is (= {:synopsis      nil
+              :critique      nil
+              :bosquet/total {:prompt 0 :completion 0 :total 0}}
+             usage)))))
 
 
 (deftest map-generation
@@ -52,34 +58,39 @@
                             {:chat-fn (fn [_ _]
                                         {wkk/content {:content "!!!" :role :assistant}
                                          wkk/usage   {:prompt 1 :completion 3 :total 4}})}}]
-    (is (= {gen/completions {:question-answer "Question: What is the distance from Moon to Io? Answer: !!!"
-                             :answer          "!!!"
-                             :self-eval       (u/join-lines
-                                               "Question: What is the distance from Moon to Io? Answer: !!!"
-                                               "Is this a correct answer?"
-                                               "!!!")
-                             :test            "!!!"}
-            gen/usage       {:answer        {:prompt 1 :completion 3 :total 4}
-                             :test          {:prompt 1 :completion 3 :total 4}
-                             :bosquet/total {:prompt 2 :completion 6 :total 8}}}
-           (gen/generate
-            {:question-answer "Question: {{question}} Answer: {{answer}}"
-             :answer          (gen/llm :service-const)
-             :self-eval       ["{{question-answer}}"
-                               "Is this a correct answer?"
-                               "{{test}}"]
-             :test            (gen/llm :service-const)}
-            {:question "What is the distance from Moon to Io?"})))))
+    (let [{:bosquet/keys [completions usage]}
+          (gen/generate
+           {:question-answer "Question: {{question}} Answer: {{answer}}"
+            :answer          (gen/llm :service-const)
+            :self-eval       ["{{question-answer}}"
+                              "Is this a correct answer?"
+                              "{{test}}"]
+            :test            (gen/llm :service-const)}
+           {:question "What is the distance from Moon to Io?"})]
+
+      (is (= {:question-answer "Question: What is the distance from Moon to Io? Answer: !!!"
+              :answer          "!!!"
+              :self-eval       (u/join-lines
+                                "Question: What is the distance from Moon to Io? Answer: !!!"
+                                "Is this a correct answer?"
+                                "!!!")
+              :test            "!!!"}
+             completions))
+      (is (= {:answer        {:prompt 1 :completion 3 :total 4}
+              :test          {:prompt 1 :completion 3 :total 4}
+              :bosquet/total {:prompt 2 :completion 6 :total 8}}
+             usage)))))
 
 
 (deftest fail-generation
-  (is (= {gen/completions {:in "How are you? {{out}}" :out nil}
-          gen/usage       {:out           nil
-                           :bosquet/total {:prompt 0 :completion 0 :total 0}}}
-         (gen/generate
-          {:in  "How are you? {{out}}"
-           :out (gen/llm :non-existing-service)}
-          {}))))
+  (is (match?
+       {gen/completions {:in "How are you? {{out}}" :out nil}
+        gen/usage       {:out           nil
+                         :bosquet/total {:prompt 0 :completion 0 :total 0}}}
+       (gen/generate
+        {:in  "How are you? {{out}}"
+         :out (gen/llm :non-existing-service)}
+        {}))))
 
 
 (deftest appending-gen-instruction
