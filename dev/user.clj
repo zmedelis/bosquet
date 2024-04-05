@@ -27,7 +27,7 @@
 
 (defn build-static-docs
   [_]
-  (clerk/build! {:paths    ["notebook/getting_started.clj"
+  (clerk/build! {:paths    ["notebook/user_guide.clj"
                             "notebook/configuration.clj"
                             "notebook/text_splitting.clj"
                             "notebook/document_loading.clj"
