@@ -1,6 +1,5 @@
 (ns bosquet.db.cache
   (:require
-   [bosquet.llm.wkk :as wkk]
    [clojure.core.cache.wrapped :as w]))
 
 

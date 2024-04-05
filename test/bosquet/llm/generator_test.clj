@@ -106,7 +106,7 @@
         question     "What is the distance from Moon to Io?"
         env-config {:service-const
                     {:chat-fn (fn [_ props]
-                                (swap! cached-props conj (cache/cache-props props))
+                                (swap! cached-props conj props)
                                 (swap! call-counter inc) {})}}
         generate     (fn [cache q]
                        (gen/generate
