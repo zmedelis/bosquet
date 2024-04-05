@@ -1,9 +1,11 @@
 ^{:nextjournal.clerk/visibility {:code :fold}}
 (ns user-guide
+  {:nextjournal.clerk/toc true}
   (:require
+   [bosquet.db.cache :as cache]
    [bosquet.env :as env]
    [bosquet.llm.generator :refer [generate llm] :as g]
-   [bosquet.llm.wkk :as wkk]
+   [bosquet.llm.wkk :as k]
    [nextjournal.clerk :as clerk]))
 
 ;; # Bosquet Tutorial
@@ -16,7 +18,6 @@
 ;; - defining your own LLM provider
 ;;
 ;; ## Configuration
-;; ### Service configuration
 ;;
 ;; *Bosquet* configuration is defined in `resources/env.edn` file. It defines the
 ;; configuration for supported LLMs and other components. At the bottom, it
@@ -48,7 +49,7 @@
 ;; * *Bosquet* by default is not reading secrets from [environment variables.](https://github.com/juxt/aero?tab=readme-ov-file#hide-passwords-in-local-private-files)
 ;;
 ;; ## Generation
-;; ### Prompt string completion
+;; ### String completion
 ;;
 ;; The simplest case of using the library is to generate a completion from a prompt.
 
@@ -64,7 +65,7 @@
 ;; {:default-llm {:temperature 0 :model :mistral-small}}
 ;; ```
 ;;
-;; ### Prompt tree completion
+;; ### Tree completion
 ;;
 ;; A more involved use case is to use linked prompt templates for text
 ;; generation. This allows us to:
@@ -78,11 +79,11 @@
 ^{:nextjournal.clerk/auto-expand-results? true}
 (generate
  {:question-answer "Question: {{question}}  Answer: {{answer}}"
-  :answer          (llm :gpt-3.5-turbo wkk/model-params {:temperature 0.8 :max-tokens 120})
+  :answer          (llm :gpt-3.5-turbo k/model-params {:temperature 0.8 :max-tokens 120})
   :self-eval       ["{{question-answer}}"
                     ""
                     "Is this a correct answer? {{test}}"]
-  :test            (llm :mistral-small wkk/model-params {:temperature 0.2 :max-tokens 120})}
+  :test            (llm :mistral-small k/model-params {:temperature 0.2 :max-tokens 120})}
  {:question "What is the distance from Moon to Io?"})
 
 ;; Using *tree* generation we can define separate question-answering and answer
@@ -97,7 +98,7 @@
 
 (def quiz (partial generate
                    {:question-answer "Question: {{question}}  Answer: {{answer}}"
-                    :answer          (llm :ollama wkk/model-params {:model :llama2})}))
+                    :answer          (llm :ollama k/model-params {:model :llama2})}))
 
 ;; That can be used to process a batch of input data
 ;;
@@ -123,28 +124,26 @@
           "Genre: {{genre}}"
           "Synopsis:"]]
   [:assistant (llm :gpt-3.5-turbo
-                   wkk/model-params {:temperature 0.8 :max-tokens 120}
-                   wkk/var-name :synopsis)]
+                   k/model-params {:temperature 0.8 :max-tokens 120}
+                   k/var-name :synopsis)]
   [:user "Now write a critique of the above synopsis:"]
   [:assistant (llm :gpt-3.5-turbo
-                   wkk/model-params {:temperature 0.2 :max-tokens 120}
-                   wkk/var-name     :critique)]]
+                   k/model-params {:temperature 0.2 :max-tokens 120}
+                   k/var-name     :critique)]]
  {:title "Mr. X"
   :genre "Sci-Fi"})
 
-;; ### Selmer templating language
+;; ## Selmer templates
 ;;
 ;; [*Selmer*](https://github.com/yogthos/Selmer) provides lots of great templating
 ;; functionality. An example of some of those features.
-;;
-;; #### Tweet sentiment batch processing
 ;;
 ;; Lets say we want to get a batch sentiment processor for Tweets.
 ;;
 ;; A template for that showing Selmer's `for` loop:
 
 (def sentimental
-  {:text     ["Estimate the sentiment of the following batch of {{text-type}}"
+  {:text     ["Estimate the sentiment of the following batch of {{text-type|default:tweets}}"
               "as positive, negative or neutral:"
               "{% for t in tweets %}"
               "* {{t}}"
@@ -159,8 +158,58 @@
     "Didn't catch the full #GOPdebate last night. Here are some of Scott's best lines in 90 seconds."
     "The biggest disappointment of my life came a year ago."])
 
-(def sentiments (generate sentimental {:tweets tweets :text-type "tweets"}))
+;; The template also has `text-type` filed, but for the *default value* demo purposes it is not
+;; supplied. Default value is supplied in the template `{{text-type|default:tweets}}`
+
+(def sentiments (generate sentimental {:tweets tweets}))
 
 ;; Generation results in the same order as `tweets`
 ^{::clerk/visibility {:code :hide}}
 (clerk/code (-> sentiments g/completions :text))
+
+;; ## Caching
+;;
+;; When the variation in the generated result is not needed and we do not need to make an LLM
+;; call if there was a call made previously with the same:
+;; * prompt text
+;; * model parameters
+;;
+;; *Bosquet* can cache LLM responses if `:llm/cache true` parameter is added.
+
+;; Reset cache from previous entries
+(cache/evict-all)
+
+(def g1 (g/generate {:qna    "Question: {{question}}  Answer: {{answer}}"
+                     :answer  (llm :ollama
+                                   k/cache true
+                                   k/model-params {:model :llama2})}
+                    {:question "What is the distance from Moon to Io?"}))
+
+;; Second call with exactly the same context will return fast and with exact same response
+;; as above
+
+^{:nextjournal.clerk/auto-expand-results? true}
+(def g2 (g/generate {:qna    "Question: {{question}}  Answer: {{answer}}"
+                     :answer  (llm :ollama
+                                   k/cache true
+                                   k/model-params {:model :llama2})}
+                    {:question "What is the distance from Moon to Io?"}))
+
+;; Once more with different model parameters, and cache lookup misses forcing a fresh call to LLM.
+
+^{:nextjournal.clerk/auto-expand-results? true}
+(def g3 (g/generate {:qna    "Question: {{question}}  Answer: {{answer}}"
+                     :answer (llm :ollama
+                                   k/cache true
+                                   k/model-params {:model :llama2
+                                                   :temperature 0.9})}
+                    {:question "What is the distance from Moon to Io?"}))
+
+;; Generation times for those three calls:
+(clerk/html [:ul
+             [:li (str "First call (nothing in cache): " (:bosquet/time g1))]
+             [:li (str "Second call (cache hit): " (:bosquet/time g2))]
+             [:li (str "Last call (nothing in cache): " (:bosquet/time g3))]])
+
+;; This is a very simple implementation, a fullblown LLM caching implementation example:
+;; https://github.com/zilliztech/GPTCache
