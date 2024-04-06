@@ -1,24 +1,23 @@
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (ns wedding-guest-example
   (:require
-   [bosquet.llm.generator :as gen]
+   [bosquet.llm.generator :refer [llm generate]]
    [nextjournal.clerk :as clerk]))
-
-;; # TODO NEEDS UPDATING
 
 ;; # Generating thank you letters
 ;;
-;; There was a wedding with lots of guests. They traveled far and wide to attend it, brough gifts and all.
-;;
-;; We want to generate thank you letters for each guest. The letters should be personalized and note how
-;; far they traveled, and how great is their gift. Letters ought to be written in a tone appropriate for
+;; There was a wedding with lots of guests. They traveled far and wide to attend
+;; it, brough gifts and all. We want to generate thank you letters for each
+;; guest. The letters should be personalized and note how far they traveled, and
+;; how great is their gift. Letters ought to be written in a tone appropriate for
 ;; the type of the relationship between the guest and the couple.
 ;;
 ;; ## The guests
 ;;
-;; The list of guests is taken from the couple's spreadsheet they used to note who came to their wedding.
-;; There were 178 guests in total, hence the need for automation. This sample shows typical types of guests'
-;; relationships with the couple, the geographical spread of visitors, and the gifts they brought.
+;; The list of guests is taken from the couple's spreadsheet they used to note
+;; who came to their wedding. There were 178 guests in total, hence the need for
+;; automation. This sample shows typical types of guests' relationships with the
+;; couple, the geographical spread of visitors, and the gifts they brought.
 ;; Those types of data will have to be reflected in personalized letters.
 
 ^{::clerk/visibility {:code :fold}}
@@ -34,9 +33,11 @@
 
 ;; ## The Instructions
 ;;
-;; Large Language Model needs to learn how to write thank you letters. LLMs need only [a few examples](https://www.promptingguide.ai/techniques/fewshot)
-;; and instructions on how to write a letter. The examples need to illustrate how different
-;; relationship types, gifts, and distances traveled impact the tone and content of the letter.
+;; Large Language Model needs to learn how to write thank you letters. LLMs need
+;; only [a few examples](https://www.promptingguide.ai/techniques/fewshot) and
+;; instructions on how to write a letter. The examples need to illustrate how
+;; different relationship types, gifts, and distances traveled impact the tone
+;; and content of the letter.
 ;;
 ;; The instructions are composed of three parts:
 ;; * data about the guest
@@ -64,8 +65,9 @@
              [:li "Mixing bowls are a nice gift because they can be used for baking."]])
 
 ;; ### Example letter
-;; Finally, the last component to finish teaching LLM to write thank you letters is to give it
-;; an actual sample letter given the above data about the guests and instructions on how to write a letter.
+;; Finally, the last component to finish teaching LLM to write thank you letters
+;; is to give it an actual sample letter given the above data about the guests
+;; and instructions on how to write a letter.
 
 ^{::clerk/visibility {:code :hide}}
 (clerk/html [:div.whitespace-pre-line.max-w-wide.bg-white.p-4.text-slate-500.text-sm
@@ -142,61 +144,56 @@ Best, Jack and Diane"}]})
 ;; * `letter` - the part where all the previous components and data are merged together to send for generation
 ;; * `letter-generation` - this one is different, it is defined in `llm-generate` and specfies which key will hold only the generated text
 (def letter-writter
-  {:context
-   "Jack and Diane just had their wedding in Puerto Rico and it is time to write thank
-you cards. For each guest, write a thoughtful, sincere, and personalized thank you note
-using the information provided below."
-
-   :few-shot-examples
-   "{% for example in examples %}
-Guest Information:
-{{example.guest}}
-
-First, let's think step by step:
-{{example.step}}
-
-Next, let's draft the letter:
-{{example.note}}
-{% endfor %}"
-
-   :letter
-   "{{context}}
-{{few-shot-examples}}
-Guest Information:
-Name: {{name}}
-Relationship: {{relationship}}
-Gift: {{gift}}
-Hometown: {{hometown}}
-
-First, let's think step by step:
-{% gen model=gpt-3.5 var-name=letter-generation %}"})
+  {:context           ["Jack and Diane just had their wedding in Puerto Rico "
+                       "and it is time to write thank you cards. For each"
+                       "guest, write a thoughtful, sincere, and personalized"
+                       "thank you note using the information provided below."]
+   :few-shot-examples ["{% for example in examples %}"
+                       "Guest Information:"
+                       "{{example.guest}}"
+                       "First, let's think step by step:"
+                       "{{example.step}}"
+                       "Next, let's draft the letter:"
+                       "{{example.note}}"
+                       "{% endfor %}"]
+   :instructions      ["{{context}}"
+                       "{{few-shot-examples}}"
+                       "Guest Information:"
+                       "Name: {{name}}"
+                       "Relationship: {{relationship}}"
+                       "Gift: {{gift}}"
+                       "Hometown: {{hometown}}"
+                       "First, let's think step by step:"
+                       "{{letter}}"]
+   :letter            (llm :gpt-3.5-turbo)})
 
 ;; ## Generate letters
 ;;
 ;; With the promts defined we can now generate the letters.
 
+(def letter-generator (partial generate letter-writter))
 
 ^{::clerk/visibility {:result :hide}}
-#_(def letters
+(def letters
   (pmap
-    (fn [guest]
-      (gen/generate letter-writter
-        (merge guest thank-you-letters-few-shot-exmples)))
-    guests))
+   (fn [guest]
+     (letter-generator
+      (merge guest thank-you-letters-few-shot-exmples)))
+   guests))
 
 ;; #### Generated letters
 
 ;; First two examples of generated text
 
 ^{::clerk/visibility {:code :hide}}
-#_(clerk/row
+(clerk/row
   (clerk/html [:div.whitespace-pre-line.max-w-md.bg-white.p-4.text-slate-500.text-sm
-               (-> letters first :letter-generation)])
+               (-> letters first :bosquet/completions :letter)])
 
   (clerk/html [:div.whitespace-pre-line.max-w-md.bg-white.p-4.text-slate-500.text-sm
-               (-> letters second :letter-generation)]))
+               (-> letters second :bosquet/completions :letter)]))
 
 ;; Full generation data
 
 ^{::clerk/visibility {:code :hide}}
-#_(clerk/table letters)
+(clerk/table (map :bosquet/completions letters))

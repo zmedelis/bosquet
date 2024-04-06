@@ -33,7 +33,8 @@
                             "notebook/document_loading.clj"
                             "notebook/using_llms.clj"
                             "notebook/observability.clj"
-                            "notebook/math_generate_code.clj"
+                            "notebook/examples/math_generate_code.clj"
+                            "notebook/examples/writing_letters.clj"
                             "notebook/memory_prosocial_dialog.clj"
                             "notebook/papers/chain_of_density.clj"
                             "notebook/papers/chain_of_verification.clj"]
