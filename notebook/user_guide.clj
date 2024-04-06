@@ -267,3 +267,46 @@
 
 ;; This is a very simple implementation, a fullblown LLM caching implementation example:
 ;; https://github.com/zilliztech/GPTCache
+;;
+;; ### Output format
+;;
+;; It is possible to request generation result to be returned in a specified output. This
+;; is done through `:llm/output-format` parameter.
+;; Supported output formats:
+;;
+;; * `:json` - convert generated data to JSON
+;; * `:edn` - convert generated data to EDN
+;; * `:list` - convert generated bullet or numbered lists to a list data structure
+;; * `:number` - convert generated data to a number
+;; * `:bool` - convert generated 'Yes/NO/true/fAlse' strings to boolean values
+;;
+;; Note that specifying `:llm/output-format :edn` will not guarantee that result will
+;; be EDN. The prompt has to request it as well.
+;;
+;; **EDN**
+(get-in
+ (generate
+  [[:system ["As a brilliant astronomer, list distances between planets and the Sun"
+             "in the Solar System. Provide the answer in EDN map where the key is the"
+             "planet name and the value is the string distance in millions of kilometers."]]
+   [:user ["Generate only EDN omit any other prose and explanations."]]
+   [:assistant (llm :gpt-3.5-turbo
+                    k/var-name :distances
+                    k/output-format :edn
+                    k/model-params {:max-tokens 300})]])
+ [g/completions :distances])
+
+;; **BOOL**
+(get-in
+ (generate
+  {:q "Is 2 = 2? Answer with 'yes' or 'no' only!!! {{a}}"
+   :a (llm :gpt-3.5-turbo k/output-format :bool)})
+ [g/completions :a])
+
+
+;; **LIST**
+(get-in
+ (generate
+  {:q "Provide a bullet list of 4 colors. {{a}}"
+   :a (llm :gpt-3.5-turbo k/output-format :list)})
+ [g/completions :a])

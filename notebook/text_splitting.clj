@@ -3,7 +3,6 @@
   {:nextjournal.clerk/toc true}
   (:require
    [bosquet.llm.generator :as g]
-   [bosquet.llm.wkk :as wkk]
    [bosquet.nlp.splitter :as split]
    [clojure.string :as string]
    [helpers :as h]
@@ -59,7 +58,7 @@ get to sea as soon as I can.")
 
 (def char-chunks (split/chunk-text
                   {split/chunk-size 200
-                   split/overlap    20
+                   split/overlap    10
                    split/split-unit split/character}
                   text))
 
@@ -199,7 +198,7 @@ Respond with unnumbered bullet list and nothing else.
 EMOTIONS: {{emotions}}
 
 {{summary}}"
-   :summary (g/llm :gpt-4)})
+   :summary (g/llm :mistral-medium)})
 
 (defn summarize [analysis]
   (->

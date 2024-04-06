@@ -19,11 +19,14 @@
            (c/list-reader "- foo\n- bar\n- baz")))))
 
 (deftest converting-yes-and-noes
-  (is (true? (c/yes-no->bool "yes")))
-  (is (true? (c/yes-no->bool "YES")))
-  (is (false? (c/yes-no->bool "     nO    ")))
-  (is (false? (c/yes-no->bool "NO")))
-  (is (= "X" (c/yes-no->bool "X"))))
+  (is (true? (c/->bool "yes")))
+  (is (true? (c/->bool "YES")))
+  (is (false? (c/->bool "     nO    ")))
+  (is (false? (c/->bool "NO")))
+  (is (= "X" (c/->bool "X")))
+
+  (is (true? (c/->bool "tRue")))
+  (is (false? (c/->bool " FALSE"))))
 
 (deftest coerce-test
   (is (= "Dogs are great!" (c/coerce nil "Dogs are great!")))
@@ -41,10 +44,10 @@
   (is (= 1 (c/json-reader (u/join-lines "```json" "1" "```")))))
 
 (deftest converting-numbers
-  (is (= "x" (c/string->number "x")))
-  (is (= 1 (c/string->number "1")))
-  (is (= 1.1 (c/string->number "1.1")))
-  (is (= 101.09 (c/string->number "101.09")))
+  (is (= "x" (c/->number "x")))
+  (is (= 1 (c/->number "1")))
+  (is (= 1.1 (c/->number "1.1")))
+  (is (= 101.09 (c/->number "101.09")))
   (is (= 0.1 (c/coerce :number "0.100"))))
 
 (deftest failing-conversions

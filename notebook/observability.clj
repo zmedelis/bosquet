@@ -47,7 +47,7 @@
             "planet name and the value is the string distance in millions of kilometers."
             "{{analysis}}"]]
   [:user ["Generate only JSON omit any other prose and explanations."]]
-  [:assistant (g/llm :gpt-4
+  [:assistant (g/llm :mistral-medium
                      :llm/var-name :distances
                      :llm/output-format :json
                      :llm/model-params {:max-tokens 300})]

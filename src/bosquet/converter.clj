@@ -24,18 +24,20 @@
   (map drop-digit
        (s/split (s/trim items) #"\n")))
 
-(defn yes-no->bool
+(defn ->bool
   "Converts yes/no answer to boolean
 
    Yes => true
    NO => false"
   [answer]
   (condp = (-> answer s/trim s/lower-case)
-    "yes" true
-    "no"  false
+    "yes"   true
+    "true"  true
+    "no"    false
+    "false" false
     answer))
 
-(defn string->number
+(defn ->number
   [num]
   (cond
     (re-matches #"\d+" num) (Integer/parseInt num)
@@ -74,7 +76,8 @@
       :json (json-reader completion)
       :edn  (edn-reader completion)
       :list (list-reader completion)
-      :number (string->number completion)
+      :number (->number completion)
+      :bool (->bool completion)
       completion)
     (catch Exception e
       (timbre/error e)

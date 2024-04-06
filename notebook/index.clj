@@ -6,9 +6,9 @@
  [:div.viewer-markdown
   [:ul
    [:li [:a.underline {:href (clerk/doc-url "notebook/user_guide/index.html")} "User guide"]]
+   [:li [:a.underline {:href (clerk/doc-url "notebook/text_splitting/index.html")} "Text Chunking"]]
    [:li [:a.underline {:href (clerk/doc-url "notebook/observability/index.html")} "Observability"]]
    [:li [:a.underline {:href (clerk/doc-url "notebook/memory_prosocial_dialog/index.html")} "Long and short-term memory use"]]
-   [:li [:a.underline {:href (clerk/doc-url "notebook/text_splitting/index.html")} "Text Chunking"]]
    [:li [:a.underline {:href (clerk/doc-url "notebook/document_loading/index.html")} "Document Loading"]]
    [:li
     [:div "Examples"]
