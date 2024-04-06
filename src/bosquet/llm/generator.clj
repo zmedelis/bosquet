@@ -444,12 +444,13 @@
   `env/config` holds configuration to make LLM calls and `inputs` has a data map
   for template slot filling."
   ([messages] (generate messages {}))
-  ([messages inputs]
+  ([messages inputs] (generate env/config messages inputs))
+([env messages inputs]
    (let [start-time (u/now)
          gen-result (cond
-                      (vector? messages) (chat env/config messages inputs)
-                      (map? messages)    (complete-graph env/config messages inputs)
-                      (string? messages) (complete-template env/config messages inputs))]
+                      (vector? messages) (chat env messages inputs)
+                     (map? messages)    (complete-graph env messages inputs)
+                     (string? messages) (complete-template env messages inputs))]
      (if (usage gen-result)
        (assoc gen-result
               :bosquet/time (- (u/now) start-time))
@@ -516,7 +517,7 @@
 
   (generate
    {:q1   ["Q: When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister? A: {{a}}"]
-    :a    (llm :ollama wkk/model-params {:model :llama2})}
+    :a    (llm :mistral-small)}
    {:age 10})
 
   (generate [[:system "You are an amazing writer."]
