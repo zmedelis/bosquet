@@ -5,16 +5,16 @@
    [bosquet.llm.wkk :as wkk]
    [nextjournal.clerk :as clerk]))
 
-;; TODO FIX IT
-
 ;; ## Chain of Density prompting
-
+;;
 ;; Chain of Density (CoD) technique is introduced in [GPT-4 Summarization with Chain of Density Prompting](https://arxiv.org/pdf/2309.04269.pdf) paper.
 ;; It aims to produce high-quality and dense information text summaries.
 
 ;; > Selecting the “right” amount of information to include in a summary is a difficult task. A good summary should be detailed
 ;; > and entity-centric without being overly dense and hard to follow.
-
+;;
+;; ![CoD](notebook/assets/cod.png)
+;;
 ;; CoD constructs a prompt that iteratively adds not yet summarized entities to the summary while keeping the overall summary length constant.
 ;; As it goes through the iterations, it produces increasingly dense summaries. Initial summaries are too sparse, while the final ones are
 ;; usually too dense. Second and third versions being the best ones.
@@ -31,7 +31,6 @@
 
 (def article (slurp "notebook/papers/2023_Herat_earthquakes.txt"))
 
-
 ;; Prompt taken from the paper. Note its structure:
 ;; - Instructing to proceed in iterations
 ;; - Each iteration asks to produce a denier summary based on missing entities
@@ -43,8 +42,8 @@
 ;; - `FORMAT` to control the output format, defaults to `JSON` (more on that later)
 
 (def cod-prompt
-  {:cod
-   "Article: {{ ARTICLE }}
+  [[:user
+    "Article: {{ ARTICLE }}
 
 You will generate increasingly concise, entity-dense summaries of the above article.
 
@@ -74,10 +73,10 @@ Guidelines:
 Remember, use the exact same number of words for each summary. Answer in {{FORMAT|default:JSON}}. The {{FORMAT|default:JSON}} should be a list (length 5) of dictionaries whose keys
 are \"Missing-Entities\" and \"Denser-Summary\".
 
-{{sum-gen}}"
-   :sum-gen (g/llm :openai
-                   wkk/output-format :json
-                   wkk/model-params {:model :gpt-4})})
+{{sum-gen}}"]
+   [:assistant (g/llm :gpt-4
+                      wkk/var-name :sum-gen
+                      wkk/output-format :json)]])
 
 ;;
 ;; With that set a call to generation (see *Getting Started* and *Configuration* notebooks for more details on how generation works) can be made.
@@ -87,15 +86,10 @@ are \"Missing-Entities\" and \"Denser-Summary\".
 ;;
 
 ^{:nextjournal.clerk/visibility {:result :hide}}
-(def result {} #_(g/generate
-             cod-prompt
-             {:ARTICLE article
-              :FORMAT  "JSON"}))
-;;
+(def result (g/generate cod-prompt {:ARTICLE article :FORMAT  "JSON"}))
+
 ;; CoT - as instructed - produces a list of 5 summaries, each summary is a map with `Missing-Entities` and `Denser-Summary` keys. Authors of the paper did human evaluation
 ;; of the produced summaries and found that humans usualy prefer 2-3rd summaries.
-;;
-
 
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (clerk/html
@@ -114,4 +108,4 @@ are \"Missing-Entities\" and \"Denser-Summary\".
            [:div.flex
             [:div.flex-none.w-32.mr-4 [:em "Denser Summary:"]]
             [:div Denser-Summary]]])
-        (:bosquet/gen result)))))
+        (get-in result [g/completions :sum-gen])))))
