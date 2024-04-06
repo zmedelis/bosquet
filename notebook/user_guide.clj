@@ -7,6 +7,7 @@
    [bosquet.llm.generator :refer [generate llm] :as g]
    [bosquet.llm.oai-shaped-llm :as oai]
    [bosquet.llm.wkk :as k]
+   [clojure.string :as s]
    [nextjournal.clerk :as clerk]))
 
 ;; # Bosquet Tutorial
@@ -36,7 +37,7 @@
 
 ;; The *fn* functions: `chat-fn`, `complete-fn`, `embed-fn` define which
 ;; functions will be called for chat and completion generation, and the one for
-;; embedding generation. More on that in **Defining your own LLM provider**.
+;; embedding generation. More on that in *Defining custom LLM calls* section below.
 ;;
 ;; `config.edn` and `secrets.edn` are loaded from the root of the project or from *USER_HOME/.bosquet* folder.
 ;;
@@ -48,6 +49,10 @@
 ;; ```
 ;; * *Bosquet* uses [Aero](https://github.com/juxt/aero) library to declare how different config options are merged
 ;; * *Bosquet* by default is not reading secrets from [environment variables.](https://github.com/juxt/aero?tab=readme-ov-file#hide-passwords-in-local-private-files)
+;;
+;; The following LLM components are defined in Bosquet's `env.edn`:
+^{:nextjournal.clerk/visibility {:code :hide}}
+(clerk/md (s/join "\n" (map #(str "* " %) (keys env/config))))
 ;;
 ;; ## Generation
 ;; ### String completion
