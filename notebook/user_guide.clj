@@ -5,6 +5,7 @@
    [bosquet.db.cache :as cache]
    [bosquet.env :as env]
    [bosquet.llm.generator :refer [generate llm] :as g]
+   [bosquet.llm.oai-shaped-llm :as oai]
    [bosquet.llm.wkk :as k]
    [nextjournal.clerk :as clerk]))
 
@@ -167,7 +168,60 @@
 ^{::clerk/visibility {:code :hide}}
 (clerk/code (-> sentiments g/completions :text))
 
-;; ## Caching
+;; ## LLM configuration
+;;
+;; ### Defining LLM call node
+;;
+;; LLM calls are defined as maps
+;; ```edn
+;; {:llm/service :ollama
+;;  :llm/cache true
+;;  :llm/model-params {:temperature 0.3}}
+;; ```
+;; *Bosquet* has a helper function to make those definitions slightly briefer
+
+(llm :gpt-3.5-turbo k/model-params {:max-tokens 1})
+
+;;Note that llm function can take either the model name or the LLM service name
+;;as the first parameter. If a model name is provided, it will consult env.edn
+;;to find out who is providing the requested model. When this is not available
+;;or there are multiple potential providers then specifying the provider and
+;;model is necessary
+
+(llm :ollama k/model-params {:model :mistral})
+
+;; ### Defining custom LLM calls
+;;
+;; Let us say none of the available LLM configurations are suitable. A custom
+;; LLM provider can be supplied to the Bosquet `generate` calls. The
+;; `bosquet.llm.generator/generate` in this tutorial was used with its one and
+;; two parameter versions, a three params version allows us to pass in custom
+;; generators.
+
+(def user-env {:prefixer
+               {:chat-fn
+                (fn [_config {:keys [prefix messages]}]
+                  {k/usage   {:prompt 1 :completion 1 :total 2}
+                   k/content {oai/role    oai/assistant
+                              oai/content (str prefix (-> messages first :content))}})}})
+
+(generate user-env
+          {:prompt "{{text}} {{gen}}"
+           :gen (llm :prefixer k/model-params {:prefix "|||"})}
+          {:text "A fox jumps over"})
+
+;; Custom environment can be merged with Bosquet defined environment
+
+(generate (merge user-env env/config)
+          [[:user "{{text}}"]
+           [:assistant (llm :prefixer
+                            k/var-name :gen1
+                            k/model-params {:prefix "|||"})]
+           [:user "Add a suffix"]
+           [:assistant (llm :ollama k/var-name :gen2 k/model-params {:model :mistral})]]
+          {:text "A fox jumps over"})
+
+;; ### Caching
 ;;
 ;; When the variation in the generated result is not needed and we do not need to make an LLM
 ;; call if there was a call made previously with the same:
