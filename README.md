@@ -5,11 +5,11 @@
 Bosquet is on a mission to make building AI applications simple. All nontrivial AI applications need to work with prompt templates that quickly grow in complexity, limited LLM context windows require memory management, and agents are needed for AI applications to interact with the outside world.
 
 Bosquet provides instruments to work with those AI application concepts:
-* LLM and Tool service management via [Integrant](https://github.com/weavejester/integrant)
+* LLM and Tool service management
 * Prompt templating via integration with the excellent [Selmer](https://github.com/yogthos/Selmer) templating library
 * Prompt chaining and composition via a powerful [Pathom](https://pathom3.wsscode.com/) graph processing machine
-* Agent and tools definition abstractions for the interactions with external APIs.
-* LLM memory handling (in progress, to be added in the next release)
+* Agent and tools definition abstractions for the interactions with external APIs
+* LLM memory handling
 * Other instruments like call response caching (see documentation)
 
 ## Documentation
