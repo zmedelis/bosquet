@@ -388,6 +388,14 @@
         (remove #(seq (index-keys graph %)) (->> graph vals (apply set/union)))]
     (select-keys context root-nodes)))
 
+(defn- select-filled-in-parts
+  "Given `generation-result` return sub map that contains no unfiled tempaltes"
+  [generation-result]
+  (select-keys
+   generation-result
+   (remove #(seq (selmer/known-variables (get generation-result %)))
+           (keys generation-result) )))
+
 
 (defn complete-graph
   "Completion case when we are processing prompt graph. Main work here is on constructing
@@ -396,24 +404,36 @@
   (let [[templates generators] (split-gen-graph graph)
         tpl-graph              (prep-graph templates vars-map)
         gen-env                (gen-environment llm-config tpl-graph vars-map)
-        pre-gen-res            (p.eql/process gen-env vars-map (vec (keys tpl-graph)))
-        ;; TODO what happens when more than one????
-        [_top-name top-tpl]    (first (top-level-template
-                                       (:com.wsscode.pathom3.connect.indexes/index-io gen-env)
-                                       pre-gen-res))
-        top-template           (chat llm-config (template->chat top-tpl generators) vars-map)
-        gen-result             (merge
-                                (reduce-kv (fn [m k v]
-                                             (assoc m k (selmer/render
-                                                         v
-                                                         (completions top-template))))
-                                           {}
-                                           pre-gen-res)
-                                (completions top-template))
-        gen-usage              (usage top-template)]
-    (u/mergex
-     {completions gen-result}
-     {usage gen-usage})))
+        pre-gen-res            (p.eql/process gen-env vars-map (vec (keys tpl-graph)))]
+    ;; Iterate over all paths in the prompt tree. Go from the root nodes we have to their bottom
+    ;; leaves
+    (loop [[[_top-name top-tpl] & tree-paths] (top-level-template
+                                               (:com.wsscode.pathom3.connect.indexes/index-io gen-env)
+                                               pre-gen-res)
+           path-completions                   vars-map
+           path-usage                         {}]
+      (if top-tpl
+        (let [top-template (chat llm-config (template->chat top-tpl generators) vars-map)
+              gen-result   (merge
+                            ;; render tempalates with newly available data
+                            (reduce-kv (fn [m k v]
+                                         (assoc m k (selmer/render
+                                                     v
+                                                     (completions top-template))))
+                                       {}
+                                       pre-gen-res)
+                            (completions top-template))
+              gen-usage    (usage top-template)]
+          (recur tree-paths
+                 ;; gather all the data points at each iterations
+                 (merge
+                  tpl-graph
+                  path-completions
+                  (select-filled-in-parts gen-result))
+                 (merge path-usage gen-usage)))
+        (u/mergex
+         {completions path-completions}
+         {usage path-usage})))))
 
 
 (defn complete-template
@@ -445,18 +465,39 @@
   for template slot filling."
   ([messages] (generate messages {}))
   ([messages inputs] (generate env/config messages inputs))
-([env messages inputs]
+  ([env messages inputs]
    (let [start-time (u/now)
          gen-result (cond
                       (vector? messages) (chat env messages inputs)
-                     (map? messages)    (complete-graph env messages inputs)
-                     (string? messages) (complete-template env messages inputs))]
+                      (map? messages)    (complete-graph env messages inputs)
+                      (string? messages) (complete-template env messages inputs))]
      (if (usage gen-result)
        (assoc gen-result
               :bosquet/time (- (u/now) start-time))
        gen-result))))
 
 (comment
+  (generate
+           {:question-answer "Question: {{question}} Answer: {{answer}}"
+            :answer          (llm :ollama wkk/model-params {:model :zephyr :max-tokens 50})
+            :self-eval       ["{{question-answer}}"
+                              "Is this a correct answer?"
+                              "{{test}}"]
+            :test            (llm :ollama wkk/model-params {:model :zephyr :max-tokens 50})}
+           {:question "What is the distance from Moon to Io?"})
+  (generate
+   {:sys "Calc:"
+    :a "{{sys}} {{M}}+2={{x}}"
+    :b "{{sys}} {{N}}-1={{y}}"
+    :x (llm :ollama wkk/model-params {:model :zephyr})
+    :y (llm :ollama wkk/model-params {:model :zephyr})}
+   {:M 10 :N 5})
+
+  (generate
+   {:sys "Calc:"
+    :a "{{sys}} {{M}}+2={{x}}"
+    :x (llm :ollama wkk/model-params {:model :zephyr})}
+   {:M 10})
 
   (generate
    {:question-answer "Question: {{question}}  Answer: {{answer}}"
