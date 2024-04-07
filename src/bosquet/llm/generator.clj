@@ -477,26 +477,33 @@
        gen-result))))
 
 (comment
-  (generate
-           {:question-answer "Question: {{question}} Answer: {{answer}}"
-            :answer          (llm :ollama wkk/model-params {:model :zephyr :max-tokens 50})
-            :self-eval       ["{{question-answer}}"
-                              "Is this a correct answer?"
-                              "{{test}}"]
-            :test            (llm :ollama wkk/model-params {:model :zephyr :max-tokens 50})}
-           {:question "What is the distance from Moon to Io?"})
+  (generate {:question-answer "Question: {{question}} Answer: {{answer}}"
+             :answer          (llm :ollama wkk/model-params {:model :zephyr :max-tokens 50})
+             :self-eval       ["{{question-answer}}"
+                               "Is this a correct answer?"
+                               "{{test}}"]
+             :test            (llm :ollama wkk/model-params {:model :zephyr :max-tokens 50})}
+            {:question "What is the distance from Moon to Io?"})
   (generate
    {:sys "Calc:"
-    :a "{{sys}} {{M}}+2={{x}}"
-    :b "{{sys}} {{N}}-1={{y}}"
-    :x (llm :ollama wkk/model-params {:model :zephyr})
-    :y (llm :ollama wkk/model-params {:model :zephyr})}
+    :a   "{{sys}} {{M}}+2={{x}}"
+    :b   "Result is: {{a}}"
+    :x   (llm :ollama wkk/model-params {:model :zephyr})
+    :y   (llm :ollama wkk/model-params {:model :zephyr})}
    {:M 10 :N 5})
 
   (generate
    {:sys "Calc:"
-    :a "{{sys}} {{M}}+2={{x}}"
-    :x (llm :ollama wkk/model-params {:model :zephyr})}
+    :a   "{{sys}} {{M}}+2={{x}}"
+    :b   "{{sys}} {{N}}-1={{y}}"
+    :x   (llm :ollama wkk/model-params {:model :zephyr})
+    :y   (llm :ollama wkk/model-params {:model :zephyr})}
+   {:M 10 :N 5})
+
+  (generate
+   {:sys "Calc:"
+    :a   "{{sys}} {{M}}+2={{x}}"
+    :x   (llm :ollama wkk/model-params {:model :zephyr})}
    {:M 10})
 
   (generate

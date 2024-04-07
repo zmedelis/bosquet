@@ -2,11 +2,8 @@
 (ns papers.chain-of-verification
   (:require
    [bosquet.llm.generator :as g]
-   [bosquet.llm.wkk :as wkk]
-   [helpers :as h]
+   [bosquet.llm.wkk :as k]
    [nextjournal.clerk :as clerk]))
-
-;; TODO update to new API
 
 ;; ## Chain of Verification prompting
 
@@ -32,13 +29,6 @@
 ;; First, helper configuration defs. Since CoVe works with GPT4 lets define one set of params for GPT4.
 ;; Another `model-end-params` is to be used for outputs needing EDN coercion.
 
-^{:nextjournal.clerk/visibility {:result :hide}}
-(def model-params
-  (g/llm :openai
-         wkk/model-params {:model :gpt-4}))
-
-(def model-edn-params
-  (merge model-params {wkk/output-format :edn}))
 
 ;; The prompt will reflect the CoVe steps:
 ;; - `baseline-instruction` is a prompt to instruct LLM how to provide the initial answer. I am using `*-instruction` prompts to separate plain instructions to make it easier to tweak them.
@@ -49,75 +39,78 @@
 ;; - `validation` is the place where facts provided in the baseline answer are compared to the answers from the verification step. This is also the spot where alternative validation techniques can be applied, for example via an Agent-based search tool.
 ;; - `revision` uses all the work done above and saved into EDN data from the `validation` step. With that LLM is instructed to rewrite the original answer.
 
+(def cov-prompt
+  {:q-n-a                       ["Answer the provided question as best as you can."
+                                 "Think carefuly about the question so as not to include any unverified"
+                                 "information. Be consise but also do not omit any important details."
+                                 ""
+                                 "QUESTION: {{question}}"
+                                 "ANSWER: {{baseline-answer}}"]
+   :baseline-answer             (g/llm :gpt-3.5-turbo)
+   :verification-plan           ["{{q-n-a}}"
+                                 ""
+                                 "Analyze the QUESTION and ANSWER above. Think criticaly about"
+                                 "the facts provided in the ANSWER."
+                                 "For each mentioned fact, ask a question that would verify that fact."
+                                 ""
+                                 "Provide you response using Clojure EDN like this:"
+                                 "[[\"mentioned fact 1\" \"verification question A\"]"
+                                 " [\"mentioned fact 2\" \"verification question B\"]"
+                                 " [\"mentioned fact 3\" \"verification question C\"]]"
+                                 ""
+                                 "{{verification-questions}}"]
+   :verification-questions      (g/llm :gpt-3.5-turbo k/output-format :edn)
+   :verification-plan-execution ["Answer the flowing questions:"
+                                 "{% for _fact, q in verification-questions %} {{q}}"
+                                 "{% endfor %}"
+                                 ""
+                                 "Provide very succinct answers using Clojure EDN vector listing"
+                                 "only answers in exact same order."
+                                 "{{verification-answers}}"]
+   :verification-answers        (g/llm :gpt-3.5-turbo k/output-format :edn)
+   #_#_:validation              ["Given a list of QUESTION, CORRECT ANSWER and PROVIDED ANSWER,"
+                                 "determine if the provided answer is correct."
+                                 ""
+                                 "{% for _provided-answer, question in verification-questions %} QUESTION {{forloop.counter}}. {{question}}"
+                                 "{% endfor %}"
+                                 ""
+                                 "{% for provided-answer, _question in verification-questions %} PROVIDED ANSWER {{forloop.counter}}. {{provided-answer}}"
+                                 "{% endfor %}"
+                                 ""
+                                 "{% for correct-answer in verification-answers %} CORRECT ANSWER {{forloop.counter}}. {{correct-answer}}"
+                                 "{% endfor %}"
+                                 ""
+                                 "Give your estimation if PROVIDED ANSWER matches CORRECT ANSWER with 'true' or 'false' boolean values."
+                                 "Combine the results of the corect answer, provided answer, and evaluation result into Clojure EDN"
+                                 "data structure like this:"
+                                 "[{:question \"QUESTION\" :correct-answer \"CORRECT ANSWER\" :provided-answer \"PROVIDED ANSWER\" :result true}]"
+                                 "{{validations }}}"]
+   #_#_:validations             (g/llm :gpt-4 k/output-format :edn)
+   ;;  THIS IS THE REASON CHAT IS  NOT GOOD BECAUSE THERE WE SHOULD NOT SEE THE WHOLE CONTEXT !!!!!!
+   #_#_:revision                ["Given the corrected facts in REVISION reformulate original ANSWER using in a more truthful way."
+                                 "QUESTION: {{question}}"
+                                 "ANSWER: {{baseline-answer}}"
+                                 ""
+                                 "Revision of the facts stated in the ANSWER"
+                                 "{% for revision in validations %}"
+                                 "STATEMENT {{forloop.counter}}. '{{revision.provided-answer}}' is {{revision.result}}"
+                                 "{% if not revision.result %}CORRECT FACT: {{revision.correct-answer}}{% endif %}"
+                                 "{% endfor %}"
+                                 ""
+                                 "Given the above facts, revise the ANSWER to be more truthful."
+                                 "{{revised-answer}}"]
+   #_#_:revised-answer          (g/llm :gpt-4)})
+
 ^{:nextjournal.clerk/visibility {:result :hide}}
 (def result
-  []
-  #_(g/generate
-
-     {:baseline-answer        model-params
+  (g/generate
+   #_{:baseline-answer        model-params
       :verification-questions model-edn-params
       :verification-answers   model-edn-params
       :validations            model-edn-params
       :revised-answer         model-params}
-
-     {:baseline-instruction          (h/join "Answer the provided question as best as you can."
-                                             "Think carefuly about the question so as not to include any unverified"
-                                             "information. Be consise but also do not omit any important details.")
-      :q-n-a                         (h/join "{{baseline-instruction}}"
-                                             ""
-                                             "QUESTION: {{question}}"
-                                             "ANSWER: {% gen baseline-answer %}")
-      :verification-plan             (h/join "QUESTION: {{question}}"
-                                             "ANSWER: {{baseline-answer}}"
-                                             ""
-                                             "Analyze the QUESTION and ANSWER above. Think criticaly about"
-                                             "the facts provided in the ANSWER."
-                                             "For each mentioned fact, ask a question that would verify that fact."
-                                             ""
-                                             "Provide you response using Clojure EDN like this:"
-                                             "[[\"mentioned fact 1\" \"verification question A\"]"
-                                             " [\"mentioned fact 2\" \"verification question B\"]"
-                                             " [\"mentioned fact 3\" \"verification question C\"]]"
-                                             ""
-                                             "{% gen verification-questions %}")
-      :verification-plan-execution   (h/join "Answer the flowing questions:"
-                                             "{% for _fact, question in verification-questions %} {{question}}"
-                                             "{% endfor %}"
-                                             ""
-                                             "Provide very succinct answers using Clojure EDN vector listing"
-                                             "only answers in exact same order."
-                                             "{% gen verification-answers %}")
-      :validation                    (h/join "Given a list of QUESTION, CORRECT ANSWER and PROVIDED ANSWER,"
-                                             "determine if the provided answer is correct."
-                                             ""
-                                             "{% for _provided-answer, question in verification-questions %} QUESTION {{forloop.counter}}. {{question}}"
-                                             "{% endfor %}"
-                                             ""
-                                             "{% for provided-answer, _question in verification-questions %} PROVIDED ANSWER {{forloop.counter}}. {{provided-answer}}"
-                                             "{% endfor %}"
-                                             ""
-                                             "{% for correct-answer in verification-answers %} CORRECT ANSWER {{forloop.counter}}. {{correct-answer}}"
-                                             "{% endfor %}"
-                                             ""
-                                             "Give your estimation if PROVIDED ANSWER matches CORRECT ANSWER with 'true' or 'false' boolean values."
-                                             "Combine the results of the corect answer, provided answer, and evaluation result into Clojure EDN"
-                                             "data structure like this:"
-                                             "[{:question \"QUESTION\" :correct-answer \"CORRECT ANSWER\" :provided-answer \"PROVIDED ANSWER\" :result true}]"
-                                             "{% gen validations %}")
-      :revision                      (h/join "Given the corrected facts in REVISION reformulate original ANSWER using in a more truthful way."
-                                             "QUESTION: {{question}}"
-                                             "ANSWER: {{baseline-answer}}"
-                                             ""
-                                             "Revision of the facts stated in the ANSWER"
-                                             "{% for revision in validations %}"
-                                             "STATEMENT {{forloop.counter}}. '{{revision.provided-answer}}' is {{revision.result}}"
-                                             "{% if not revision.result %}CORRECT FACT: {{revision.correct-answer}}{% endif %}"
-                                             "{% endfor %}"
-                                             ""
-                                             "Given the above facts, revise the ANSWER to be more truthful."
-                                             "{% gen revised-answer %}")}
-
-     {:question "What was the primary cause of the Mexican-American war?"}))
+   cov-prompt
+   {:question "What was the primary cause of the Mexican-American war?"}))
 
 ;; ## Results
 ;;
@@ -127,35 +120,34 @@
 ;;
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (clerk/html
-  [:div.font-mono
-   [:div.flex.mb-4
-    [:div.flex-none.w-32.mr-4 [:em "Question:"]]
-    [:div (:question result)]]
-   [:div.flex.mb-4
-    [:div.flex-none.w-32.mr-4 [:em "Answer:"]]
-    [:div (:baseline-answer result)]]
-   [:div.flex.mb-4
-    [:div.flex-none.w-32.mr-4 [:em "Validation:"]]
-    (vec
-      (cons
-        :div
-        (map-indexed
-          (fn [idx [fact question]]
-            [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.hover:bg-gray-100.dark:bg-gray-800.dark:border-gray-700.dark:hover:bg-gray-700.grid.grid-cols-1.gap-3
-             [:div.flex
-              [:div.flex-none.w-32.mr-4 [:em "Stated fact:"]]
-              [:div fact]]
-             [:div.flex
-              [:div.flex-none.w-32.mr-4 [:em "Verification question:"]]
-              [:div question]]
-             [:div.flex
-              [:div.flex-none.w-32.mr-4 [:em "Correct answer:"]]
-              [:div (:correct-answer (get (:validations result) idx))]]
-             [:div.flex
-              [:div.flex-none.w-32.mr-4 [:em "Evaluation:"]]
-              [:div (str (:result (get (:validations result) idx)))]]
-             ])
-          (:verification-questions result))))]])
+ [:div.font-mono
+  [:div.flex.mb-4
+   [:div.flex-none.w-32.mr-4 [:em "Question:"]]
+   [:div (:question result)]]
+  [:div.flex.mb-4
+   [:div.flex-none.w-32.mr-4 [:em "Answer:"]]
+   [:div (:baseline-answer result)]]
+  [:div.flex.mb-4
+   [:div.flex-none.w-32.mr-4 [:em "Validation:"]]
+   (vec
+    (cons
+     :div
+     (map-indexed
+      (fn [idx [fact question]]
+        [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.hover:bg-gray-100.dark:bg-gray-800.dark:border-gray-700.dark:hover:bg-gray-700.grid.grid-cols-1.gap-3
+         [:div.flex
+          [:div.flex-none.w-32.mr-4 [:em "Stated fact:"]]
+          [:div fact]]
+         [:div.flex
+          [:div.flex-none.w-32.mr-4 [:em "Verification question:"]]
+          [:div question]]
+         [:div.flex
+          [:div.flex-none.w-32.mr-4 [:em "Correct answer:"]]
+          [:div (:correct-answer (get (:validations result) idx))]]
+         [:div.flex
+          [:div.flex-none.w-32.mr-4 [:em "Evaluation:"]]
+          [:div (str (:result (get (:validations result) idx)))]]])
+      (:verification-questions result))))]])
 
 ;; And the revised answer based on the work done above
 ^{:nextjournal.clerk/visibility {:code :hide}}
