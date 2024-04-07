@@ -174,7 +174,7 @@
 
 
 (defn find-refering-templates
-  "Given all the templates in a `context-map` find out which ones are
+  "Given all the templates in a `context-map` find out which ones
   have references to `var-name`"
   [var-name context-map]
   (reduce-kv
