@@ -69,6 +69,7 @@
            {:question "What is the distance from Moon to Io?"})]
 
       (is (= {:question-answer "Question: What is the distance from Moon to Io? Answer: !!!"
+              :question        "What is the distance from Moon to Io?"
               :answer          "!!!"
               :self-eval       (u/join-lines
                                 "Question: What is the distance from Moon to Io? Answer: !!!"
