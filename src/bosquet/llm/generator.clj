@@ -393,7 +393,8 @@
   [generation-result]
   (select-keys
    generation-result
-   (remove #(seq (selmer/known-variables (get generation-result %)))
+   (remove #(or (coll? (get generation-result %))
+             (seq (selmer/known-variables (get generation-result %))))
            (keys generation-result) )))
 
 

@@ -144,7 +144,8 @@
 ^{:nextjournal.clerk/visibility {:result :hide}}
 (comment
   (ltm-rememberer {:model :all-minilm :content :context}
-                  dialog-ds-subset))
+                  dialog-ds-subset)
+  #__)
 
 ;; ## Prosocial Chat
 
