@@ -109,9 +109,9 @@
 ;; That can be used to process a batch of input data
 ;;
 ^{:nextjournal.clerk/auto-expand-results? true}
-(mapv quiz [{:question "What is a point?"}
-            {:question "What is a space?"}
-            {:question "What is an angle?"}])
+(map quiz [{:question "What is a point?"}
+           {:question "What is a space?"}
+           {:question "What is an angle?"}])
 
 ;;
 ;; ### Chat completion
@@ -315,3 +315,6 @@
   {:q "Provide a bullet list of 4 colors. {{a}}"
    :a (llm :gpt-3.5-turbo k/output-format :list)})
  [g/completions :a])
+
+;; At some point it would be great to integrate
+;; https://github.com/kapilreddy/instructor-clj

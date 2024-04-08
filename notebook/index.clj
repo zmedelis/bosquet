@@ -19,4 +19,11 @@
     [:div "Paper Implementations"]
     [:ul
      [:li [:a.underline {:href (clerk/doc-url "notebook/papers/chain_of_density/index.html")} "Chain of Density"]]
-     [:li [:a.underline {:href (clerk/doc-url "notebook/papers/chain_of_verification/index.html")} "Chain of Verification"]]]]]])
+     [:li [:a.underline {:href (clerk/doc-url "notebook/papers/chain_of_verification/index.html")} "Chain of Verification"]]]]
+   [:li
+    [:div "Presentations"]
+    [:ul
+     [:li [:a.underline {:href "https://clojureverse.org/t/scicloj-llm-meetup-3-llmops-with-bosquet-summary-recording/"} "2023-06-17: LLMOps with Bosquet (Scicloj)"]]
+     [:li [:a.underline {:href "https://clojureverse.org/t/scicloj-llm-meetup-6-implementing-research-papers-with-bosquet-summary-recording/"} "2023-11-17: Implementing research papers with Bosquet (Scicloj)"]]
+     [:li [:a.underline {:href "https://www.youtube.com/watch?v=ywlNGiD9gCg"} "Bosquet LLM command line interface and observability tools"]]]
+    ]]])

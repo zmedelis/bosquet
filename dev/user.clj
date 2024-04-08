@@ -28,10 +28,8 @@
 (defn build-static-docs
   [_]
   (clerk/build! {:paths    ["notebook/user_guide.clj"
-                            "notebook/configuration.clj"
                             "notebook/text_splitting.clj"
                             "notebook/document_loading.clj"
-                            "notebook/using_llms.clj"
                             "notebook/observability.clj"
                             "notebook/examples/math_generate_code.clj"
                             "notebook/examples/writing_letters.clj"
