@@ -367,7 +367,7 @@
   [graph]
   (reduce-kv
    (fn [[templates generators] k v]
-     (if (and (map? v) #_(wkk/service v))
+     (if (map? v)
        [templates (assoc generators k v)]
        [(assoc templates k v) generators]))
    [{} {}]
@@ -394,7 +394,7 @@
   (select-keys
    generation-result
    (remove #(or (coll? (get generation-result %))
-             (seq (selmer/known-variables (get generation-result %))))
+                (seq (selmer/known-variables (str (get generation-result %)))))
            (keys generation-result) )))
 
 
