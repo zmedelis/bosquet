@@ -39,7 +39,8 @@
 ;; - `validation` is the place where facts provided in the baseline answer are compared to the answers from the verification step. This is also the spot where alternative validation techniques can be applied, for example via an Agent-based search tool.
 ;; - `revision` uses all the work done above and saved into EDN data from the `validation` step. With that LLM is instructed to rewrite the original answer.
 
-
+;; ![CoVe](notebook/assets/cov_contexts.png)
+;;
 (def cov-verification-plan
   [[:user ["Answer the provided question as best as you can."
            "Think carefuly about the question so as not to include any unverified"
