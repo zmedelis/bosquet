@@ -312,9 +312,9 @@
 ;; **LIST**
 (get-in
  (generate
-  {:q "Provide a bullet list of 4 colors. {{a}}"
-   :a (llm :gpt-3.5-turbo k/output-format :list)})
- [g/completions :a])
+  [[:user "Provide a bullet list of 4 colors."]
+   [:assistant (llm :gpt-4 k/output-format :list) k/var-name :a]])
+ [g/completions nil])
 
 ;; At some point it would be great to integrate
 ;; https://github.com/kapilreddy/instructor-clj
