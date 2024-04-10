@@ -2,7 +2,6 @@
   (:gen-class)
   (:require
    [bosquet.llm.wkk :as wkk]
-   [bosquet.memory.memory :as mem]
    [bosquet.memory.retrieval :as r]
    [clojure.core.async :refer [<! chan go go-loop onto-chan! pipeline]]))
 
