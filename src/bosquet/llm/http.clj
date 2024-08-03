@@ -27,17 +27,18 @@
 
 (defn post
   ([url params] (post url nil params))
-  ([url api-key params]
+  ([url headers params]
    (u/log-call url params)
    (try
      (-> url
          (hc/post (merge {:content-type :json
                           :body         (->> params u/snake-case u/write-json)
                           :http-client  (client)}
-                         (when api-key {:oauth-token api-key})))
+                         headers))
          :body
          (u/read-json))
      (catch Exception e
+       (.printStackTrace e)
        (let [{:keys [body status]}   (ex-data e)
              {:keys [message error]} (u/read-json body)]
          (timbre/error "Call failed")
