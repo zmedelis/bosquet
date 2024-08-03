@@ -2,29 +2,29 @@
  :deps    {org.clojure/clojure                           {:mvn/version "1.11.3"}
            io.github.zmedelis/hfds-clj                   {:mvn/version "2023.12.11"}
            com.wsscode/pathom3                           {:mvn/version "2023.08.22-alpha"}
-           net.clojars.wkok/openai-clojure               {:mvn/version "0.16.0"}
+           net.clojars.wkok/openai-clojure               {:mvn/version "0.18.1"}
            com.taoensso/timbre                           {:mvn/version "6.5.0"}
-           com.knuddels/jtokkit                          {:mvn/version "1.0.0"}
-           http-kit/http-kit                             {:mvn/version "2.7.0"}
-           hato/hato                                     {:mvn/version "0.9.0"}
-           metosin/jsonista                              {:mvn/version "0.3.8"}
+           com.knuddels/jtokkit                          {:mvn/version "1.1.0"}
+           http-kit/http-kit                             {:mvn/version "2.8.0"}
+           hato/hato                                     {:mvn/version "1.0.0"}
+           metosin/jsonista                              {:mvn/version "0.3.9"}
            org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
            aero/aero                                     {:mvn/version "1.1.6"}
            org.clojure/core.cache                        {:mvn/version "1.1.234"}
-           org.apache.commons/commons-text               {:mvn/version "1.11.0"}
+           org.apache.commons/commons-text               {:mvn/version "1.12.0"}
            me.flowthing/pp                               {:mvn/version "2024-01-04.60"}
            org.apache.tika/tika-core                     {:mvn/version "2.9.2"}
            org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.2"}
            org.apache.tika/tika-parsers-standard-package {:mvn/version "2.9.2"}
-           org.apache.opennlp/opennlp-tools              {:mvn/version "2.3.2"}
+           org.apache.opennlp/opennlp-tools              {:mvn/version "2.4.0"}
            camel-snake-kebab/camel-snake-kebab           {:mvn/version "0.4.3"}
            org.clojure/tools.cli                         {:mvn/version "1.1.230"}
            com.fzakaria/slf4j-timbre                     {:mvn/version "0.4.1"}
            org.clojure/core.async                        {:mvn/version "1.6.681"}
-           selmer/selmer                                 {:mvn/version "1.12.59"}}
+           selmer/selmer                                 {:mvn/version "1.12.61"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
-                        :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.15.957"}
-                                      djblue/portal                        {:mvn/version "0.54.2"}
+                        :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.16.1016"}
+                                      djblue/portal                        {:mvn/version "0.57.1"}
                                       com.github.clj-easy/graal-build-time {:mvn/version "1.0.5"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "2024.02.22"}}
@@ -35,9 +35,9 @@
            :test       {:extra-deps {nubank/matcher-combinators {:mvn/version "3.9.1"}}}
            :kaocha     {:main-opts   ["-m" "kaocha.runner"]
                         :extra-paths ["test"]
-                        :extra-deps  {lambdaisland/kaocha {:mvn/version "1.88.1376"}}}
-           :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.10.0"
-                                                                    :git/sha "3a2c484"}
+                        :extra-deps  {lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
+           :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.10.5"
+                                                                    :git/sha "2a21b7a"}
                                      slipset/deps-deploy           {:mvn/version "0.2.2"}}
                         :ns-default build}
            :ns-default build}}
