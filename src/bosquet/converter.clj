@@ -80,6 +80,5 @@
       :bool (->bool completion)
       completion)
     (catch Exception e
-      (timbre/error e)
-      (timbre/error "Returning generated data withouth coercion")
+      (timbre/error (format "Coercion error '%s'. Returning generated data withouth coercion" (.getMessage e)))
       completion)))
