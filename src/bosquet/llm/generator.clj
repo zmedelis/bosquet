@@ -395,7 +395,7 @@
    generation-result
    (remove #(or (coll? (get generation-result %))
                 (seq (selmer/known-variables (str (get generation-result %)))))
-           (keys generation-result) )))
+           (keys generation-result))))
 
 
 (defn complete-graph
@@ -478,6 +478,10 @@
        gen-result))))
 
 (comment
+  (generate {:question-answer "Question: {{question}} Answer: {{answer}}"
+             :answer          (llm :claude wkk/model-params {:model :claude-3-opus-20240229})}
+            {:question "What is the distance from Moon to Io?"})
+
   (generate {:question-answer "Question: {{question}} Answer: {{answer}}"
              :answer          (llm :ollama wkk/model-params {:model :zephyr :max-tokens 50})
              :self-eval       ["{{question-answer}}"
@@ -578,8 +582,7 @@
                               wkk/model-params {:model :gpt-4 :temperature 0.8 :max-tokens 120}
                               wkk/var-name :synopsis)]
              [:user "Now write a critique of the above synopsis:"]
-             [:assistant (llm wkk/mistral
-                              wkk/model-params {:model :mistral-small :temperature 0.2 :max-tokens 120}
+             [:assistant (llm wkk/openai
                               wkk/var-name :critique)]]
             {:title "Mr. X"
              :genre "Sci-Fi"})
