@@ -27,14 +27,30 @@
     (-> file slurp read-string)))
 
 
-(def model-providers
-  (-> (io/resource "model_alias.edn") slurp read-string))
-
-
 (def config
   (aero/read-config
    (io/resource "env.edn")
    {:resolver aero/root-resolver}))
+
+
+(def model-providers
+  "A list of model names supported by this service. It is an
+   optional data point that allows a shortcut when defining LLM
+   calls with (generator/llm) function. Instead of
+   `(llm :openai :model-params {:model :gpt-3.5})`
+   a shorthand of `(llm :gpt-3.5)` will work"
+  (reduce-kv (fn [m k {:keys [model-names chat-fn complete-fn]}]
+               ;; The IF is a product of not separating llm definitions
+               ;; from other stuff like QDRANT in edn.env
+               ;; It does not hurt to have qdrant def being processed here
+               ;; but it would add junk
+               (if (or chat-fn complete-fn)
+                 (reduce (fn [model-mapping model-name]
+                           (assoc model-mapping model-name k))
+                         m model-names)
+                 m))
+             {}
+             config))
 
 
 (defn val

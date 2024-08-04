@@ -39,7 +39,7 @@
   `service-or-model` can be one of:
   - `serivice` (like openai, mistral, ...), in this case args need to specify
      {:llm/model-params {:model :x}}
-  - `model` in this case `service` will be determined from `llm/model-providers`,
+  - `model` in this case `service` will be determined from `env/model-providers`,
     no need to specify {:llm/model-params {:model :x}}
   ```
   {:llm/service      service
