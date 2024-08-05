@@ -493,8 +493,8 @@
    {:sys "Calc:"
     :a   "{{sys}} {{M}}+2={{x}}"
     :b   "Result is: {{a}}"
-    :x   (llm :ollama wkk/model-params {:model :zephyr})
-    :y   (llm :ollama wkk/model-params {:model :zephyr})}
+    :x   (llm :ollama wkk/model-params {:model :llama3:8b})
+    :y   (llm :ollama wkk/model-params {:model :llama3:8b})}
    {:M 10 :N 5})
 
   (generate

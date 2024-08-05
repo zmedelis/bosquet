@@ -2,6 +2,8 @@
   (:require
    [camel-snake-kebab.core :as csk]
    [camel-snake-kebab.extras :as cske]
+   [clojure.edn :as edn]
+   [clojure.java.io :as io]
    [clojure.string :as string]
    [jsonista.core :as j]
    [me.flowthing.pp :as pp]
@@ -91,3 +93,8 @@
 
 (defn now []
   (inst-ms (java.time.Instant/now)))
+
+
+(defn read-edn-file [file-path]
+  (with-open [reader (io/reader file-path)]
+    (edn/read (java.io.PushbackReader. reader))))

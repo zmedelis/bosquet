@@ -4,21 +4,45 @@
    [aero.core :as aero]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
-   [clojure.java.io :as io]))
+   [clojure.java.io :as io]
+   [taoensso.timbre :as log]))
+
+(defn bosquet-cfg-file
+  "Get Bosquet config file (secrets.edn or config.edn). First check project root
+  then go to ~/.bosquet"
+  [cfg-file-name]
+  (let [local-file    (io/file (str "./" cfg-file-name))
+        home-dir-file (io/file (System/getProperty "user.home")
+                               (str ".bosquet/" cfg-file-name))]
+    (cond
+      (.exists local-file)    local-file
+      (.exists home-dir-file) home-dir-file
+      :else                   (io/resource (str "default-" cfg-file-name)))))
+
 
 (def config-file
   "Config file to override `env.edn` or add new components: LLM providers, memory, tools."
-  (io/file (System/getProperty "user.home") ".bosquet/config.edn"))
+  #_(bosquet-cfg-file "config.edn"))
 
 
 (def secrets-file
   "API keys and other things not to be shared"
-  (io/file (System/getProperty "user.home") ".bosquet/secrets.edn"))
+  #_(bosquet-cfg-file "secrets.edn"))
 
 
 (defmethod aero/reader 'mmerge
   [_opts _tag value]
   (apply merge-with merge value))
+
+
+(defmethod aero/reader 'include-config
+  [_opts _tag value]
+  (let [cfg-file (bosquet-cfg-file value)
+        config (u/read-edn-file cfg-file)]
+    (when (empty? config)
+      (log/infof "No '%s' configuration, using defaults if applicable."
+                 value))
+    config))
 
 
 (defn- read-edn
@@ -28,9 +52,7 @@
 
 
 (def config
-  (aero/read-config
-   (io/resource "env.edn")
-   {:resolver aero/root-resolver}))
+  (aero/read-config (io/resource "env.edn")))
 
 
 (def model-providers
