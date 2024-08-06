@@ -8,8 +8,8 @@
 
 (defn ->completion
   [{:keys [response message prompt_eval_count eval_count]
-                                        ; ollama returns 0 for prompt eval if the prompt was cached
-    :or   {prompt_eval_count 0}}]
+    ;; ollama returns 0 for prompt eval if the prompt was cached
+    :or   {prompt_eval_count 0 eval_count 0}}]
   (assoc
    (cond
      message  {wkk/generation-type :chat

@@ -38,7 +38,6 @@
          :body
          (u/read-json))
      (catch Exception e
-       (.printStackTrace e)
        (let [{:keys [body status]}   (ex-data e)
              {:keys [message error]} (u/read-json body)]
          (timbre/error "Call failed")

@@ -9,15 +9,14 @@
   [usages]
   (reduce-kv
    (fn [{:keys [prompt completion total]
-         :or   {prompt 0 completion 0 total 0}
-         :as   aggr}
+         :or  {prompt 0 completion 0 total 0}
+         :as  aggr}
         _k
-        {p :prompt c :completion t :total
-         :or {p 0 c 0 t 0}}]
+        {p :prompt c :completion t :total}]
      (assoc aggr
-            :prompt (+ p prompt)
-            :completion (+ c completion)
-            :total (+ t total)))
+            :prompt (+ (or p 0) prompt)
+            :completion (+ (or c 0) completion)
+            :total (+ (or t 0) total)))
    {}
    usages))
 
