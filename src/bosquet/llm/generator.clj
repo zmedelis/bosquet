@@ -479,7 +479,7 @@
 
 (comment
   (generate {:question-answer "Question: {{question}} Answer: {{answer}}"
-             :answer          (llm :claude wkk/model-params {:model :claude-3-opus-20240229})}
+             :answer          (llm :claude-3-opus-20240229)}
             {:question "What is the distance from Moon to Io?"})
 
   (generate {:question-answer "Question: {{question}} Answer: {{answer}}"
