@@ -1,10 +1,9 @@
 (ns bosquet.utils
   (:require
-   [camel-snake-kebab.core :as csk]
-   [camel-snake-kebab.extras :as cske]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as string]
+   [clojure.walk :refer [postwalk]]
    [jsonista.core :as j]
    [me.flowthing.pp :as pp]
    [taoensso.timbre :as timbre])
@@ -77,11 +76,35 @@
            a-map))
         maps)))
 
+(defn kebab->snake [s]
+  (string/replace s #"-" "_"))
+
+(defn camel->snake [s]
+  (string/replace s #"([a-z0-9])([A-Z])" "$1_$2"))
+
+(defn ->snake_case_keyword [k]
+  (-> k
+      name
+      kebab->snake
+      camel->snake
+      string/lower-case
+      keyword))
+
+
+;; Taken from camel-snake-kebab.extras
+;; https://clj-commons.org/camel-snake-kebab/
+;; conflicts with clj-commons/clj-yaml {:mvn/version "1.0.27"}
+(defn transform-keys
+  "Recursively transforms all map keys in coll with t."
+  [t coll]
+  (letfn [(transform [[k v]] [(t k) v])]
+    (postwalk (fn [x] (if (map? x) (into {} (map transform x)) x)) coll)))
+
 
 (defn snake-case
   "Snake case keys from `:max-tokens` to `:max_tokens`"
   [m]
-  (cske/transform-keys csk/->snake_case_keyword m))
+  (transform-keys ->snake_case_keyword m))
 
 
 (defn log-call
