@@ -1,13 +1,13 @@
 {:paths   ["src" "resources"]
- :deps    {org.clojure/clojure                           {:mvn/version "1.11.4"}
+ :deps    {org.clojure/clojure                           {:mvn/version "1.12.0"}
            io.github.zmedelis/hfds-clj                   {:mvn/version "2023.12.11"}
            com.wsscode/pathom3                           {:mvn/version "2023.08.22-alpha"}
-           net.clojars.wkok/openai-clojure               {:mvn/version "0.18.1"}
+           net.clojars.wkok/openai-clojure               {:mvn/version "0.21.0"}
            com.taoensso/timbre                           {:mvn/version "6.5.0"}
            com.knuddels/jtokkit                          {:mvn/version "1.1.0"}
            http-kit/http-kit                             {:mvn/version "2.8.0"}
            hato/hato                                     {:mvn/version "1.0.0"}
-           metosin/jsonista                              {:mvn/version "0.3.9"}
+           metosin/jsonista                              {:mvn/version "0.3.10"}
            org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
            aero/aero                                     {:mvn/version "1.1.6"}
            org.clojure/core.cache                        {:mvn/version "1.1.234"}
@@ -24,7 +24,7 @@
            selmer/selmer                                 {:mvn/version "1.12.61"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.16.1016"}
-                                      djblue/portal                        {:mvn/version "0.57.1"}
+                                      djblue/portal                        {:mvn/version "0.57.3"}
                                       com.github.clj-easy/graal-build-time {:mvn/version "1.0.5"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "2024.08.08"}}
