@@ -91,7 +91,8 @@
 
 (defn render [text ctx]
   (let [text (str text)]
-    (when-not (string/blank? text)
+    (if (string/blank? text)
+      text
       (util/without-escaping
         (selmer/render text ctx)))))
 

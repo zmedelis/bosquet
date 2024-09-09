@@ -321,7 +321,7 @@
         (fn [m k v]
           (assoc m k (cond
                        (string? v)      (selmer/render v available-data)
-                       #_ #_(wkk/fun-impl v) (run-node-function v available-data)
+                       #_#_(wkk/fun-impl v) (run-node-function v available-data)
                        :else            v)))
         {})))
 
@@ -478,8 +478,22 @@
        gen-result))))
 
 (comment
+
+  (generate
+   {:sys "You are the best LLM in the world"
+    :examples ""
+    :prompt "In one word: How are you?"
+    :template ["{{sys}}"
+               "Examples:"
+               "{{examples}}"
+               "{{prompt}}"
+               "{{res}}"]
+    :res (llm :claude :llm/model-params {:model :claude-3-haiku-20240307})})
+
+
+
   (generate {:question-answer "Question: {{question}} Answer: {{answer}}"
-             :answer          (llm :claude-3-opus-20240229)}
+             :answer          (llm :claude-3-haiku-20240307)}
             {:question "What is the distance from Moon to Io?"})
 
   (generate {:question-answer "Question: {{question}} Answer: {{answer}}"
