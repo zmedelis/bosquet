@@ -26,7 +26,7 @@
                                       djblue/portal                        {:mvn/version "0.58.5"}
                                       com.github.clj-easy/graal-build-time {:mvn/version "1.0.5"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
-                                  :version "2024.08.08"}}
+                                  :version "2024.01.17"}}
            :rebel      {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
                         :main-opts  ["-m" "rebel-readline.main"]}
            :outdated   {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
