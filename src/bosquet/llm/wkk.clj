@@ -14,6 +14,8 @@
 
 (def openai :openai)
 
+(def localai :localai)
+
 (def cohere :cohere)
 
 (def lmstudio :lmstudio)
