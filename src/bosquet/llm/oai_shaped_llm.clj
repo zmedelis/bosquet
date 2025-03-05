@@ -76,7 +76,7 @@
    OAI style endpoint URL structure is used.
    If we get `api-endpoint-messages` then we use endpoint URL for that specific task
    as it is passed in in the config."
-  (partial http/post
+  (partial http/resilient-post
            (if api-endpoint (str api-endpoint "/chat/completions")
                             api-endpoint-messages)
            (when api-key {:oauth-token api-key})))

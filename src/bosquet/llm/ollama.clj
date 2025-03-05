@@ -22,15 +22,15 @@
 
 
 (defn- chat-fn [{:keys [api-endpoint]}]
-  (partial http/post (str api-endpoint "/chat")))
+  (partial http/resilient-post (str api-endpoint "/chat")))
 
 
 (defn- completion-fn [{:keys [api-endpoint]}]
-  (partial http/post (str api-endpoint "/generate")))
+  (partial http/resilient-post (str api-endpoint "/generate")))
 
 
 (defn- embedding-fn [{:keys [api-endpoint]}]
-  (partial http/post (str api-endpoint "/embeddings")))
+  (partial http/resilient-post (str api-endpoint "/embeddings")))
 
 
 (defn- generate

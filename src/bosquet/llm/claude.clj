@@ -23,7 +23,7 @@
   ([params] (messages (wkk/openai env/config) params))
   ([{key :api-key url :api-endpoint} params]
    (u/log-call url params)
-   (let [{:keys [content usage]} (http/post (str url "/messages") (header key) params)]
+   (let [{:keys [content usage]} (http/resilient-post (str url "/messages") (header key) params)]
      {wkk/generation-type :chat
       wkk/content         {:role    :assistant
                            :content (-> content last :text)}
