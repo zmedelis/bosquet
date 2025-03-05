@@ -5,11 +5,6 @@
    [taoensso.timbre :as timbre]
    [net.modulolotus.truegrit.circuit-breaker :as cb]))
 
-
-(def rest-service-cb (cb/circuit-breaker "shared-rest-service"
-                                         {:failure-rate-threshold 30
-                                          :minimum-number-of-calls 10}))
-
 (defn use-local-proxy
   "Use local proxy to log LLM API requests"
   ([] (use-local-proxy "localhost" 8080 "changeit"))
@@ -49,7 +44,10 @@
          (timbre/errorf "- HTTP status '%s'" status)
          (timbre/errorf "- Error message '%s'" (or message error)))))))
 
+(def resilient-post*
+  (cb/wrap (fn [url params]
+             (post url params))
+           u/rest-service-cb))
+
 (defn resilient-post [url params]
-  #_(post url params)
-  (cb/wrap (post url params)
-           rest-service-cb))
+  (resilient-post* url params))
