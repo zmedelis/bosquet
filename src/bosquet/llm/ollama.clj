@@ -70,7 +70,7 @@
     :prompt (content payload)}))
 
 (comment
-  (create-embedding (env/config :ollama) {:model :all-minilm}
+  (create-embedding (env/config :ollama) {:model :llama3.2}
                     "Here is an article about llamas...")
 
   (create-embedding (env/config :ollama) {:model :all-minilm
