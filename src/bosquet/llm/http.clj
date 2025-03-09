@@ -14,7 +14,6 @@
    (System/setProperty "https.proxyHost" host)
    (System/setProperty "https.proxyPort" (str port))))
 
-
 (defn client
   ([] (client nil))
   ([{:keys [connect-timeout]
@@ -23,7 +22,6 @@
    (hc/build-http-client
     (merge opts
            {:connect-timeout connect-timeout}))))
-
 
 (defn post
   ([url params] (post url nil params))
