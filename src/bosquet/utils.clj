@@ -6,9 +6,14 @@
    [clojure.walk :refer [postwalk]]
    [jsonista.core :as j]
    [me.flowthing.pp :as pp]
-   [taoensso.timbre :as timbre])
+   [taoensso.timbre :as timbre]
+   [net.modulolotus.truegrit.circuit-breaker :as cb])
   (:import
    [java.util UUID]))
+
+(def rest-service-cb (cb/circuit-breaker "shared-rest-service"
+                                         {:failure-rate-threshold 30
+                                          :minimum-number-of-calls 2}))
 
 (defn uuid []
   (UUID/randomUUID))

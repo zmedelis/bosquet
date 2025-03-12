@@ -2,8 +2,8 @@
   (:require
    [bosquet.utils :as u]
    [hato.client :as hc]
-   [taoensso.timbre :as timbre]))
-
+   [taoensso.timbre :as timbre]
+   [net.modulolotus.truegrit.circuit-breaker :as cb]))
 
 (defn use-local-proxy
   "Use local proxy to log LLM API requests"
@@ -14,7 +14,6 @@
    (System/setProperty "https.proxyHost" host)
    (System/setProperty "https.proxyPort" (str port))))
 
-
 (defn client
   ([] (client nil))
   ([{:keys [connect-timeout]
@@ -23,7 +22,6 @@
    (hc/build-http-client
     (merge opts
            {:connect-timeout connect-timeout}))))
-
 
 (defn post
   ([url params] (post url nil params))
@@ -43,3 +41,11 @@
          (timbre/error "Call failed")
          (timbre/errorf "- HTTP status '%s'" status)
          (timbre/errorf "- Error message '%s'" (or message error)))))))
+
+(def resilient-post*
+  (cb/wrap (fn [url params]
+             (post url params))
+           u/rest-service-cb))
+
+(defn resilient-post [url params]
+  (resilient-post* url params))
