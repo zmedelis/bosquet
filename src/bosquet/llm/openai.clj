@@ -4,33 +4,38 @@
    [bosquet.llm.oai-shaped-llm :as oai]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
-   [wkok.openai-clojure.api :as api]))
+   [wkok.openai-clojure.api :as api]
+   [net.modulolotus.truegrit.circuit-breaker :as cb]))
 
 
-(defn chat
+(def chat*
   "Run 'chat' type completion. Pass in `messages` in ChatML format."
-  ([params] (chat (wkk/openai env/config) params))
-  ([{url :api-endpoint default-params :model-params :as service-cfg} params]
-   (u/log-call url params)
-   (-> params
-       (oai/prep-params default-params)
-       (api/create-chat-completion service-cfg)
-       oai/->completion)))
+  (cb/wrap (fn [{url :api-endpoint default-params :model-params :as service-cfg} params]
+             (u/log-call url params)
+             (-> params
+                 (oai/prep-params default-params)
+                 (api/create-chat-completion service-cfg)
+                 oai/->completion))
+           u/rest-service-cb))
 
+(defn chat [params]
+  (chat* (wkk/openai env/config) params))
 
-(defn complete
+(def complete*
   "Run 'completion' type generation.
-  `params` needs to have `prompt` key.
+                         `params` needs to have `prompt` key.
+                       
+                         *Deprecated* by OAI?"
+  (cb/wrap (fn [{url :api-endpoint default-params :model-params :as service-cfg} params]
+             (u/log-call url params)
+             (-> params
+                 (oai/prep-params default-params)
+                 (api/create-completion service-cfg)
+                 oai/->completion))
+           u/rest-service-cb))
 
-  *Deprecated* by OAI?"
-  ([params] (complete (wkk/openai env/config) params))
-  ([{url :api-endpoint default-params :model-params :as service-cfg} params]
-   (u/log-call url params)
-   (-> params
-       (oai/prep-params default-params)
-       (api/create-completion service-cfg)
-       oai/->completion)))
-
+(defn complete [params]
+  (complete* (wkk/openai env/config) params))
 
 (comment
   (chat {:messages [{:role :user :content "2/2="}]})

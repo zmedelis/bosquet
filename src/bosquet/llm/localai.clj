@@ -4,7 +4,6 @@
    [bosquet.llm.oai-shaped-llm :as oai]
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
-   [bosquet.llm.http :as http]
    [wkok.openai-clojure.api :as api]
    [net.modulolotus.truegrit.circuit-breaker :as cb]))
 
@@ -21,19 +20,21 @@
 (defn chat [params]
   (chat* (wkk/localai env/config) params))
 
-(defn complete
+(def complete*
   "Run 'completion' type generation.
                          `params` needs to have `prompt` key.
                        
                          *Deprecated* by OAI?"
-  ([params] (complete (wkk/localai env/config) params))
-  ([{url :api-endpoint default-params :model-params :as service-cfg} params]
-   (u/log-call url params)
-   (-> params
-       (oai/prep-params default-params)
-       (api/create-completion service-cfg)
-       oai/->completion)))
+  (cb/wrap (fn [{url :api-endpoint default-params :model-params :as service-cfg} params]
+             (u/log-call url params)
+             (-> params
+                 (oai/prep-params default-params)
+                 (api/create-completion service-cfg)
+                 oai/->completion))
+           u/rest-service-cb))
 
+(defn complete [params]
+  (complete* (wkk/localai env/config) params))
 
 (comment
   (chat {:messages [{:role :user :content "2/2="}]}) 
