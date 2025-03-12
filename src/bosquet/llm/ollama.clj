@@ -22,15 +22,15 @@
 
 
 (defn- chat-fn [{:keys [api-endpoint]}]
-  (partial http/post (str api-endpoint "/chat")))
+  (partial http/resilient-post (str api-endpoint "/chat")))
 
 
 (defn- completion-fn [{:keys [api-endpoint]}]
-  (partial http/post (str api-endpoint "/generate")))
+  (partial http/resilient-post (str api-endpoint "/generate")))
 
 
 (defn- embedding-fn [{:keys [api-endpoint]}]
-  (partial http/post (str api-endpoint "/embeddings")))
+  (partial http/resilient-post (str api-endpoint "/embeddings")))
 
 
 (defn- generate
@@ -70,7 +70,7 @@
     :prompt (content payload)}))
 
 (comment
-  (create-embedding (env/config :ollama) {:model :all-minilm}
+  (create-embedding (env/config :ollama) {:model :llama3.2}
                     "Here is an article about llamas...")
 
   (create-embedding (env/config :ollama) {:model :all-minilm
