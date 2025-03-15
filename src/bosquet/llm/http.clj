@@ -43,9 +43,10 @@
          (timbre/errorf "- Error message '%s'" (or message error)))))))
 
 (def resilient-post*
-  (cb/wrap (fn [url params]
-             (post url params))
+  (cb/wrap (fn [& args]
+             (apply post args))
            u/rest-service-cb))
 
-(defn resilient-post [url params]
-  (resilient-post* url params))
+(defn resilient-post [& args]
+  (apply resilient-post* args))
+
