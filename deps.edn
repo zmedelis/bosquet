@@ -1,7 +1,7 @@
 {:paths   ["src" "resources"]
  :deps    {org.clojure/clojure                           {:mvn/version "1.12.0"}
            io.github.zmedelis/hfds-clj                   {:mvn/version "2023.12.11"}
-           com.wsscode/pathom3                           {:mvn/version "2024.11.23-alpha"}
+           com.wsscode/pathom3                           {:mvn/version "2025.01.16-alpha"}
            net.clojars.wkok/openai-clojure               {:mvn/version "0.22.0"}
            com.taoensso/timbre                           {:mvn/version "6.6.1"}
            com.knuddels/jtokkit                          {:mvn/version "1.1.0"}
@@ -13,14 +13,14 @@
            org.clojure/core.cache                        {:mvn/version "1.1.234"}
            org.apache.commons/commons-text               {:mvn/version "1.13.0"}
            me.flowthing/pp                               {:mvn/version "2024-11-13.77"}
-           org.apache.tika/tika-core                     {:mvn/version "3.0.0"}
-           org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.2"}
-           org.apache.tika/tika-parsers-standard-package {:mvn/version "3.0.0"}
-           org.apache.opennlp/opennlp-tools              {:mvn/version "2.5.2"}
+           org.apache.tika/tika-core                     {:mvn/version "3.1.0"}
+           org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.3"}
+           org.apache.tika/tika-parsers-standard-package {:mvn/version "3.1.0"}
+           org.apache.opennlp/opennlp-tools              {:mvn/version "2.5.3"}
            org.clojure/tools.cli                         {:mvn/version "1.1.230"}
            com.fzakaria/slf4j-timbre                     {:mvn/version "0.4.1"}
            org.clojure/core.async                        {:mvn/version "1.7.701"}
-           selmer/selmer                                 {:mvn/version "1.12.61"}
+           selmer/selmer                                 {:mvn/version "1.12.62"}
            net.modulolotus/truegrit                      {:mvn/version "2.3.35"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.17.1102"}
@@ -28,7 +28,7 @@
                                       com.github.clj-easy/graal-build-time {:mvn/version "1.0.5"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "2024.01.17"}}
-           :rebel      {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
+           :rebel      {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.5"}}
                         :main-opts  ["-m" "rebel-readline.main"]}
            :outdated   {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
                         :main-opts ["-m" "antq.core" "--upgrade"]}
@@ -36,8 +36,8 @@
            :kaocha     {:main-opts   ["-m" "kaocha.runner"]
                         :extra-paths ["test"]
                         :extra-deps  {lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
-           :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.10.6"
-                                                                    :git/sha "52cf7d6"}
+           :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.10.7"
+                                                                    :git/sha "573711e"}
                                      slipset/deps-deploy           {:mvn/version "0.2.2"}}
                         :ns-default build}
            :ns-default build}}
