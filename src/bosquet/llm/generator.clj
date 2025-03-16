@@ -503,26 +503,26 @@
                                "{{test}}"]
              :test            (llm :ollama wkk/model-params {:model :zephyr :max-tokens 50})}
             {:question "What is the distance from Moon to Io?"})
-  (generate
-   {:sys "Calc:"
-    :a   "{{sys}} {{M}}+2={{x}}"
-    :b   "Result is: {{a}}"
-    :x   (llm :ollama wkk/model-params {:model :llama3:8b})
-    :y   (llm :ollama wkk/model-params {:model :llama3:8b})}
-   {:M 10 :N 5})
+  (def x (generate
+          {:sys "Calc:"
+           :a   "{{sys}} {{M}}+2={{x}}"
+           :b   "Result is: {{a}}"
+           :x   (llm :ollama wkk/model-params {:model :mistral-small:latest})
+           :y   (llm :ollama wkk/model-params {:model :mistral-small:latest})}
+          {:M 10 :N 5}))
 
   (generate
-   {:sys "Calc:"
+   {:sys "Calculate:"
     :a   "{{sys}} {{M}}+2={{x}}"
     :b   "{{sys}} {{N}}-1={{y}}"
-    :x   (llm :ollama wkk/model-params {:model :zephyr})
-    :y   (llm :ollama wkk/model-params {:model :zephyr})}
+    :x   (llm :ollama wkk/model-params {:model :gemma3:4b})
+    :y   (llm :ollama wkk/model-params {:model :gemma3:4b})}
    {:M 10 :N 5})
 
   (generate
    {:sys "Calc:"
     :a   "{{sys}} {{M}}+2={{x}}"
-    :x   (llm :ollama wkk/model-params {:model :zephyr})}
+    :x   (llm :lmstudio wkk/model-params {:model :unsloth/phi-4-GGUF})}
    {:M 10})
 
   (generate

@@ -2,16 +2,16 @@
   (:require
    [bosquet.agent.tool :as t]
    [jsonista.core :as j]
-   [org.httpkit.client :as http]))
+   [clj-http.client :as http]))
 
 (defn- read-json [json]
   (j/read-value json (j/object-mapper {:decode-key-fn true})))
 
 (defn call-wiki [params]
-  (->> @(http/request
-         {:method       :get
-          :url          "https://en.wikipedia.org/w/api.php"
-          :query-params params})
+  (->> (http/request
+        {:method       :get
+         :url          "https://en.wikipedia.org/w/api.php"
+         :query-params params})
        :body read-json))
 
 (defn search-wiki-titles
