@@ -68,17 +68,18 @@
                 :completion completion_tokens
                 :total      total_tokens}))
 
-(defn completion-fn [{:keys [api-endpoint
-                             api-endpoint-messages
-                             api-key]}]
+(defn completion-fn
   "Create completion http client based on passed in parameters.
    If `api-endpoint` is specified in the configuration then it will be assumed that
    OAI style endpoint URL structure is used.
    If we get `api-endpoint-messages` then we use endpoint URL for that specific task
    as it is passed in in the config."
+  [{:keys [api-endpoint
+           api-endpoint-messages
+           api-key]}]
   (partial http/resilient-post
            (if api-endpoint (str api-endpoint "/chat/completions")
-                            api-endpoint-messages)
+               api-endpoint-messages)
            (when api-key {:oauth-token api-key})))
 
 
