@@ -522,7 +522,7 @@
   (generate
    {:sys "Calc:"
     :a   "{{sys}} {{M}}+2={{x}}"
-    :x   (llm :lmstudio wkk/model-params {:model :unsloth/phi-4-GGUF})}
+    :x   (llm :openai) #_(llm :lmstudio wkk/model-params {:model :unsloth/phi-4-GGUF})}
    {:M 10})
 
   (generate

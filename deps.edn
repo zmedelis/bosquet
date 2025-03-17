@@ -5,7 +5,7 @@
            net.clojars.wkok/openai-clojure               {:mvn/version "0.22.0"}
            com.taoensso/timbre                           {:mvn/version "6.6.1"}
            com.knuddels/jtokkit                          {:mvn/version "1.1.0"}
-           clj-http/clj-http {:mvn/version "3.13.0"}
+           clj-http/clj-http                             {:mvn/version "3.13.0"}
            metosin/jsonista                              {:mvn/version "0.3.13"}
            org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
            aero/aero                                     {:mvn/version "1.1.6"}

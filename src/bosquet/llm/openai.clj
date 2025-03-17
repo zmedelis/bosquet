@@ -9,23 +9,23 @@
 
 
 (def chat*
-  "Run 'chat' type completion. Pass in `messages` in ChatML format."
   (cb/wrap (fn [{url :api-endpoint default-params :model-params :as service-cfg} params]
              (u/log-call url params)
              (-> params
                  (oai/prep-params default-params)
                  (api/create-chat-completion service-cfg)
                  oai/->completion))
-           u/rest-service-cb))
+            u/rest-service-cb))
 
-(defn chat [params]
-  (chat* (wkk/openai env/config) params))
+
+(defn chat
+  "Run 'chat' type completion. Pass in `messages` in ChatML format."
+  ([service-cfg params] (chat* service-cfg params))
+  ([params] (chat (wkk/openai env/config) params)))
+
 
 (def complete*
-  "Run 'completion' type generation.
-                         `params` needs to have `prompt` key.
-                       
-                         *Deprecated* by OAI?"
+  "Run 'completion' type generation. `params` needs to have `prompt` key."
   (cb/wrap (fn [{url :api-endpoint default-params :model-params :as service-cfg} params]
              (u/log-call url params)
              (-> params
@@ -34,8 +34,9 @@
                  oai/->completion))
            u/rest-service-cb))
 
-(defn complete [params]
-  (complete* (wkk/openai env/config) params))
+(defn complete
+  ([service-cfg params] (complete* service-cfg params))
+  ([params] (complete (wkk/openai env/config) params)))
 
 (comment
   (chat {:messages [{:role :user :content "2/2="}]})
