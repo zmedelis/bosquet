@@ -7,6 +7,10 @@
    [clojure.java.io :as io]
    [taoensso.timbre :as log]))
 
+
+(defn exists? [file] (.exists file))
+
+
 (defn bosquet-cfg-file
   "Get Bosquet config file (secrets.edn or config.edn). First check project root
   then go to ~/.bosquet"
@@ -15,19 +19,21 @@
         home-dir-file (io/file (System/getProperty "user.home")
                                (str ".bosquet/" cfg-file-name))]
     (cond
-      (.exists local-file)    local-file
-      (.exists home-dir-file) home-dir-file
-      :else                   (io/resource (str "default-" cfg-file-name)))))
+      (exists? local-file)    local-file
+      (exists? home-dir-file) home-dir-file
+      :else                   (do
+                                (spit local-file "{}")
+                                local-file))))
 
 
 (def config-file
   "Config file to override `env.edn` or add new components: LLM providers, memory, tools."
-  #_(bosquet-cfg-file "config.edn"))
+  (bosquet-cfg-file "config.edn"))
 
 
 (def secrets-file
   "API keys and other things not to be shared"
-  #_(bosquet-cfg-file "secrets.edn"))
+  (bosquet-cfg-file "secrets.edn"))
 
 
 (defmethod aero/reader 'mmerge
@@ -38,7 +44,7 @@
 (defmethod aero/reader 'include-config
   [_opts _tag value]
   (let [cfg-file (bosquet-cfg-file value)
-        config (u/read-edn-file cfg-file)]
+        config   (if cfg-file (u/read-edn-file cfg-file) {})]
     (when (empty? config)
       (log/infof "No '%s' configuration, using defaults if applicable."
                  value))
@@ -47,8 +53,9 @@
 
 (defn- read-edn
   [file]
-  (when (.exists file)
-    (-> file slurp read-string)))
+  (if (and file (.exists file))
+    (-> file slurp read-string)
+    {}))
 
 
 (def config

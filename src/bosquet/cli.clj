@@ -90,7 +90,7 @@
   (println (env/default-service)))
 
 (defn- set-default [options]
-  (env/update-config-file [(:llm/model (env/default-service))] options)
+  (env/update-config-file [:default-llm] options)
   (println "Defaults:")
   (show-defaults))
 

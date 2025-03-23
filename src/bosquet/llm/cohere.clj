@@ -7,7 +7,8 @@
    [cohere.client :as client]))
 
 (defn- set-api-key [api-key]
-  (System/setProperty "cohere.api.key" api-key))
+  (when api-key
+    (System/setProperty "cohere.api.key" api-key)))
 
 (defn- props->cohere
   "Convert general LLM model properties to Cohere specific ones."

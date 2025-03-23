@@ -33,7 +33,7 @@ clojure -M -m bosquet.cli
 
 Set the default model with
 ```
-clojure -M -m bosquet.cli llms set --service openai --temperature 0 --model gpt-4
+clojure -M -m bosquet.cli llms set --service openai --temperature 0 --model gpt-4o
 ```
 
 Do not forget to set the API KEY for your service (change 'openai' to a different name if needed)

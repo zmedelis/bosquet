@@ -488,9 +488,7 @@
                "{{examples}}"
                "{{prompt}}"
                "{{res}}"]
-    :res (llm :claude :llm/model-params {:model :claude-3-haiku-20240307})})
-
-
+    :res (llm :mistral :llm/model-params {:model :mistral-small})})
 
   (generate {:question-answer "Question: {{question}} Answer: {{answer}}"
              :answer          (llm :claude-3-haiku-20240307)}
@@ -522,7 +520,7 @@
   (generate
    {:sys "Calc:"
     :a   "{{sys}} {{M}}+2={{x}}"
-    :x   (llm :openai) #_(llm :lmstudio wkk/model-params {:model :unsloth/phi-4-GGUF})}
+    :x    (llm :lmstudio wkk/model-params {:model :unsloth/phi-4-GGUF})}
    {:M 10})
 
   (generate
