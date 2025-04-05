@@ -3,11 +3,12 @@
    [bosquet.env :as env]
    [bosquet.llm.http :as http]
    [bosquet.llm.oai-shaped-llm :as oai]
-   [bosquet.llm.wkk :as wkk]))
+   [bosquet.llm.wkk :as wkk]
+   [bosquet.llm.tools :as tools]))
 
 
 (defn ->completion
-  [{:keys [response message prompt_eval_count eval_count]
+  [{:keys [response message prompt_eval_count eval_count tools]
     ;; ollama returns 0 for prompt eval if the prompt was cached
     :or   {prompt_eval_count 0 eval_count 0}}]
   (assoc
@@ -35,13 +36,12 @@
 
 (defn- generate
   [default-params params gen-fn]
-  (-> params
-      ;; no support for streaming for now
-      (assoc :stream false)
-      (oai/prep-params default-params)
-      gen-fn
-      ->completion))
-
+  (let [tools  (map tools/tool->function (wkk/tools params))
+        tool-defs (wkk/tools params)
+        params (-> params (assoc :stream false) (oai/prep-params default-params) (assoc :tools tools) ) ]
+    (-> (gen-fn params)
+        (tools/apply-tools wkk/ollama params tool-defs gen-fn)
+        ->completion)))
 
 (defn chat
   [service-cfg params]
@@ -50,7 +50,7 @@
 
 (defn complete
   [service-cfg params]
-  (generate service-cfg params (completion-fn service-cfg)))
+  (generate service-cfg (dissoc params wkk/tools)(completion-fn service-cfg)))
 
 
 (defn create-embedding
@@ -77,4 +77,21 @@
                                           :content :text}
                     {:text "Here is an article about llamas..."
                      :score 100})
-  #__)
+  (complete {:api-endpoint "http://localhost:11434/api"}
+            {:model "llama3.2:3b" 
+             :prompt "why is the sky blue?"
+         wkk/tools [#'tools/get-current-weather]})
+
+  (chat {:api-endpoint "http://localhost:11434/api"} 
+        {:model "llama3.2:3b" 
+         :messages [ {:role :user :content "What is the weather in san francisco?" }]
+         wkk/tools [#'tools/get-current-weather]} )
+
+  (chat {:api-endpoint "http://localhost:11434/api"} 
+        {:model "llama3.2:3b" 
+         :messages [ {:role :user :content "What is 2 plus 2 minus 2" }]
+         wkk/tools [#'tools/add #'tools/sub]} )
+  (complete {:api-endpoint "http://localhost:11434/api"}
+              {:model "llama3.2:3b" 
+               :prompt "The current weather in san francisco is"
+                wkk/tools [#'tools/get-current-weather]}))

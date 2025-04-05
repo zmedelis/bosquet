@@ -613,4 +613,14 @@
             "provide me with​ a) average distance b) max distance c) min distance"]]
     [:assistant (llm :mistral-small
                      wkk/var-name :analysis)]])
+
+   (generate
+            [[:system "You are a math wizard"]
+             [:user "What is 2 + 2 - 3"]
+             [:assistant (llm wkk/openai wkk/model-params {wkk/tools [#'bosquet.llm.tools/add #'bosquet.llm.tools/sub]} wkk/var-name :answer)]])
+
+   (generate
+            [[:system "You are a weather reporter"]
+             [:user "What is the temperature in San Francisco"]
+             [:assistant (llm wkk/ollama wkk/model-params {:model "llama3.2:3b" wkk/tools [#'bosquet.llm.tools/get-current-weather]} wkk/var-name :weather-report)]])
   #__)
