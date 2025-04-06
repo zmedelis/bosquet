@@ -5,17 +5,25 @@
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
    [wkok.openai-clojure.api :as api]
-   [net.modulolotus.truegrit.circuit-breaker :as cb]))
+   [net.modulolotus.truegrit.circuit-breaker :as cb]
+   [bosquet.llm.tools :as tools]))
 
 
-(def chat*
-  (cb/wrap (fn [{url :api-endpoint default-params :model-params :as service-cfg} params]
-             (u/log-call url params)
-             (-> params
-                 (oai/prep-params default-params)
-                 (api/create-chat-completion service-cfg)
-                 oai/->completion))
-            u/rest-service-cb))
+(defn chat*
+  [service-cfg params]
+  (let [tools (map tools/tool->function (wkk/tools params))
+        tool-defs (wkk/tools params)
+        gen-fn (cb/wrap (fn [{url :api-endpoint default-params :model-params :as service-cfg} params]
+                          (u/log-call url params)
+                          (let [params (cond-> params 
+                                         true (oai/prep-params default-params) 
+                                         (not-empty tools) (assoc :tools tools))] 
+                            (-> params
+                                (api/create-chat-completion service-cfg))))
+                          u/rest-service-cb)]
+    (-> (gen-fn service-cfg params) 
+        (tools/apply-tools wkk/openai params tool-defs (partial gen-fn service-cfg))
+        oai/->completion)))
 
 
 (defn chat
@@ -40,5 +48,9 @@
 
 (comment
   (chat {:messages [{:role :user :content "2/2="}]})
+  (chat {:messages [{:role :user :content "Whats 2 plus 2 minus 3"}] wkk/tools [#'tools/add #'tools/sub]})
   (complete {:prompt "2+2=" wkk/model-params {:model :davinci-002}})
+  (chat {:messages [{:role :user :content "what is the current weather in san francisco?"}]  wkk/tools [#'tools/get-current-weather]})
   #__)
+
+

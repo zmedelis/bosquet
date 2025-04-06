@@ -16,6 +16,7 @@
    (-> params
        (u/mergex defaults params)
        (dissoc wkk/model-params)
+       (dissoc wkk/tools)
        (merge (wkk/model-params params)))))
 
 ;; ## ChatML

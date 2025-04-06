@@ -22,6 +22,8 @@
 
 (def mistral :mistral)
 
+(def ollama :ollama)
+
 (def model-params :llm/model-params)
 (def chat-fn :chat-fn)
 (def complete-fn :complete-fn)
@@ -44,3 +46,6 @@
 
 (def fun-args
   :fun/args)
+
+(def tools
+  :llm/tools)
