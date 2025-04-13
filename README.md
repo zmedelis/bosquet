@@ -102,6 +102,7 @@ Simple prompt completion can be done like this.
 ### Chat
 
 ```clojure
+(require '[bosquet.llm.generator :refer [generate llm]])
 (require '[bosquet.llm.wkk :as wkk])
 (generate
     [[:system "You are an amazing writer."]
