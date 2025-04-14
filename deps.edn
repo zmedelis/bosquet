@@ -10,7 +10,7 @@
            org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
            aero/aero                                     {:mvn/version "1.1.6"}
            org.clojure/core.cache                        {:mvn/version "1.1.234"}
-           org.apache.commons/commons-text               {:mvn/version "1.13.0"}
+           org.apache.commons/commons-text               {:mvn/version "1.13.1"}
            me.flowthing/pp                               {:mvn/version "2024-11-13.77"}
            org.apache.tika/tika-core                     {:mvn/version "3.1.0"}
            org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.3"}
@@ -18,7 +18,7 @@
            org.apache.opennlp/opennlp-tools              {:mvn/version "2.5.3"}
            org.clojure/tools.cli                         {:mvn/version "1.1.230"}
            com.fzakaria/slf4j-timbre                     {:mvn/version "0.4.1"}
-           org.clojure/core.async                        {:mvn/version "1.7.701"}
+           org.clojure/core.async                        {:mvn/version "1.8.741"}
            selmer/selmer                                 {:mvn/version "1.12.62"}
            net.modulolotus/truegrit                      {:mvn/version "2.3.35"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
