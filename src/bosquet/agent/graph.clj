@@ -66,7 +66,7 @@
   }
   - a node-map mapping the nodes to behaviors
   - the entry node 
-  - recording the history(completions) as it traverses the graph  
+  recording the history(completions) as it traverses the graph  
   "
   [graph-def node-map entry-node {:keys [trace __pos history] :as input}]
 
@@ -84,12 +84,10 @@
                         (-> ((condition-fns pos) state)
                             ((condition-maps pos)))
                         (first (lg/successors graph pos)))
-              #_#_next-node (if next next (first (lg/successors graph pos)))]
           (recur (-> state
                      (update :history conj [pos (:completion state)])
                      (assoc :__pos next-node)
                      (update :trace conj [pos next-node]))))))))
-
 
 (defmacro defagent 
   "
@@ -106,31 +104,31 @@
   (defnode categorize 
     [state]
     (let  [completion (g/generate
-                                        [[:system "Is the user asking a question (general inquiry) or making a request to produce code? Reply only with: question or code."]
-                                         [:user "{{input}}"]
-                                         [:assistant llm]] state) 
+                        [[:system "Is the user asking a question (general inquiry) or making a request to produce code? Reply only with: question or code."]
+                         [:user "{{input}}"]
+                         [:assistant llm]] state) 
            what (get-in completion [:bosquet/completions :answer])
            code? (re-find #"(?i)code" what)] 
-        {:completion completion
-         :code? code?}))
+      {:completion completion
+       :code? code?}))
 
   (defnode codegen 
     [state]
     (let [completion (g/generate
-                                       [[:system "Write code for this request"]
-                                        [:user "{{input}}"]
-                                        [:assistant llm]] state)]
+                       [[:system "Write code for this request"]
+                        [:user "{{input}}"]
+                        [:assistant llm]] state)]
       {:completion completion
        :code (get-in completion [:bosquet/completions :answer])}))
 
   (defnode qa 
     [state]
     (let [completion (g/generate 
-                                       [[:system "Answer concisely"]
-                                        [:user "{{input}}"]
-                                        [:assistant llm]] state)]
-     {:completion completion
-      :answer (get-in completion [:bosquet/completions :answer]) }))
+                       [[:system "Answer concisely"]
+                        [:user "{{input}}"]
+                        [:assistant llm]] state)]
+      {:completion completion
+       :answer (get-in completion [:bosquet/completions :answer]) }))
 
   (defnode summarize
     [state]
@@ -139,8 +137,8 @@
                             (mapcat #(:bosquet/conversation (second %) ) )
                             vec)
           prompt [[:system "Summarize the following conversation and decisions in one or two sentences"]
-                   [:user conversation]
-                   [:assistant llm]]
+                  [:user conversation]
+                  [:assistant llm]]
           completion (g/generate prompt {})]
       {:completion completion
        :summary (get-in completion [:bosquet/completions :answer])}))
@@ -162,6 +160,6 @@
 
   (run-agent {:input "is pluto a planet"})
   (run-agent {:input "Write a bash script to count files in a folder."})
- )
+  )
 
      
