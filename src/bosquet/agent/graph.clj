@@ -75,7 +75,7 @@
                             :trace (or trace []))]
     (let [pos (:__pos state)]
       (if (= (:__pos state) :end)
-        (dissoc state :__pos)
+        (-> state (dissoc :__pos) (dissoc :completion))
         (let [{:keys [graph condition-fns condition-maps]} graph-def
               node-fn (get node-map pos)
               current-state (node-fn state)
@@ -83,11 +83,12 @@
               next-node (if (condition-maps pos) 
                         (-> ((condition-fns pos) state)
                             ((condition-maps pos)))
-                        (first (lg/successors graph pos)))
+                        (first (lg/successors graph pos)))]
           (recur (-> state
                      (update :history conj [pos (:completion state)])
                      (assoc :__pos next-node)
                      (update :trace conj [pos next-node]))))))))
+
 
 (defmacro defagent 
   "
