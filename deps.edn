@@ -20,7 +20,8 @@
            com.fzakaria/slf4j-timbre                     {:mvn/version "0.4.1"}
            org.clojure/core.async                        {:mvn/version "1.8.741"}
            selmer/selmer                                 {:mvn/version "1.12.62"}
-           net.modulolotus/truegrit                      {:mvn/version "2.3.35"}}
+           net.modulolotus/truegrit                      {:mvn/version "2.3.35"}
+           aysylu/loom                                   {:mvn/version "1.0.2"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.17.1102"}
                                       djblue/portal                        {:mvn/version "0.58.5"}
