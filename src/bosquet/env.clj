@@ -5,7 +5,8 @@
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
    [clojure.java.io :as io]
-   [taoensso.timbre :as log]))
+   [taoensso.timbre :as log]
+   [bosquet.mcp.tools :as mcp-tools]))
 
 
 (defn exists? [file] (.exists file))
@@ -134,3 +135,11 @@
                               :service :default-for-models
                               :api-key :api-endpoint :impl
                               wkk/service wkk/chat-fn wkk/complete-fn wkk/embed-fn)}))
+
+(defn initialize-mcp-tools
+  "Initialize mcp tools as defined in config.edn.
+  Once initialized all the tool definitions are included in the bosquet.mcp.tools namespace.
+  You can then pass the tool symbols in wkk/tools or use any of the functions in the llm/tools namespace to extract metadata etc"
+  []
+  (when-let [mcp-servers (:mcp-servers config)]
+    (bosquet.mcp/intialize-mcp-servers! mcp-servers)))

@@ -1,1 +1,6 @@
-{:default-llm {:temperature 0 :model :mistral-small}}
+{:default-llm {:temperature 0 :model :mistral-small}
+ :mcp-servers [
+ {:name "echo-server"
+  :type :stdio
+  :command "python3"
+  :args ["resources/mcp-example/echo.py"]}]}
