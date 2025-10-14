@@ -1,30 +1,30 @@
 {:paths   ["src" "resources"]
- :deps    {org.clojure/clojure                           {:mvn/version "1.12.0"}
+ :deps    {org.clojure/clojure                           {:mvn/version "1.12.3"}
            io.github.zmedelis/hfds-clj                   {:mvn/version "2023.12.11"}
            com.wsscode/pathom3                           {:mvn/version "2025.01.16-alpha"}
-           net.clojars.wkok/openai-clojure               {:mvn/version "0.22.0"}
-           com.taoensso/timbre                           {:mvn/version "6.7.1"}
+           net.clojars.wkok/openai-clojure               {:mvn/version "0.23.0"}
+           com.taoensso/timbre                           {:mvn/version "6.8.0"}
            com.knuddels/jtokkit                          {:mvn/version "1.1.0"}
-           clj-http/clj-http                             {:mvn/version "3.13.0"}
+           clj-http/clj-http                             {:mvn/version "3.13.1"}
            metosin/jsonista                              {:mvn/version "0.3.13"}
            org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
            aero/aero                                     {:mvn/version "1.1.6"}
            org.clojure/core.cache                        {:mvn/version "1.1.234"}
-           org.apache.commons/commons-text               {:mvn/version "1.13.1"}
+           org.apache.commons/commons-text               {:mvn/version "1.14.0"}
            me.flowthing/pp                               {:mvn/version "2024-11-13.77"}
-           org.apache.tika/tika-core                     {:mvn/version "3.2.0"}
+           org.apache.tika/tika-core                     {:mvn/version "3.2.3"}
            org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.4"}
-           org.apache.tika/tika-parsers-standard-package {:mvn/version "3.2.0"}
-           org.apache.opennlp/opennlp-tools              {:mvn/version "2.5.4"}
-           org.clojure/tools.cli                         {:mvn/version "1.1.230"}
+           org.apache.tika/tika-parsers-standard-package {:mvn/version "3.2.3"}
+           org.apache.opennlp/opennlp-tools              {:mvn/version "2.5.6"}
+           org.clojure/tools.cli                         {:mvn/version "1.2.245"}
            com.fzakaria/slf4j-timbre                     {:mvn/version "0.4.1"}
            org.clojure/core.async                        {:mvn/version "1.8.741"}
-           selmer/selmer                                 {:mvn/version "1.12.62"}
+           selmer/selmer                                 {:mvn/version "1.12.63"}
            net.modulolotus/truegrit                      {:mvn/version "2.3.35"}
            aysylu/loom                                   {:mvn/version "1.0.2"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
-                        :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.17.1102"}
-                                      djblue/portal                        {:mvn/version "0.59.1"}
+                        :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.18.1150"}
+                                      djblue/portal                        {:mvn/version "0.61.0"}
                                       com.github.clj-easy/graal-build-time {:mvn/version "1.0.5"}}}
            :neil       {:project {:name    io.github.zmedelis/bosquet
                                   :version "2025.03.28"}}
@@ -32,12 +32,12 @@
                         :main-opts  ["-m" "rebel-readline.main"]}
            :outdated   {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
                         :main-opts ["-m" "antq.core" "--upgrade"]}
-           :test       {:extra-deps {nubank/matcher-combinators {:mvn/version "3.9.1"}}}
+           :test       {:extra-deps {nubank/matcher-combinators {:mvn/version "3.9.2"}}}
            :kaocha     {:main-opts   ["-m" "kaocha.runner"]
                         :extra-paths ["test"]
                         :extra-deps  {lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
-           :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.10.9"
-                                                                    :git/sha "e405aac"}
+           :build      {:deps       {io.github.clojure/tools.build {:git/tag "v0.10.10"
+                                                                    :git/sha "deedd62"}
                                      slipset/deps-deploy           {:mvn/version "0.2.2"}}
                         :ns-default build}
            :ns-default build}}
