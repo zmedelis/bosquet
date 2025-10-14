@@ -62,41 +62,21 @@
   (timbre/infof "Applying tools %d for engine %s" (count tools) engine)
   (if (not-empty tools)
     (let [parsed-result (parse-arguments engine result)
-          fn-results (->> (:tool_calls parsed-result)
+          fn-results    (->> (:tool_calls parsed-result)
                           (map #(apply-tool tools %)))
           tool-messages (tool-result-formatter engine result fn-results)
-          messages (concat (vec (:messages params)) tool-messages)]
+          messages      (concat (vec (:messages params)) tool-messages)]
       (timbre/debug messages)
       (if (seq? tool-messages)
-        (generator (-> params 
-                       (dissoc wkk/tools) 
+        (generator (-> params
+                       (dissoc wkk/tools)
                        (assoc :messages messages)))
         result))
     result))
 
-(comment 
-  (defn ^{:desc "Get the current weather in a given location"} get-current-weather
-    [^{:type "string" :desc "The city, e.g. San Francisco"} location]
-    (timbre/infof "Applying get-current-weather for location %s" location)
-    (case (str/lower-case location)
-      "tokyo" {:location "Tokyo" :temperature "10" :unit "fahrenheit"}
-      "san francisco" {:location "San Francisco" :temperature "72" :unit "fahrenheit"}
-      "paris" {:location "Paris" :temperature "22" :unit "fahrenheit"}
-      {:location location :temperature "unknown"}))
-
-  (defn ^{:desc "add 'x' and 'y'"} add
-    [^{:type "number" :desc "First number to add"} x
-     ^{:type "number" :desc "Second number to add"} y]
-    (timbre/infof "Applying add for location %s %s" x y)
-    (+ (if (number? x)  x (Float/parseFloat x) )
-       (if (number? y)  y (Float/parseFloat y) )))
-
-(defn ^{:desc "subtract 'y' from 'x'"} sub
-    [^{:type "number" :desc "Number to subtract from"} x
-     ^{:type "number" :desc "Number to subtract"} y]
-  (timbre/infof "Applying sub for location %s %s" x y)
-  (- (if (number? x)  x (Float/parseFloat x) )
-       (if (number? y)  y (Float/parseFloat y) )))
-
+(comment
+  ;; Example tool registration
+  (require '[bosquet.tool.math :refer [add]]
+           '[bosquet.tool.weather :refer [get-current-weather]]) 
   (tool->function #'get-current-weather)
   (tool->function #'add))

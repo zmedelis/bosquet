@@ -5,8 +5,8 @@
    [bosquet.llm.wkk :as wkk]
    [bosquet.utils :as u]
    [wkok.openai-clojure.api :as api]
-   [net.modulolotus.truegrit.circuit-breaker :as cb]
-   [bosquet.llm.tools :as tools]))
+   [bosquet.llm.tools :as tools]
+   [net.modulolotus.truegrit.circuit-breaker :as cb]))
 
 
 (defn chat*
@@ -47,10 +47,16 @@
   ([params] (complete (wkk/openai env/config) params)))
 
 (comment
+  (require '[bosquet.tool.math :refer [add sub]]
+           '[bosquet.tool.weather :refer [get-current-weather]]) 
+  (tools/tool->function #'get-current-weather)
+  (tools/tool->function #'add)
+  (tools/tool->function #'sub)
   (chat {:messages [{:role :user :content "2/2="}]})
-  (chat {:messages [{:role :user :content "Whats 2 plus 2 minus 3"}] wkk/tools [#'tools/add #'tools/sub]})
-  (complete {:prompt "2+2=" wkk/model-params {:model :davinci-002}})
-  (chat {:messages [{:role :user :content "what is the current weather in san francisco?"}]  wkk/tools [#'tools/get-current-weather]})
+  (chat {:messages [{:role :user :content "Whats 2 plus 2 minus 3"}] wkk/tools [#'add #'sub]})
+  (chat {:messages [{:role :user :content "Whats 2 plus 2"}] wkk/tools [#'add #'sub]})
+  (chat {:messages [{:role :user :content "what is the current weather in san francisco?"}]
+         wkk/tools [#'get-current-weather]})
   #__)
 
 
