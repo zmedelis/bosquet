@@ -6,18 +6,15 @@
    [bosquet.llm.schema :as schema]
    [bosquet.utils :as u]))
 
-
 (defn usage->canonical
   [{:keys [input_tokens output_tokens]}]
   {schema/usage-in-count input_tokens
    schema/usage-out-count output_tokens
    schema/usage-total-count (+ output_tokens input_tokens)})
 
-
 (defn- header [key]
   {:headers {"x-api-key"         key
              "anthropic-version" "2023-06-01"}})
-
 
 (defn messages
   ([params] (messages (wkk/openai env/config) params))

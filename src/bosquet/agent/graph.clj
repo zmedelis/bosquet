@@ -6,35 +6,33 @@
             [taoensso.timbre :as timbre]))
 
 (defmacro defgraph
- "
+  "
  Create a loom digraph that can be run within the agent (edges + optional labels)
  "
   [name & edge-defs]
   `(def ~name
      (let [g0# (lg/digraph)]
        (reduce
-         (fn [ret# [from# to# & [attrs#]]]
-           (if (map? to#) ;conditional edge
-             (-> (assoc ret# :graph 
-                        (reduce 
-                          (fn [g# [cond# to0#]] 
-                            (-> g# 
-                                (lg/add-nodes from# to0#)
-                                (lg/add-edges [from# to0#])
-                                (attr/add-attr from# to0# :label (str cond#)) ))
-                          (:graph ret#) to#)) 
-                 (assoc-in [:condition-fns from#] attrs#)
-                 (assoc-in [:condition-maps from#] to#))
-             (assoc ret# :graph
-                    (-> (:graph ret#) 
-                        (lg/add-nodes from# to#)
-                        (lg/add-edges [from# to#])))))
-           {:graph g0# :condition-fns {} :condition-maps {}}
-           [~@edge-defs]))))
+        (fn [ret# [from# to# & [attrs#]]]
+          (if (map? to#) ;conditional edge
+            (-> (assoc ret# :graph
+                       (reduce
+                        (fn [g# [cond# to0#]]
+                          (-> g#
+                              (lg/add-nodes from# to0#)
+                              (lg/add-edges [from# to0#])
+                              (attr/add-attr from# to0# :label (str cond#))))
+                        (:graph ret#) to#))
+                (assoc-in [:condition-fns from#] attrs#)
+                (assoc-in [:condition-maps from#] to#))
+            (assoc ret# :graph
+                   (-> (:graph ret#)
+                       (lg/add-nodes from# to#)
+                       (lg/add-edges [from# to#])))))
+        {:graph g0# :condition-fns {} :condition-maps {}}
+        [~@edge-defs]))))
 
-
-
-(defmacro defnode 
+(defmacro defnode
   "
   Define each node behavior get the current state and execut the body on the state
   The node function must always return a map with the values to be used in the future states
@@ -56,7 +54,7 @@
      (let [result# (do ~@body)]
        result#)))
 
-(defn run-graph 
+(defn run-graph
   "
   Graph executor
   run a digraph given 
@@ -73,14 +71,14 @@
   [graph-def node-map entry-node {:keys [trace __pos history] :as input}]
 
   (loop [state (assoc input :__pos (or entry-node (first (lg/nodes (:graph graph-def))))
-                            :history (or history [])
-                            :trace (or trace []))]
+                      :history (or history [])
+                      :trace (or trace []))]
     (let [pos (:__pos state)]
       (if (= (:__pos state) :end)
         (-> state (dissoc :__pos) (dissoc :completion))
         (let [{:keys [graph condition-fns condition-maps]} graph-def
               node-fn (get node-map pos)
-              _ (or node-fn (timbre/error {:msg "Failed to get next node" :history (:history state)} ))
+              _ (or node-fn (timbre/error {:msg "Failed to get next node" :history (:history state)}))
               current-state (node-fn state)
               state (merge state current-state)]
           (if (:interrupt current-state)
@@ -90,10 +88,10 @@
              :graph-def graph-def
              :node-map node-map
              :message (:interrupt-message current-state "Human intervention required")}
-            (let [next-node (if (condition-maps pos) 
-                            (-> ((condition-fns pos) state)
-                                ((condition-maps pos)))
-                            (first (lg/successors graph pos)))]
+            (let [next-node (if (condition-maps pos)
+                              (-> ((condition-fns pos) state)
+                                  ((condition-maps pos)))
+                              (first (lg/successors graph pos)))]
               (recur (-> state
                          (update :history conj [pos (:completion state)])
                          (assoc :__pos next-node)
@@ -119,8 +117,7 @@
                    (update :history conj [__pos (:completion merged-state)])
                    (update :trace conj [__pos next-node])))))
 
-
-(defmacro defagent 
+(defmacro defagent
   "
   One-stop macro to define and run an agent
   To run the agent call (<name> graph entry-node nodemap)
@@ -129,39 +126,39 @@
   `(defn ~name [initial-state#]
      (run-graph ~graph ~node-map ~entry-node initial-state#)))
 
-(comment 
+(comment
   (require '[bosquet.llm.wkk :as wkk])
   (def llm (g/llm wkk/ollama wkk/model-params {:model "gemma3:12b"} wkk/var-name :answer))
   (defnode categorize [state]
     (let  [completion (g/generate
-                        [[:system "Is the user asking a question (general inquiry) or making a request to produce code? Reply only with: question or code."]
-                         [:user "{{input}}"]
-                         [:assistant llm]] state) 
+                       [[:system "Is the user asking a question (general inquiry) or making a request to produce code? Reply only with: question or code."]
+                        [:user "{{input}}"]
+                        [:assistant llm]] state)
            what (get-in completion [:bosquet/completions :answer])
-           code? (re-find #"(?i)code" what)] 
+           code? (re-find #"(?i)code" what)]
       {:completion completion
        :code? code?}))
 
   (defnode codegen [state]
     (let [completion (g/generate
-                       [[:system "Write code for this request"]
-                        [:user "{{input}}"]
-                        [:assistant llm]] state)]
+                      [[:system "Write code for this request"]
+                       [:user "{{input}}"]
+                       [:assistant llm]] state)]
       {:completion completion
        :code (get-in completion [:bosquet/completions :answer])}))
 
   (defnode qa [state]
-    (let [completion (g/generate 
-                       [[:system "Answer concisely"]
-                        [:user "{{input}}"]
-                        [:assistant llm]] state)]
+    (let [completion (g/generate
+                      [[:system "Answer concisely"]
+                       [:user "{{input}}"]
+                       [:assistant llm]] state)]
       {:completion completion
-       :answer (get-in completion [:bosquet/completions :answer]) }))
+       :answer (get-in completion [:bosquet/completions :answer])}))
 
   (defnode summarize [state]
-    (let [conversation (->> state 
+    (let [conversation (->> state
                             :history
-                            (mapcat #(:bosquet/conversation (second %) ) )
+                            (mapcat #(:bosquet/conversation (second %)))
                             vec)
           prompt [[:system "Summarize the following conversation and decisions in one or two sentences"]
                   [:user conversation]
@@ -171,7 +168,7 @@
        :summary (get-in completion [:bosquet/completions :answer])}))
 
   (defgraph agent-graph
-    [:categorize {true :codegen false :qa} (fn[state] (boolean (:code? state)))]
+    [:categorize {true :codegen false :qa} (fn [state] (boolean (:code? state)))]
     [:qa :summarize]
     [:codegen :summarize]
     [:summarize :end])
@@ -192,9 +189,9 @@
   (defnode review-request
     [state]
     (let [completion (g/generate
-                       [[:system "Analyze this request and suggest an approach"]
-                        [:user "{{input}}"]
-                        [:assistant llm]] state)]
+                      [[:system "Analyze this request and suggest an approach"]
+                       [:user "{{input}}"]
+                       [:assistant llm]] state)]
       {:completion completion
        :analysis (get-in completion [:bosquet/completions :answer])
        :interrupt true
@@ -236,7 +233,7 @@
   ;; Example usage with interrupts:
   ;; Start the agent
   (def result1 (interactive-agent {:input "Create a user authentication system"}))
-  
+
   ;; If interrupted, result1 will be:
   ;; {:status :interrupted
   ;;  :node :review-request  
@@ -245,28 +242,28 @@
 
   ;; Human provides feedback and resumes
   (def result2 (resume-graph result1 {:human-feedback "Focus on security best practices and use JWT tokens"}))
-  
+
   ;; If interrupted again at final-review, provide approval
   (def final-result (resume-graph result2 {:approval "Approved - looks good to implement"}))
 
   ;; Example of checking for interrupts:
-  (defn run-with-interrupts 
+  (defn run-with-interrupts
     [agent initial-state]
     (loop [result (agent initial-state)]
       (if (= (:status result) :interrupted)
-        (do 
+        (do
           (println (str "Interrupted at node: " (:node result)))
           (println (str "Message: " (:message result)))
           (println "Waiting for human input...")
           ;; In a real application, you'd collect user input here
           ;; For demo, we'll simulate continuing
           (let [user-input (case (:node result)
-                            :review-request {:human-feedback "Use secure authentication"}
-                            :final-review {:approval "Approved"}
-                            {})]
+                             :review-request {:human-feedback "Use secure authentication"}
+                             :final-review {:approval "Approved"}
+                             {})]
             (recur (resume-graph result user-input))))
         result)))
 
   (run-with-interrupts interactive-agent {:input "Build a login system"}))
 
-     
+

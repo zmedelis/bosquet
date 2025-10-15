@@ -13,7 +13,6 @@
    (System/setProperty "https.proxyHost" host)
    (System/setProperty "https.proxyPort" (str port))))
 
-
 (defn post
   ([url params] (post url nil params))
   ([url http-opts params]
@@ -32,7 +31,6 @@
          (timbre/error "Call failed")
          (timbre/errorf "- HTTP status '%s'" status)
          (timbre/errorf "- Error message '%s'" (or message error)))))))
-
 
 (def resilient-post*
   (cb/wrap (fn [& args]

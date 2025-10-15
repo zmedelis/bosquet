@@ -42,32 +42,26 @@
   ([x & ys]
    (into (vec x) cat ys)))
 
-
 (defn join-lines [& lines]
   (apply str (interpose "\n" lines)))
 
-
 (defn join-coll [content]
   (if (coll? content) (string/join "\n" content) content))
-
 
 (defn read-json
   "Read JSON from a string keywordizing keys"
   [s]
   (j/read-value s j/keyword-keys-object-mapper))
 
-
 (defn write-json
   "Write JSON to a string"
   [s]
   (j/write-value-as-string s))
 
-
 (defn flattenx
   "Flatten a nested collection"
   [coll]
   (remove nil? (flatten coll)))
-
 
 (defn mergex
   "Merge maps filtering nil values"
@@ -95,7 +89,6 @@
       string/lower-case
       keyword))
 
-
 ;; Taken from camel-snake-kebab.extras
 ;; https://clj-commons.org/camel-snake-kebab/
 ;; conflicts with clj-commons/clj-yaml {:mvn/version "1.0.27"}
@@ -105,12 +98,10 @@
   (letfn [(transform [[k v]] [(t k) v])]
     (postwalk (fn [x] (if (map? x) (into {} (map transform x)) x)) coll)))
 
-
 (defn snake-case
   "Snake case keys from `:max-tokens` to `:max_tokens`"
   [m]
   (transform-keys ->snake_case_keyword m))
-
 
 (defn log-call
   [url params]
@@ -118,10 +109,8 @@
   (doseq [[k v] (dissoc params :messages)]
     (timbre/infof "   %-15s%s" k v)))
 
-
 (defn now []
   (inst-ms (java.time.Instant/now)))
-
 
 (defn read-edn-file [file-path]
   (with-open [reader (io/reader file-path)]

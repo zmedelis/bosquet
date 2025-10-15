@@ -5,22 +5,22 @@
    [clojure.test :as t]))
 
 #_(t/deftest simple-memory-operations
-  (let [mem (m/->remember)]
-    (m/forget)
-    (mem nil "1")
-    (mem nil ["2" "3" "4" "5"])
+    (let [mem (m/->remember)]
+      (m/forget)
+      (mem nil "1")
+      (mem nil ["2" "3" "4" "5"])
     ;; no limits specified return all
-    (t/is (= ["1" "2" "3" "4" "5"] (.sequential-recall mem {r/memory-content identity})))
+      (t/is (= ["1" "2" "3" "4" "5"] (.sequential-recall mem {r/memory-content identity})))
     ;; last 3 objects returned, no token limit
-    (t/is (= ["3" "4" "5"] (.sequential-recall mem {r/memory-content    identity
-                                                    r/memory-objects-limit 3})))
+      (t/is (= ["3" "4" "5"] (.sequential-recall mem {r/memory-content    identity
+                                                      r/memory-objects-limit 3})))
     ;; object and token limitation
-    (t/is (= ["4" "5"] (.sequential-recall mem {r/memory-objects-limit 3
-                                                r/memory-tokens-limit  3
-                                                r/memory-content    identity})))
-    (t/is (= ["3" "4" "5"] (.sequential-recall mem {r/memory-objects-limit 3
-                                                    r/memory-tokens-limit  1000
-                                                    r/memory-content    identity})))))
+      (t/is (= ["4" "5"] (.sequential-recall mem {r/memory-objects-limit 3
+                                                  r/memory-tokens-limit  3
+                                                  r/memory-content    identity})))
+      (t/is (= ["3" "4" "5"] (.sequential-recall mem {r/memory-objects-limit 3
+                                                      r/memory-tokens-limit  1000
+                                                      r/memory-content    identity})))))
 
 (t/deftest cue-recall
   (let [mem        (m/->remember)

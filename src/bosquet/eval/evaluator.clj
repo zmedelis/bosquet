@@ -92,8 +92,8 @@
   #_(import 'bosquet.nlp.embeddings.OAIEmbeddings)
   (def opts {:collection-name "llama2-qna-eval"})
   #_(def memory (LongTermMemory.
-               (Qdrant. (:qdrant env/config))
-               (OAIEmbeddings. (:openai env/config))))
+                 (Qdrant. (:qdrant env/config))
+                 (OAIEmbeddings. (:openai env/config))))
   (def text (:text (document/parse "data/llama2.pdf")))
 
   #_(store-knowledge opts memory text)

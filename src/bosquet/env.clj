@@ -8,9 +8,7 @@
    [taoensso.timbre :as log]
    [bosquet.mcp.core :as mcp]))
 
-
 (defn exists? [file] (.exists file))
-
 
 (defn bosquet-cfg-file
   "Get Bosquet config file (secrets.edn or config.edn). First check project root
@@ -26,21 +24,17 @@
                                 (spit local-file "{}")
                                 local-file))))
 
-
 (def config-file
   "Config file to override `env.edn` or add new components: LLM providers, memory, tools."
   (bosquet-cfg-file "config.edn"))
-
 
 (def secrets-file
   "API keys and other things not to be shared"
   (bosquet-cfg-file "secrets.edn"))
 
-
 (defmethod aero/reader 'mmerge
   [_opts _tag value]
   (apply merge-with merge value))
-
 
 (defmethod aero/reader 'include-config
   [_opts _tag value]
@@ -51,17 +45,14 @@
                  value))
     config))
 
-
 (defn- read-edn
   [file]
   (if (and file (.exists file))
     (-> file slurp read-string)
     {}))
 
-
 (def config
   (aero/read-config (io/resource "env.edn")))
-
 
 (def model-providers
   "A list of model names supported by this service. It is an
@@ -82,16 +73,13 @@
              {}
              config))
 
-
 (defn val
   "Get configuration at path"
   [& path]
   (get-in config path))
 
-
 (defn- merge-config [cfg conf-path value]
   (merge cfg (assoc-in cfg conf-path value)))
-
 
 (defn- update-props-file
   [file conf-path value]
@@ -107,20 +95,16 @@
         (println "Restoring config.")
         (spit file cfg)))))
 
-
 (def update-config-file
   (partial update-props-file config-file))
 
-
 (def update-secrets-file
   (partial update-props-file secrets-file))
-
 
 (defn configured-api-keys
   "Get a list of keys set in `secrects.edn`"
   []
   (-> secrets-file (read-edn) keys))
-
 
 (defn default-service
   "Get default LLM service as defiened in config.edn.

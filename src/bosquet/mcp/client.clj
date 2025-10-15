@@ -3,7 +3,6 @@
   (:require [bosquet.mcp.transport :refer [send-request send-notification close]]
             [bosquet.mcp.stdio-transport :as stdio-transport]))
 
-
 (defn create-transport
   "Create appropriate transport based on config.
    Automatically starts processes for stdio transport."
@@ -13,14 +12,13 @@
     :http  (throw (ex-info "http: Not yet supported" {:type type :config config}))
     (throw (ex-info "Unknown transport type" {:type type :config config}))))
 
-
 (defn initialize
   "Initialize MCP connection"
   [transport]
   (let [response (send-request transport "initialize"
-    {:protocolVersion "2024-11-05"
-     :capabilities {:tools {}}
-     :clientInfo {:name "bosquet-mcp" :version "1.0.0"}})]
+                               {:protocolVersion "2024-11-05"
+                                :capabilities {:tools {}}
+                                :clientInfo {:name "bosquet-mcp" :version "1.0.0"}})]
     (send-notification transport "notifications/initialized" {})
     response))
 
@@ -32,8 +30,8 @@
 (defn call-tool
   "Call a tool"
   [transport tool-name arguments]
-  (get-in (send-request transport "tools/call" 
-            {:name tool-name :arguments arguments})
+  (get-in (send-request transport "tools/call"
+                        {:name tool-name :arguments arguments})
           [:result :content]))
 
 (defn shutdown

@@ -94,7 +94,7 @@
     (if (string/blank? text)
       text
       (util/without-escaping
-        (selmer/render text ctx)))))
+       (selmer/render text ctx)))))
 
 (defn missing-value-noop [tag _context-map]
   (format "{{%s}}" (:tag-value tag)))

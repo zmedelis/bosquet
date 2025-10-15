@@ -2,24 +2,19 @@
   (:require
    [clojure.core.cache.wrapped :as w]))
 
-
 (defn ->cache []
   (w/fifo-cache-factory {}))
 
-
 (def cache (->cache))
-
 
 (defn evict
   [props]
   (w/evict cache props))
 
-
 (defn evict-all
   []
   (doseq [k (keys @cache)]
     (evict k)))
-
 
 (defn lookup-or-call
   "Call `gen-fn` function with `properties` that are used as
@@ -27,4 +22,4 @@
   the cache"
   [gen-fn properties]
   (w/lookup-or-miss cache properties
-   (fn [_item] (gen-fn properties))))
+                    (fn [_item] (gen-fn properties))))

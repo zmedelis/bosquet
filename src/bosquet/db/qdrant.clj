@@ -7,12 +7,10 @@
    [jsonista.core :as j]
    [taoensso.timbre :as log]))
 
-
 (defn- collections-path
   "URL endpoint for collection with the `name` operations."
   [{:keys [api-endpoint]} {:keys [collection-name]}]
   (str  api-endpoint "/collections/" collection-name))
-
 
 (defn- points-path
   "URL endpoint for collection with the `points` operations."
@@ -20,12 +18,10 @@
   (format "%s/collections/%s/points?wait=true"
           api-endpoint collection-name))
 
-
 (defn- search-path
   "URL endpoint for collection with the `points` operations."
   [{:keys [api-endpoint]} {:keys [collection-name]}]
   (format "%s/collections/%s/points/search" api-endpoint collection-name))
-
 
 (defn collection-info
   [opts params]
@@ -34,7 +30,6 @@
     (condp = status
       200 (-> body (j/read-value j/keyword-keys-object-mapper) :result)
       404 nil)))
-
 
 (defn create-collection
   "Create a collection with `name` and `config`"
@@ -48,25 +43,22 @@
                                         (dissoc opts :api-endpoint)
                                         params))})})))
 
-
 (defn delete-collection
   [opts params]
   (hc/delete opts params))
-
 
 (defn add-docs
   "Add docs to the `collection-name` if collection does not exist, create it."
   [opts params data]
   (when (seq data)
-        (let [points {:points (mapv (fn [{:keys [payload embedding]}]
-                                      {:id      (u/uuid)
-                                       :vector  embedding
-                                       :payload payload})
-                                    data)}]
-          (hc/put (points-path opts params)
-                  {:content-type :json
-                   :body         (j/write-value-as-string points)}))))
-
+    (let [points {:points (mapv (fn [{:keys [payload embedding]}]
+                                  {:id      (u/uuid)
+                                   :vector  embedding
+                                   :payload payload})
+                                data)}]
+      (hc/put (points-path opts params)
+              {:content-type :json
+               :body         (j/write-value-as-string points)}))))
 
 (defn search
   ([opts params embeds-vector]
@@ -87,17 +79,17 @@
        (log/error e)))))
 
 (deftype Qdrant
-    [params]
-    vdb/VectorDB
+         [params]
+  vdb/VectorDB
 
-    (create [_this]
-      (create-collection (env/val :qdrant) params))
+  (create [_this]
+    (create-collection (env/val :qdrant) params))
 
-    (delete [_this]
-      (delete-collection (env/val :qdrant) params))
+  (delete [_this]
+    (delete-collection (env/val :qdrant) params))
 
-    (add [_this docs]
-      (add-docs (env/val :qdrant) params docs))
+  (add [_this docs]
+    (add-docs (env/val :qdrant) params docs))
 
-    (search [_this embeddings search-opts]
-      (search (env/val :qdrant) params embeddings search-opts)))
+  (search [_this embeddings search-opts]
+    (search (env/val :qdrant) params embeddings search-opts)))

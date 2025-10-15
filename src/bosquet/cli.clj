@@ -64,8 +64,6 @@
        (string/join \newline)
        println))
 
-
-
 (defn- read-input [label]
   (printf "%s: " (name label))
   (flush)
@@ -93,7 +91,6 @@
   (env/update-config-file [:default-llm] options)
   (println "Defaults:")
   (show-defaults))
-
 
 (defn- list-llms
   []

@@ -15,7 +15,6 @@
            (dissoc service-config
                    wkk/complete-fn wkk/chat-fn wkk/embed-fn)))
 
-
 (defn store-embeds
   "Generate embeddings via the `llm` provider, and save them to `storage`"
   [storage llm opts items]
@@ -54,7 +53,6 @@
                           wkk/service wkk/openai}
                          params))))
 
-
 (defn ->cue-memory
   [storage llm]
   (fn [{limit r/memory-objects-limit :or {limit 3} :as opts} cue]
@@ -70,9 +68,8 @@
   (fn [opts observation]
     (store-embeds storage llm opts observation)))
 
-
 #_(deftype LongTermMemory
-    [storage llm]
+           [storage llm]
     mem/Memory
 
     (forget
@@ -85,9 +82,7 @@
 
     (free-recall [_this _cueue _params])
 
-
     (sequential-recall [_this _params])
-
 
     (cue-recall
       [_this cue {:keys [limit] :or {limit 3} :as opts}]

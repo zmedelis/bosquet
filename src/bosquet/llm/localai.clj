@@ -37,7 +37,7 @@
   (complete* (wkk/localai env/config) params))
 
 (comment
-  (chat {:messages [{:role :user :content "2/2="}]}) 
+  (chat {:messages [{:role :user :content "2/2="}]})
   (complete {:prompt "2+2=" wkk/model-params {:model :phi-4}})
   (complete {:prompt "HOw are you doing?" wkk/model-params {:model :phi-4}})
   #__)

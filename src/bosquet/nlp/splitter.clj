@@ -36,7 +36,6 @@
   "Text splitter by tokens. Tokenization is done based on the provided model."
   :splitter/token-split)
 
-
 (defn- load-splitter-model
   "Load OpenNLP model for a `lang` sentence boundary detection.
 

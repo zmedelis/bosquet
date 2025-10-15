@@ -6,7 +6,6 @@
    [bosquet.llm.wkk :as wkk]
    [bosquet.llm.tools :as tools]))
 
-
 (defn ->completion
   [{:keys [response message prompt_eval_count eval_count]
     ;; ollama returns 0 for prompt eval if the prompt was cached
@@ -21,24 +20,20 @@
               :completion eval_count
               :total      (+ eval_count prompt_eval_count)}))
 
-
 (defn- chat-fn [{:keys [api-endpoint]}]
   (partial http/resilient-post (str api-endpoint "/chat")))
-
 
 (defn- completion-fn [{:keys [api-endpoint]}]
   (partial http/resilient-post (str api-endpoint "/generate")))
 
-
 (defn- embedding-fn [{:keys [api-endpoint]}]
   (partial http/resilient-post (str api-endpoint "/embeddings")))
-
 
 (defn- generate
   [default-params params gen-fn]
   (let [tools  (map tools/tool->function (wkk/tools params))
         tool-defs (wkk/tools params)
-        params (-> params (assoc :stream false) (oai/prep-params default-params) (assoc :tools tools) ) ]
+        params (-> params (assoc :stream false) (oai/prep-params default-params) (assoc :tools tools))]
     (-> (gen-fn params)
         (tools/apply-tools wkk/ollama params tool-defs gen-fn)
         ->completion)))
@@ -47,11 +42,9 @@
   [service-cfg params]
   (generate service-cfg params (chat-fn service-cfg)))
 
-
 (defn complete
   [service-cfg params]
-  (generate service-cfg (dissoc params wkk/tools)(completion-fn service-cfg)))
-
+  (generate service-cfg (dissoc params wkk/tools) (completion-fn service-cfg)))
 
 (defn create-embedding
   "Works as the equivalent of this:
@@ -78,20 +71,20 @@
                     {:text "Here is an article about llamas..."
                      :score 100})
   (complete {:api-endpoint "http://localhost:11434/api"}
-            {:model "llama3.2:3b" 
+            {:model "llama3.2:3b"
              :prompt "why is the sky blue?"
+             wkk/tools [#'tools/get-current-weather]})
+
+  (chat {:api-endpoint "http://localhost:11434/api"}
+        {:model "llama3.2:3b"
+         :messages [{:role :user :content "What is the weather in san francisco?"}]
          wkk/tools [#'tools/get-current-weather]})
 
-  (chat {:api-endpoint "http://localhost:11434/api"} 
-        {:model "llama3.2:3b" 
-         :messages [ {:role :user :content "What is the weather in san francisco?" }]
-         wkk/tools [#'tools/get-current-weather]} )
-
-  (chat {:api-endpoint "http://localhost:11434/api"} 
-        {:model "llama3.2:3b" 
-         :messages [ {:role :user :content "What is 2 plus 2 minus 2" }]
-         wkk/tools [#'tools/add #'tools/sub]} )
+  (chat {:api-endpoint "http://localhost:11434/api"}
+        {:model "llama3.2:3b"
+         :messages [{:role :user :content "What is 2 plus 2 minus 2"}]
+         wkk/tools [#'tools/add #'tools/sub]})
   (complete {:api-endpoint "http://localhost:11434/api"}
-              {:model "llama3.2:3b" 
-               :prompt "The current weather in san francisco is"
-                wkk/tools [#'tools/get-current-weather]}))
+            {:model "llama3.2:3b"
+             :prompt "The current weather in san francisco is"
+             wkk/tools [#'tools/get-current-weather]}))

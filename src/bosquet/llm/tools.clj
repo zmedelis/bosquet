@@ -27,14 +27,14 @@
 (defn- parse-arguments [model-engine result]
   (let [result (condp = model-engine
                  wkk/ollama (:message result)
-                 wkk/openai (-> result :choices first :message))] 
+                 wkk/openai (-> result :choices first :message))]
     (update result :tool_calls
-          #(map (fn [tool-call]
-                  (update-in tool-call [:function :arguments]
-                             (fn [arguments]
-                               (if (string? arguments)
-                                 (json/parse-string arguments true) 
-                                 arguments)))) %)) ))
+            #(map (fn [tool-call]
+                    (update-in tool-call [:function :arguments]
+                               (fn [arguments]
+                                 (if (string? arguments)
+                                   (json/parse-string arguments true)
+                                   arguments)))) %))))
 
 (defn- apply-fn [tool function]
   (let [args (first (:arglists (meta tool)))]
@@ -46,13 +46,13 @@
     {:id id
      :function function
      :result (when tool
-               (apply-fn tool function))} ))
+               (apply-fn tool function))}))
 
 (defn- tool-result-formatter
   [model-engine result tool-results]
   (let [tool-results (map #(condp = model-engine
-                              wkk/ollama {:role "tool" :content (json/generate-string (:result %))}
-                              wkk/openai {:role "tool" :content (json/generate-string (:result %)) :tool_call_id (:id %)}) tool-results)]
+                             wkk/ollama {:role "tool" :content (json/generate-string (:result %))}
+                             wkk/openai {:role "tool" :content (json/generate-string (:result %)) :tool_call_id (:id %)}) tool-results)]
     (condp = model-engine
       wkk/ollama tool-results
       wkk/openai (concat [{:role "assistant" :tool_calls (-> result :choices first :message :tool_calls)}] tool-results))))
@@ -63,7 +63,7 @@
   (if (not-empty tools)
     (let [parsed-result (parse-arguments engine result)
           fn-results    (->> (:tool_calls parsed-result)
-                          (map #(apply-tool tools %)))
+                             (map #(apply-tool tools %)))
           tool-messages (tool-result-formatter engine result fn-results)
           messages      (concat (vec (:messages params)) tool-messages)]
       (timbre/debug messages)
@@ -77,6 +77,6 @@
 (comment
   ;; Example tool registration
   (require '[bosquet.tool.math :refer [add]]
-           '[bosquet.tool.weather :refer [get-current-weather]]) 
+           '[bosquet.tool.weather :refer [get-current-weather]])
   (tool->function #'get-current-weather)
   (tool->function #'add))

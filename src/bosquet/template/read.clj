@@ -44,11 +44,11 @@
                         (string? tpl-chat-or-graph) [tpl-chat-or-graph]
                         (map? tpl-chat-or-graph)    (->> tpl-chat-or-graph vals (map u/join-coll))
                         (vector? tpl-chat-or-graph) (map (fn [[_ content]]
-                                                       (u/join-coll content)) tpl-chat-or-graph))
+                                                           (u/join-coll content)) tpl-chat-or-graph))
         non-data-refs (set (cond
                              (map? tpl-chat-or-graph)    (keys tpl-chat-or-graph)
                              (vector? tpl-chat-or-graph) (map (fn [[_ content]]
-                                                            (when (map? content) (wkk/var-name content)))
-                                                          tpl-chat-or-graph)))
+                                                                (when (map? content) (wkk/var-name content)))
+                                                              tpl-chat-or-graph)))
         slots         (selmer/known-variables templates)]
     (set/difference slots non-data-refs)))

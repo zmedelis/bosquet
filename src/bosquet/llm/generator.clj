@@ -24,14 +24,12 @@
   This is a key for prompt entry"
   :bosquet.template/prompt)
 
-
 (def default-template-completion
   "Simple string template generation case does not create var names for the completions,
   compared to Map generation where map keys are the var names.
 
   This is a key for completion entry"
   :bosquet.template/completion)
-
 
 (defn llm
   "A helper function to create LLM spec for calls during the generation process.
@@ -53,12 +51,10 @@
         (assoc-in [wkk/model-params :model] service-or-model))
     (assoc (apply hash-map args) wkk/service service-or-model)))
 
-
 (defn fun
   [impl args]
   {wkk/fun-impl impl
    wkk/fun-args args})
-
 
 (defn- resolver-error-wrapper
   [env]
@@ -83,7 +79,6 @@
                  (j/write-value-as-string content)
                  content)})
    messages))
-
 
 (defn call-llm
   "Make a call to the LLM service.
@@ -162,7 +157,6 @@
                  accumulated-usage
                  ctx))))))
 
-
 (defn- ->resolver
   [name-sufix message-key input resolve-fn]
   (timbre/infof "resolver: (%s%s) => %s" name-sufix (if (seq input) (str " " (string/join " " input)) "") message-key)
@@ -171,7 +165,6 @@
     ::pco/output  [message-key]
     ::pco/input   (vec input)
     ::pco/resolve resolve-fn}))
-
 
 (defn find-refering-templates
   "Given all the templates in a `context-map` find out which ones
@@ -185,13 +178,11 @@
    []
    context-map))
 
-
 (defn- entry
   [{entry-tree ::pet/entity-tree*} entry-key]
   (get @entry-tree entry-key))
 
 (selmer/set-missing-value-formatter)
-
 
 (defn run-node-function
   "Run a function definition in the prompt tree.
@@ -203,7 +194,6 @@
                      (mapv keyword (wkk/fun-args node)))]
     (apply (wkk/fun-impl node) args)))
 
-
 (defn- render
   [{entry-tree ::pet/entity-tree*} content]
   (selmer/render content
@@ -213,24 +203,20 @@
                    (fn [m k v] (assoc m k (completions v)))
                    @entry-tree))))
 
-
 (defn- llm-node?
   "Is this node defining an LLM call?"
   [node]
   (and (map? node) (contains? node wkk/service)))
-
 
 (defn- fun-node?
   "Is this node defining a custom function call?"
   [node]
   (and (map? node) (contains? node wkk/fun-impl)))
 
-
 (defn- template-node?
   "Is this node defining a string template?"
   [node]
   (not (map? node)))
-
 
 (defn- generation-resolver
   [llm-config message-key context vars-map]
@@ -264,8 +250,7 @@
                                             (merge vars-map context)))})))
        refs)
 
-
-      ;; Template node
+;; Template node
       (template-node? node)
       (let [message-content (selmer/render node vars-map)]
         (->resolver "template" message-key
@@ -284,13 +269,11 @@
                                                     @entry-tree)))]
                         {message-key result})))))))
 
-
 (defn- prompt-indexes [llm-config context vars-map]
   (pci/register
    (mapv (fn [prompt-key]
            (generation-resolver llm-config prompt-key context vars-map))
          (keys context))))
-
 
 (defn append-generation-instruction
   "If template does not specify generation function append the default one."
@@ -298,12 +281,10 @@
   {default-template-prompt     (selmer/append-slot string-template default-template-completion)
    default-template-completion (env/default-service)})
 
-
 (defn gen-environment
   [llm-config context vars-map]
   (-> (prompt-indexes llm-config context vars-map)
       (resolver-error-wrapper)))
-
 
 (defn- prep-graph
   "Join strings if tempalte is provided as collection"
@@ -324,7 +305,6 @@
                        #_#_(wkk/fun-impl v) (run-node-function v available-data)
                        :else            v)))
         {})))
-
 
 (defn- template->chat
   "Convert Selmer template into chat structure. This
@@ -362,7 +342,6 @@
                      (conj chat [:user (apply str (mapv second elements))])))
                  []))))
 
-
 (defn- split-gen-graph
   [graph]
   (reduce-kv
@@ -373,10 +352,8 @@
    [{} {}]
    graph))
 
-
 (defn- index-keys [index key]
   (filter key (keys index)))
-
 
 (defn top-level-template
   [index context]
@@ -396,7 +373,6 @@
    (remove #(or (coll? (get generation-result %))
                 (seq (selmer/known-variables (str (get generation-result %)))))
            (keys generation-result))))
-
 
 (defn complete-graph
   "Completion case when we are processing prompt graph. Main work here is on constructing
@@ -436,14 +412,12 @@
          {completions path-completions}
          {usage path-usage})))))
 
-
 (defn complete-template
   "Completion for a case when we have simple string `prompt`"
   [llm-config template vars-map]
   (get-in
    (complete-graph llm-config (append-generation-instruction template) vars-map)
    [completions default-template-completion]))
-
 
 (defn generate
   "Generate completions for various modes. Generation mode is determined
@@ -539,7 +513,6 @@
     "Laimutį Adomaitį, Aldą Lukošaitį, Vladimiras sako, dirbs ir toliau ne vien todėl, "
     "kad tai mylimas darbas."))
 
-
   (generate
    "When I was {{age}} my sister was half my age. Now I’m 70 how old is my sister?"
    {:age 13})
@@ -617,7 +590,7 @@
   (require
    '[bosquet.llm.tools :as tools]
    '[bosquet.tool.math :refer [add sub]]
-   '[bosquet.tool.weather :refer [get-current-weather]]) 
+   '[bosquet.tool.weather :refer [get-current-weather]])
   (tools/tool->function #'get-current-weather)
   (tools/tool->function #'add)
   (tools/tool->function #'sub)

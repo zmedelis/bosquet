@@ -50,14 +50,14 @@
 
 ;; Someone who forgets it all. To be used when memory is not needed (default)
 (deftype Amnesiac
-    []
-    Memory
-    (volume [_this _opts])
-    (remember [_this _observation _params])
-    (forget [_this _params])
-    (free-recall [_this _cueue _params])
-    (sequential-recall [_this _params])
-    (cue-recall [_this _cue _params]))
+         []
+  Memory
+  (volume [_this _opts])
+  (remember [_this _observation _params])
+  (forget [_this _params])
+  (free-recall [_this _cueue _params])
+  (sequential-recall [_this _params])
+  (cue-recall [_this _cue _params]))
 
 (defn handle-recall
   "Handle memory retrieval. Dispatch to retrieval method based on `recall-function`.
@@ -77,7 +77,6 @@
     (do
       (timbre/warnf "Memory system is not specified. Using 'context' as memories.")
       context)))
-
 
 (defn available-memories
   [{system        wkk/memory-system

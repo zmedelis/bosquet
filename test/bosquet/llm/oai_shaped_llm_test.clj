@@ -4,7 +4,6 @@
    [bosquet.llm.wkk :as wkk]
    [clojure.test :refer [deftest is]]))
 
-
 (deftest prep-params-test
   (is (= {}
          (oai/prep-params {} {})))
@@ -18,7 +17,6 @@
           {wkk/model-params {:model :gpt-100}
            :cache           true}))))
 
-
 (deftest completion-normalization
   (let [txt       "Hello there, how may I assist you today?"
         usage-in  {:prompt_tokens 5 :completion_tokens 7 :total_tokens 12}
@@ -27,18 +25,18 @@
             wkk/usage           usage-out
             wkk/generation-type :chat}
            (oai/->completion {:model   "gpt-3.5-turbo"
-                               :object  "chat.completion"
-                               :choices [{:index         0
-                                          :message       {:role "assistant" :content txt}
-                                          :finish_reason "stop"}]
-                               :usage   usage-in})))
+                              :object  "chat.completion"
+                              :choices [{:index         0
+                                         :message       {:role "assistant" :content txt}
+                                         :finish_reason "stop"}]
+                              :usage   usage-in})))
     (is (= {wkk/content         txt
             wkk/usage           usage-out
             wkk/generation-type :completion}
            (oai/->completion {:object  "text_completion"
-                               :model   "gpt-3.5-turbo"
-                               :choices [{:text          txt
-                                          :index         0
-                                          :logprobs      nil
-                                          :finish_reason "length"}]
-                               :usage   usage-in})))))
+                              :model   "gpt-3.5-turbo"
+                              :choices [{:text          txt
+                                         :index         0
+                                         :logprobs      nil
+                                         :finish_reason "length"}]
+                              :usage   usage-in})))))

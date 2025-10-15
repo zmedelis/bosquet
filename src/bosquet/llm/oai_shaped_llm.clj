@@ -5,7 +5,6 @@
    [bosquet.utils :as u]
    [clojure.set :as set]))
 
-
 (defn prep-params
   "Shape `params` into the LLM API service required structure.
   Remove or move `Bosquet` parameters.
@@ -49,7 +48,6 @@
   [{r :role c :content}]
   {role (role-mapping (keyword r)) content c})
 
-
 (defn ->completion
   "Build Bosquet completion data structure from
   the OAI-shaped responses.
@@ -83,7 +81,6 @@
                api-endpoint-messages)
            (when api-key {:oauth-token api-key})))
 
-
 (defn create-completion
   "Make a call to OAI API shaped service.
 
@@ -102,11 +99,9 @@
          lm-call
          ->completion))))
 
-
 (defn chat
   [service-cfg params]
   (create-completion service-cfg params))
-
 
 (defn complete
   [service-cfg {prompt :prompt :as params}]

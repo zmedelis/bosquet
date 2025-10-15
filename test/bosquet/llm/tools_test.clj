@@ -8,7 +8,6 @@
    [clojure.test :refer [deftest is]]
    [jsonista.core :as j]))
 
- 
 (deftest test-tool->function
   (let [weather-spec (tool->function #'get-current-weather)]
     (is (= "function" (:type weather-spec)))
@@ -20,7 +19,6 @@
     (is (= "string" (get-in weather-spec [:function :parameters :properties :location :type])))
     (is (= "The city, e.g. Vilnius" (get-in weather-spec [:function :parameters :properties :location :description])))
     (is (= ["location"] (get-in weather-spec [:function :parameters :required])))))
-
 
 (deftest test-apply-tools
   (let [available-tools [#'get-current-weather #'add]
@@ -55,6 +53,6 @@
       (is (some? (get-in (second messages) [:tool_calls 0 :function :name])))
       (is (= "tool" (:role (nth messages 2))))
       (is (= "call_abc123" (:tool_call_id (nth messages 2))))
-      (is (= {:temperature "24" :unit"celcius" :location "Vilnius"}
+      (is (= {:temperature "24" :unit "celcius" :location "Vilnius"}
              (-> messages (nth 2) :content (j/read-value j/keyword-keys-object-mapper))))
       (is (nil? (get @generator-called-with wkk/tools)) "tools-key should be dissoc'd"))))

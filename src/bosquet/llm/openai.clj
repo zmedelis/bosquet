@@ -8,29 +8,26 @@
    [bosquet.llm.tools :as tools]
    [net.modulolotus.truegrit.circuit-breaker :as cb]))
 
-
 (defn chat*
   [service-cfg params]
   (let [tools (map tools/tool->function (wkk/tools params))
         tool-defs (wkk/tools params)
         gen-fn (cb/wrap (fn [{url :api-endpoint default-params :model-params :as service-cfg} params]
                           (u/log-call url params)
-                          (let [params (cond-> params 
-                                         true (oai/prep-params default-params) 
-                                         (not-empty tools) (assoc :tools tools))] 
+                          (let [params (cond-> params
+                                         true (oai/prep-params default-params)
+                                         (not-empty tools) (assoc :tools tools))]
                             (-> params
                                 (api/create-chat-completion service-cfg))))
-                          u/rest-service-cb)]
-    (-> (gen-fn service-cfg params) 
+                        u/rest-service-cb)]
+    (-> (gen-fn service-cfg params)
         (tools/apply-tools wkk/openai params tool-defs (partial gen-fn service-cfg))
         oai/->completion)))
-
 
 (defn chat
   "Run 'chat' type completion. Pass in `messages` in ChatML format."
   ([service-cfg params] (chat* service-cfg params))
   ([params] (chat (wkk/openai env/config) params)))
-
 
 (def complete*
   "Run 'completion' type generation. `params` needs to have `prompt` key."
@@ -48,7 +45,7 @@
 
 (comment
   (require '[bosquet.tool.math :refer [add sub]]
-           '[bosquet.tool.weather :refer [get-current-weather]]) 
+           '[bosquet.tool.weather :refer [get-current-weather]])
   (tools/tool->function #'get-current-weather)
   (tools/tool->function #'add)
   (tools/tool->function #'sub)

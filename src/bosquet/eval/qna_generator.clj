@@ -17,7 +17,6 @@
 (def query-count :eval/query-count)
 (def max-chunks :eval/max-chunks)
 
-
 (def context-prompt-block
   (u/join-lines
    "CONTEXT INFORMATION is below:"
@@ -25,13 +24,11 @@
    "{{context}}"
    "~~~~~~"))
 
-
 (def format-constraints
   #_"Write your response as numbered list, one item per line."
   (u/join-lines
    "Write your response in JSON. Resulting JSON is a vector containing generated items one vector element per generated item."
    "Example JSON output: [\"Item 1\", \"Item 2\", \"Item 3\", \"Item 4\"]"))
-
 
 (defn question-building-prompts
   [question-count]
@@ -51,7 +48,6 @@
    :questions (gen/llm :gpt-4
                        wkk/output-format    :list
                        wkk/model-parameters {:max-tokens (* question-count 100)})})
-
 
 (defn answering-prompt
   [question-count]

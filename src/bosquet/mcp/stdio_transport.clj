@@ -44,11 +44,11 @@
                                   :params  (or params {})}
           ^BufferedWriter writer (io/writer (.getOutputStream process))
           notification-json      (json/write-value-as-string notification)]
-        (timbre/debug "STDIO → (notification)" notification-json)
-        (.write writer notification-json)
-        (.newLine writer)
-        (.flush writer)))
-  
+      (timbre/debug "STDIO → (notification)" notification-json)
+      (.write writer notification-json)
+      (.newLine writer)
+      (.flush writer)))
+
   (close [_]
     (.destroy process)))
 

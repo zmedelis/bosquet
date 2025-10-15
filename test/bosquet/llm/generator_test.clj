@@ -8,20 +8,17 @@
    [bosquet.utils :as u]
    [clojure.test :refer [deftest is]]))
 
-
 (def echo-service-chat-last
   "Fake generation. Take last message and repeat it as generation output"
   (fn [_system {msg :messages}]
     {wkk/content
      {:role :assistant :content (-> msg last :content)}}))
 
-
 (def echo-service-chat-first
   "Fake generation. Take first message and repeat it as generation output"
   (fn [_system {msg :messages}]
     {wkk/content
      {:role :assistant :content (-> msg first :content)}}))
-
 
 (deftest chat-generation
   (with-redefs [env/config {:service-last  {:chat-fn echo-service-chat-last}
@@ -52,7 +49,6 @@
               :bosquet/total {:prompt 0 :completion 0 :total 0}}
              usage)))))
 
-
 (deftest map-generation
   (with-redefs [env/config {:service-const
                             {:chat-fn (fn [_ _]
@@ -82,7 +78,6 @@
               :bosquet/total {:prompt 2 :completion 6 :total 8}}
              usage)))))
 
-
 (deftest fail-generation
   (is (match?
        {gen/completions {:in "How are you? {{out}}" :out nil}
@@ -93,13 +88,11 @@
          :out (gen/llm :non-existing-service)}
         {}))))
 
-
 (deftest appending-gen-instruction
   (is (= {gen/default-template-prompt     "What is the distance from Moon to Io? {{bosquet..template/completion}}"
           gen/default-template-completion (env/default-service)}
          (gen/append-generation-instruction
           "What is the distance from Moon to Io?"))))
-
 
 (deftest chache-usage
   (let [call-counter (atom 0)
@@ -131,25 +124,21 @@
       (doseq [p @cached-props]
         (cache/evict p)))))
 
-
 (deftest find-var-references
   (is (= [:y :z] (gen/find-refering-templates :x {:x "aaa" :y "{{x}}" :z "{{x}} {{y}}"})))
   (is (= [:y :z] (gen/find-refering-templates :n/x {:x "aaa" :y "{{n/x}}" :z "{{n/x}} {{y}}"})))
   (is (= [:n/y :n/z] (gen/find-refering-templates :x {:x "aaa" :n/y "{{x}}" :n/z "{{x}} {{y}}"})))
   (is (= [] (gen/find-refering-templates :x {:x "aaa"}))))
 
-
 (deftest ->chatml-conversion
   (is (= [{:role :user :content "Hi!"}] (gen/->chatml [[:user "Hi!"]])))
   (is (= [{:role :user :content "{\"lon\":54.1,\"lat\":50.3}"}]
          (gen/->chatml [[:user {:lon 54.1 :lat 50.3}]]))))
 
-
 (deftest llm-spec-construction
   (is (= {wkk/service :openai} (gen/llm :openai)))
   (is (= {wkk/model-params {:model :command} wkk/service :cohere}
          (gen/llm :command))))
-
 
 (deftest slot-filling
   (is (= "3 + 1 = 4"
@@ -157,7 +146,6 @@
           (gen/generate
            {:z "{{y}} + {{x}} = {{a}}" :a 4} {:x 1 :y 3})
           [gen/completions :z]))))
-
 
 (deftest run-node-function-test
   (is (= 3 (gen/run-node-function
