@@ -1,8 +1,8 @@
 (ns bosquet.llm.tools
-  (:require [clojure.string :as str]
-            [cheshire.core :as json]
-            [bosquet.llm.wkk :as wkk]
-            [taoensso.timbre :as timbre]))
+  (:require
+   [bosquet.llm.wkk :as wkk]
+   [cheshire.core :as json]
+   [taoensso.timbre :as timbre]))
 
 (defn tool->function [tool-var]
   (let [fn-meta (meta tool-var)
