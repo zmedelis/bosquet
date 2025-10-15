@@ -6,6 +6,7 @@
    [bosquet.utils :as u]
    [clojure.java.io :as io]
    [taoensso.timbre :as log]
+   [bosquet.mcp.core :as mcp]
    [bosquet.mcp.tools :as mcp-tools]))
 
 
@@ -139,7 +140,8 @@
 (defn initialize-mcp-tools
   "Initialize mcp tools as defined in config.edn.
   Once initialized all the tool definitions are included in the bosquet.mcp.tools namespace.
-  You can then pass the tool symbols in wkk/tools or use any of the functions in the llm/tools namespace to extract metadata etc"
+  You can then pass the tool symbols in wkk/tools or use any of the functions in the llm/tools
+  namespace to extract metadata etc"
   []
   (when-let [mcp-servers (:mcp-servers config)]
-    (bosquet.mcp/intialize-mcp-servers! mcp-servers)))
+    (mcp/initialize-mcp-servers! mcp-servers)))
