@@ -6,8 +6,7 @@
    [bosquet.utils :as u]
    [clojure.java.io :as io]
    [taoensso.timbre :as log]
-   [bosquet.mcp.core :as mcp]
-   [bosquet.mcp.tools :as mcp-tools]))
+   [bosquet.mcp.core :as mcp]))
 
 
 (defn exists? [file] (.exists file))

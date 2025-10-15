@@ -1,11 +1,5 @@
 (ns bosquet.agent.tool
-  (:require
-   [taoensso.timbre :as timbre]
-   [taoensso.timbre.appenders.core :as appenders]))
-
-#_(timbre/merge-config!
-   {:appenders {:println {:enabled? false}
-                :spit    (appenders/spit-appender {:fname "bosquet.log"})}})
+  (:require [taoensso.timbre :as timbre]))
 
 (defprotocol Tool
   (my-name [this])
@@ -16,7 +10,7 @@
 (defn call-tool [agent action ctx]
   (condp = action
     :search (let [result (search agent ctx)]
-              {:lookup-db    [[0 true result]] #_(mind-reader/lookup-index parameters result)
+              {:lookup-db    [[0 true result]]
                :lookup-index 0})
     :lookup (lookup agent ctx)
     :finish (finish agent ctx)))
@@ -26,25 +20,21 @@
 ;;
 
 (defn print-indexed-step [action plan step]
-  (println (format "%s: %s" (name action) step))
-  (println plan))
+  (timbre/info (format "%s: %s" (name action) step))
+  (timbre/info plan))
 
 (defn print-action [action parameters step]
-  (println)
-  (println "Act: " step)
-  (println "- Action: " (name action))
-  (println "- Parameters: " parameters))
+  (timbre/info "\nAct: " step)
+  (timbre/info "- Action: " (name action))
+  (timbre/info "- Parameters: " parameters))
 
 (defn print-thought [plan content]
-  (println)
-  (println (str plan ":"))
-  (println content))
+  (timbre/info (str "\n" plan ":"))
+  (timbre/info content))
 
 (defn print-result [result]
-  (println)
-  (println "Agent found the solution: " result))
+  (timbre/info "Agent found the solution: " result))
 
 (defn print-too-much-thinking-error [steps]
-  (println)
-  (println
-   (format "Agent was thinking for %s steps and failed to find a solution" steps)))
+  (timbre/info
+   (format "\nAgent was thinking for %s steps and failed to find a solution" steps)))

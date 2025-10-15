@@ -40,7 +40,7 @@
   (count (encode text model)))
 
 (comment
-  (def text (:text (bosquet.read.document/parse "data/llama2.pdf")))
+  (def text "Some random text")
   (token-count text :gpt-4)
   (decode (encode "Small test" :gpt-4) :gpt-4)
   #__)

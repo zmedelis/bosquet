@@ -20,36 +20,35 @@
 (defrecord StdioTransport [process]
   MCPTransport
   (send-request [_ method params]
-    (let [request {:jsonrpc "2.0"
-                   :id (System/currentTimeMillis)
-                   :method method
-                   :params (or params {})}
+    (let [request                {:jsonrpc "2.0"
+                                  :id      (System/currentTimeMillis)
+                                  :method  method
+                                  :params  (or params {})}
           ^BufferedWriter writer (io/writer (.getOutputStream process))
           ^BufferedReader reader (io/reader (.getInputStream process))]
-      
+
       (let [request-json (json/write-value-as-string request)]
         (timbre/debug "STDIO →" request-json)
         (.write writer request-json)
         (.newLine writer)
         (.flush writer))
-      
+
       (let [response-json (.readLine reader)
-            response (json/read-value response-json mapper)]
+            response      (json/read-value response-json mapper)]
         (timbre/debug "STDIO ←" response-json)
         response)))
- 
-   (send-notification [_ method params]
-    (let [notification {:jsonrpc "2.0"
-                       :method method
-                       :params (or params {})}
-          ^BufferedWriter writer (io/writer (.getOutputStream process))]
-      
-      (let [notification-json (json/write-value-as-string notification)]
+
+  (send-notification [_ method params]
+    (let [notification           {:jsonrpc "2.0"
+                                  :method  method
+                                  :params  (or params {})}
+          ^BufferedWriter writer (io/writer (.getOutputStream process))
+          notification-json      (json/write-value-as-string notification)]
         (timbre/debug "STDIO → (notification)" notification-json)
         (.write writer notification-json)
         (.newLine writer)
-        (.flush writer))))
-
+        (.flush writer)))
+  
   (close [_]
     (.destroy process)))
 

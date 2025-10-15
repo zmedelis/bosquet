@@ -106,15 +106,15 @@
   "
   [interrupted-result updated-state]
   (let [{:keys [graph-def node-map state]} interrupted-result
-        {:keys [trace __pos history]} state
-        next-node (if (get-in graph-def [:condition-maps __pos])
-                    (-> ((get-in graph-def [:condition-fns __pos]) updated-state)
-                        ((get-in graph-def [:condition-maps __pos])))
-                    (first (lg/successors (:graph graph-def) __pos)))
-        merged-state (merge state updated-state)]
-    (run-graph graph-def 
-               node-map 
-               next-node 
+        {:keys [__pos]}                    state
+        next-node                          (if (get-in graph-def [:condition-maps __pos])
+                                             (-> ((get-in graph-def [:condition-fns __pos]) updated-state)
+                                                 ((get-in graph-def [:condition-maps __pos])))
+                                             (first (lg/successors (:graph graph-def) __pos)))
+        merged-state                       (merge state updated-state)]
+    (run-graph graph-def
+               node-map
+               next-node
                (-> merged-state
                    (update :history conj [__pos (:completion merged-state)])
                    (update :trace conj [__pos next-node])))))
@@ -132,8 +132,7 @@
 (comment 
   (require '[bosquet.llm.wkk :as wkk])
   (def llm (g/llm wkk/ollama wkk/model-params {:model "gemma3:12b"} wkk/var-name :answer))
-  (defnode categorize 
-    [state]
+  (defnode categorize [state]
     (let  [completion (g/generate
                         [[:system "Is the user asking a question (general inquiry) or making a request to produce code? Reply only with: question or code."]
                          [:user "{{input}}"]
@@ -143,8 +142,7 @@
       {:completion completion
        :code? code?}))
 
-  (defnode codegen 
-    [state]
+  (defnode codegen [state]
     (let [completion (g/generate
                        [[:system "Write code for this request"]
                         [:user "{{input}}"]
@@ -152,8 +150,7 @@
       {:completion completion
        :code (get-in completion [:bosquet/completions :answer])}))
 
-  (defnode qa 
-    [state]
+  (defnode qa [state]
     (let [completion (g/generate 
                        [[:system "Answer concisely"]
                         [:user "{{input}}"]
@@ -161,8 +158,7 @@
       {:completion completion
        :answer (get-in completion [:bosquet/completions :answer]) }))
 
-  (defnode summarize
-    [state]
+  (defnode summarize [state]
     (let [conversation (->> state 
                             :history
                             (mapcat #(:bosquet/conversation (second %) ) )
@@ -180,7 +176,7 @@
     [:codegen :summarize]
     [:summarize :end])
 
-  (lio/view (:graph agent-graph ))
+  (lio/view (:graph agent-graph))
 
   (defagent run-agent agent-graph
     :categorize

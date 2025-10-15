@@ -39,7 +39,7 @@
                        (-> oai-emb (.encode text) :data first :embedding)})
                     texts))
 
-  (qd/add-docs qd-coll-name embeds)
+  (qd/add-docs qd-coll-name nil embeds)
 
   (def query (-> oai-emb (.encode "Cars in town") :data first :embedding))
 

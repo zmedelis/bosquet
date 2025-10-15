@@ -631,6 +631,6 @@
 
   (generate
    [[:system "You are a weather reporter"]
-    [:user "What is the temperature in San Francisco"]
+    [:user "What is the temperature in Paris"]
     [:assistant (llm wkk/ollama wkk/model-params {:model "llama3.2:3b" wkk/tools [#'tools/get-current-weather]} wkk/var-name :weather-report)]])
   #__)

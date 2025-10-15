@@ -1,6 +1,5 @@
 (ns bosquet.agent.react
   (:require
-   [bosquet.agent.agent-mind-reader :as mind-reader]
    [bosquet.agent.tool :as t]
    [bosquet.llm.generator :as gen]
    [bosquet.template.read :as template]))
@@ -41,17 +40,13 @@
   - `task` is a quesiton ar task formulation for the agent
   - `max-steps` specifies how many thinking steps agent is allowed to do
   it either reaches that number of steps or 'Finish' action, and then terminates."
-  [{:bosquet/keys [max-steps tools task-prompts]
-    :or           {max-steps 5}
-    :as           cfg}
-   task]
+  [{:bosquet/keys [_max-steps tools task-prompts]} task]
   (let [tool              (first tools)
         initial-ctx       {:react/task task
                            :react/step 1}
         _                 (t/print-thought
                            (format "'%s' tool has the following task" (t/my-name tool)) task)
-        {{:react/keys [memory thought action] :as x}
-         gen/completions} (gen/generate task-prompts initial-ctx)]
+        {x gen/completions} (gen/generate task-prompts initial-ctx)]
     (tap> x)
     #_(loop [step            1
              ctx             initial-ctx

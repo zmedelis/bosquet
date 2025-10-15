@@ -1,6 +1,5 @@
 (ns bosquet.eval.evaluator
   (:require
-   [bosquet.env :as env]
    [bosquet.llm.generator :as gen]
    [bosquet.memory.long-term-memory]
    [bosquet.nlp.splitter :as splitter]

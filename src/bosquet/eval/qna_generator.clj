@@ -68,12 +68,6 @@
                        wkk/output-format    :json
                        wkk/model-parameters {:max-tokens (* question-count 400)})})
 
-(def question-set
-  [:sequential [:string {:min 2 :max 1000}]])
-
-(def response-set
-  [:sequential [:string {:min 6 :max 6000}]])
-
 (defn- query-response-valid?
   "Check the validity of questions and responses.
 
@@ -81,10 +75,7 @@
   * the lenght of question collection is the same as answers
   * collections are min lenght strings as per schema"
   [{:keys [queries responses context]}]
-  (if (and
-       #_(m/validate question-set queries)
-       #_(m/validate response-set responses)
-       (= (count responses) (count queries)))
+  (if (= (count responses) (count queries))
     true
     (do
       (timbre/warnf
