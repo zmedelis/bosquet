@@ -34,7 +34,7 @@
         {})))
 
 (defn data-slots
-  "Exrract data slots that are defined in the template, chat, or graph context.
+  "Extract data slots that are defined in the template, chat, or graph context.
   This will ignore all the self references and generation slots,
   only return slots that are suplied as data and not defined in prompts."
   [tpl-chat-or-graph]

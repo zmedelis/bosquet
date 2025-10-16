@@ -1,6 +1,7 @@
 {:paths   ["src" "resources"]
  :deps    {org.clojure/clojure                           {:mvn/version "1.12.3"}
            io.github.zmedelis/hfds-clj                   {:mvn/version "2023.12.11"}
+           metosin/malli                                 {:mvn/version "0.20.0-alpha2"}
            com.wsscode/pathom3                           {:mvn/version "2025.01.16-alpha"}
            net.clojars.wkok/openai-clojure               {:mvn/version "0.23.0"}
            com.taoensso/timbre                           {:mvn/version "6.8.0"}
