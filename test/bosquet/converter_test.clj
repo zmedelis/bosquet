@@ -31,7 +31,8 @@
 (deftest coerce-test
   (is (= "Dogs are great!" (c/coerce nil "Dogs are great!")))
   (is (= "Dogs are great!" (c/coerce :pdf "Dogs are great!")))
-  (is (= [{"x" 1.2 "y" 0.8}] (c/coerce :json "[{\"x\" : 1.2, \"y\" : 0.8}]"))))
+  (is (= [{"x" 1.2 "y" 0.8}] (c/coerce :json "[{\"x\" : 1.2, \"y\" : 0.8}]")))
+  (is (= ["1" "2"] (c/coerce #(vec (re-seq #"\d+" %)) "Answer is 1 and 2"))))
 
 (deftest reading-edn
   (is (= [1 2] (c/edn-reader "[1 2]")))

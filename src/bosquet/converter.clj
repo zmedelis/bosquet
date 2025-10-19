@@ -72,13 +72,15 @@
 (defn coerce
   [format completion]
   (try
-    (condp = format
-      :json (json-reader completion)
-      :edn  (edn-reader completion)
-      :list (list-reader completion)
-      :number (->number completion)
-      :bool (->bool completion)
-      completion)
+    (if (fn? format)
+      (format completion)
+      (condp = format
+        :json (json-reader completion)
+        :edn  (edn-reader completion)
+        :list (list-reader completion)
+        :number (->number completion)
+        :bool (->bool completion)
+        completion))
     (catch Exception e
       (timbre/error (format "Coercion error '%s'. Returning generated data withouth coercion" (.getMessage e)))
       completion)))
