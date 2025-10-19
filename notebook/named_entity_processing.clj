@@ -2,9 +2,10 @@
 (ns named-entity-processing
   {:nextjournal.clerk/toc true}
   (:require
-   [bosquet.llm.generator :refer [llm generate]]
+   [bosquet.llm.generator :refer [llm]]
    [bosquet.llm.wkk :as wkk]
    [bosquet.template.selmer :as selmer]
+   [clojure.string :as str]
    [helpers :as h]))
 
 ;; # Named Entity Recognition
@@ -122,29 +123,60 @@
 
 ;; # PromptNER
 
+(defn parse-ner-response
+  "Parses NER response text and returns a vector of [entity type] tuples.
+   Only includes entities marked as True.
+   
+   Example input line:
+   '1. All month | True | as it is a time period reference (dateperiod)'
+   
+   Example output:
+   [[\"All month\" \"dateperiod\"] [\"Venus\" \"celestialbody\"]]"
+  [response-text]
+  (tap> response-text)
+  (let [ ;; ^\d+\.        - starts with number and period (e.g., "1.")
+        ;; \s*           - optional whitespace
+        ;; (.+?)         - capture entity name (non-greedy)
+        ;; \s*\|\s*True  - pipe, "True", with optional spaces
+        ;; .*            - anything in between
+        ;; \(([^)]+)\)   - capture text inside parentheses (the type)
+        pattern #"^\d+\.\s*(.+?)\s*\|\s*True\s*\|.*\(([^)]+)\).*$"]
+    
+    (->> response-text
+         str/split-lines
+         (map str/trim)
+         (filter #(re-find #"^\d+\." %)) ;; keep only lines with text
+         (keep (fn [line]
+                 (when-let [matches (re-matches pattern line)]
+                   (let [entity (nth matches 1)
+                         type   (nth matches 2)]
+                     [entity type]))))
+         vec)))
+
 (def prompt
-  {:prompt ["DEFINITION:"
-            "{{definition}}"
-            ""
-            "{% for example in examples %}"
-            "EXAMPLE {{forloop.counter}}:"
-            "TEXT:"
-            "{{example.text}}"
-            ""
-            "ANSWER:"
-            "{% for item in example.items %}"
-            "{{forloop.counter}}. {{item.entity-candidate}} | {{item.is-entity}} | {{item.reasoning}}"
-            "{% endfor %}"
-            "{% endfor %}"
-            ""
-            "Q: Given the text below, identify a list of possible entities and for each entry explain why it either is or is not an entity:"
-            ""
-            "TEXT:"
-            "{{text}}"
-            ""
-            "ANSWER:"
-            "{{ner}}"]
-   :ner    (llm :gpt-5-nano)})
+  [[:user ["DEFINITION:"
+           "{{definition}}"
+           ""
+           "{% for example in examples %}"
+           "EXAMPLE {{forloop.counter}}:"
+           "TEXT:"
+           "{{example.text}}"
+           ""
+           "ANSWER:"
+           "{% for item in example.items %}"
+           "{{forloop.counter}}. {{item.entity-candidate}} | {{item.is-entity}} | {{item.reasoning}}"
+           "{% endfor %}"
+           "{% endfor %}"
+           ""
+           "Q: Given the text below, identify a list of possible entities and for each entry explain why it either is or is not an entity:"
+           ""
+           "TEXT:"
+           "{{text}}"
+           ""
+           "When answering use precisly the same format of returning entities as given in the examples."
+           ""
+           "ANSWER:"]]
+   [:assistant (llm :gpt-5-nano wkk/output-format parse-ner-response wkk/var-name :ner)]])
 
 ;; Updated Definition map - removed mission, added observation time
 (def astronomy-definition
@@ -218,15 +250,5 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
                      {:definition astronomy-definition
                       :examples   astronomy-examples
                       :text       astronomy-text}))
-  ;; Expected entities from the astronomy-text:
-  ;; - All month (dateperiod) - appears multiple times
-  ;; - Later in the month (dateperiod)
-  ;; - Oct. 5 (dateperiod)
-  ;; - Oct. 7 (dateperiod)
-  ;; - Oct. 14 (dateperiod)
-  ;; - Venus, Jupiter, Saturn, Mars, Mercury, Moon (celestialbody)
-  ;; - Full Moon (event)
-  ;; - predawn, middle of the night, before dawn, early evening, evening (obstime)
-  ;; - east, west, overhead (skydirection)
-  )
+  #__)
 
