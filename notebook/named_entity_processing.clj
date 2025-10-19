@@ -2,8 +2,26 @@
 (ns named-entity-processing
   {:nextjournal.clerk/toc true}
   (:require
+   [bosquet.llm.generator :refer [llm generate]]
+   [bosquet.llm.wkk :as wkk]
    [bosquet.template.selmer :as selmer]
    [helpers :as h]))
+
+;; # Named Entity Recognition
+;; 
+;; Named Entity Recognition is a Natural Language Processing tehnique that
+;; extracts substrings from the text that represent real-world objects: people,
+;; organizations, locations, etc.
+;;
+;; Interest in NER
+;;
+;; https://arxiv.org/html/2401.10825v3/extracted/6075572/images/ner2024.png
+;; (from https://arxiv.org/html/2401.10825v3#S3)
+;;
+;; Entity is described as something that has type, definition and examples.
+;; Since most things language are vagualy defined examples of use are a
+;; necessary part of the definition.
+;;
 
 (def EntityDefinition
   [:map
@@ -14,6 +32,32 @@
                [:map
                 [:text [:string {:min 5}]]
                 [:entities [:vector {:gen/min 1 :gen/max 3} [:string {:min 5}]]]]]]])
+
+;; The task for entity detection system is two fold:
+;; 1. Identity entity
+;; 2. Classify entity
+
+;; # Traditional approaches
+;; 1. Spacy rule and ML
+;; 2. GLiNER
+;;
+;; # LLM
+;; Problem with LLM is that it they are for text generation not sequence labeling
+;;
+;; ## Why LLM?
+;; Should we categorize the phrase
+;; ‘Theory of General Relativity’ as an entity? A media company tasked with
+;; extracting information from political articles might not designate physical
+;; laws as a relevant class of entities but a scientific journal might. Given
+;; the diversity of use cases and underlying documents that characterize
+;; different deployment settings, we might hope ideally for a system to adapt to
+;; new settings flexibly, requiring minimal labeled data, human effort, and
+;; computational cost.
+;;
+;; Two problems remain
+;; 1. LLMs are resource intensive
+;; 2. Prompt sensitivity, no matter what this involves complex prompting and it is always problemantic
+;; 
 
 (defn llm-named-entity-extraction
   [text enity-definitions]
@@ -68,9 +112,121 @@
 ;;
 ;; All month: Super bright Venus is in the predawn east, getting lower as the weeks pass. 
 ;; All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
-;; All month:  Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the rest of the night. 
+;; All month:  Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the
+;; rest of the night. 
 ;; All month: Reddish Mars is very low in the evening west, getting even lower as the weeks pass.
 ;; Later in the month: Bright Mercury is low in the early evening west.
 ;; Oct. 5: Yellowish Saturn is near a nearly Full Moon.
 ;; Oct. 7: Full Moon
 ;; Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn. 
+
+;; # PromptNER
+
+(def prompt
+  {:prompt ["DEFINITION:"
+            "{{definition}}"
+            ""
+            "{% for example in examples %}"
+            "EXAMPLE {{forloop.counter}}:"
+            "TEXT:"
+            "{{example.text}}"
+            ""
+            "ANSWER:"
+            "{% for item in example.items %}"
+            "{{forloop.counter}}. {{item.entity-candidate}} | {{item.is-entity}} | {{item.reasoning}}"
+            "{% endfor %}"
+            "{% endfor %}"
+            ""
+            "Q: Given the text below, identify a list of possible entities and for each entry explain why it either is or is not an entity:"
+            ""
+            "TEXT:"
+            "{{text}}"
+            ""
+            "ANSWER:"
+            "{{ner}}"]
+   :ner    (llm :gpt-5-nano)})
+
+;; Updated Definition map - removed mission, added observation time
+(def astronomy-definition
+  "An entity is a celestial body (celestialbody), constellation (constellation), astronomical event (event), date or time period (dateperiod),
+observation time (obstime), or sky direction (skydirection).
+
+Celestial bodies include planets, moons, stars, asteroids, comets with specific names. \"Moon\" when referring to Earth's moon is an entity.
+\"Full Moon\" is an astronomical event.
+
+Date/time periods include specific dates (Oct. 5, March 15), month references (All month, Later in the month), or specific times (9:45 PM).
+
+Observation times are specific periods of the night/day for making observations (before dawn, predawn, early evening, middle of the night, after sunset).
+
+Sky directions are cardinal directions where objects appear (east, west, overhead, southern sky).
+
+Abstract concepts, adjectives describing appearance (bright, yellowish, reddish, very low, high up), and action verbs (rises, getting lower, moving)
+are not entities.")
+
+(defn ->entity-item
+  [candidate is-entity? reasoning]
+  {:entity-candidate candidate
+   :is-entity (if is-entity? "True" "False")
+   :reasoning reasoning})
+
+(def astronomy-examples
+  [{:text "All month: The bright star Sirius appears in the southern sky after sunset, rising higher before dawn."
+    :items [(->entity-item "All month" true "as it is a time period reference (dateperiod)")
+            (->entity-item "Sirius" true "as it is a specific named star (celestialbody)")
+            (->entity-item "bright" false "as it is an adjective describing appearance")
+            (->entity-item "southern sky" true "as it is a sky direction (skydirection)")
+            (->entity-item "after sunset" true "as it is an observation time period (obstime)")
+            (->entity-item "rising higher" false "as it is a verb phrase describing motion")
+            (->entity-item "before dawn" true "as it is an observation time period (obstime)")]}
+   
+   {:text "On March 15, Mars and Venus will be visible in the west during early evening, near the constellation Orion."
+    :items [(->entity-item "March 15" true "as it is a specific date (dateperiod)")
+            (->entity-item "Mars" true "as it is a specific planet (celestialbody)")
+            (->entity-item "Venus" true "as it is a specific planet (celestialbody)")
+            (->entity-item "visible" false "as it is an adjective describing state")
+            (->entity-item "west" true "as it is a sky direction (skydirection)")
+            (->entity-item "early evening" true "as it is an observation time period (obstime)")
+            (->entity-item "Orion" true "as it is a specific constellation (constellation)")]}
+   
+   {:text "Later in the month, Jupiter's Great Red Spot will be prominently visible overhead at midnight."
+    :items [(->entity-item "Later in the month" true "as it is a time period reference (dateperiod)")
+            (->entity-item "Jupiter" true "as it is a specific planet (celestialbody)")
+            (->entity-item "Great Red Spot" true "as it is a specific named feature on Jupiter (celestialbody)")
+            (->entity-item "prominently visible" false "as it is a descriptive phrase about visibility")
+            (->entity-item "overhead" true "as it is a sky direction (skydirection)")
+            (->entity-item "midnight" true "as it is an observation time period (obstime)")]}])
+
+
+;; The actual text to analyze
+(def astronomy-text
+  "All month: Super bright Venus is in the predawn east, getting lower as the weeks pass.
+All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
+All month: Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the rest of the night.
+All month: Reddish Mars is very low in the evening west, getting even lower as the weeks pass.
+Later in the month: Bright Mercury is low in the early evening west.
+Oct. 5: Yellowish Saturn is near a nearly Full Moon.
+Oct. 7: Full Moon.
+Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn.")
+
+;; Function call
+
+
+
+(comment
+  (def pner (prompt-ner))
+  (def res (generate prompt
+                     {:definition astronomy-definition
+                      :examples   astronomy-examples
+                      :text       astronomy-text}))
+  ;; Expected entities from the astronomy-text:
+  ;; - All month (dateperiod) - appears multiple times
+  ;; - Later in the month (dateperiod)
+  ;; - Oct. 5 (dateperiod)
+  ;; - Oct. 7 (dateperiod)
+  ;; - Oct. 14 (dateperiod)
+  ;; - Venus, Jupiter, Saturn, Mars, Mercury, Moon (celestialbody)
+  ;; - Full Moon (event)
+  ;; - predawn, middle of the night, before dawn, early evening, evening (obstime)
+  ;; - east, west, overhead (skydirection)
+  )
+
