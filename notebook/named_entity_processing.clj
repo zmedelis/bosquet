@@ -2,11 +2,14 @@
 (ns named-entity-processing
   {:nextjournal.clerk/toc true}
   (:require
-   [bosquet.llm.generator :refer [llm]]
+   [bosquet.llm.generator :refer [llm generate]]
    [bosquet.llm.wkk :as wkk]
    [bosquet.template.selmer :as selmer]
    [clojure.string :as str]
-   [helpers :as h]))
+   [helpers :as h]
+   [bosquet.memory.simple-memory :as simple-memory]
+   [bosquet.memory.retrieval :as r]
+   [clojure.pprint :as p]))
 
 ;; # Named Entity Recognition
 ;; 
@@ -124,34 +127,77 @@
 ;; # PromptNER
 
 (defn parse-ner-response
-  "Parses NER response text and returns a vector of [entity type] tuples.
-   Only includes entities marked as True.
-   
-   Example input line:
-   '1. All month | True | as it is a time period reference (dateperiod)'
+  "Parses NER response and groups by observation dates, then by celestial bodies.
+   Returns a vector of maps with nested observations per object.
    
    Example output:
-   [[\"All month\" \"dateperiod\"] [\"Venus\" \"celestialbody\"]]"
+   [{:date \"All month\"
+     :observations [{:object \"Venus\"
+                     :details [{:entity \"predawn\" :type :obstime}
+                               {:entity \"east\" :type :skydirection}]}
+                    {:object \"Mars\"
+                     :details [{:entity \"west\" :type :skydirection}
+                               {:entity \"midnight\" :type :obstime}]}]}]"
   [response-text]
-  (tap> response-text)
-  (let [ ;; ^\d+\.        - starts with number and period (e.g., "1.")
-        ;; \s*           - optional whitespace
-        ;; (.+?)         - capture entity name (non-greedy)
-        ;; \s*\|\s*True  - pipe, "True", with optional spaces
-        ;; .*            - anything in between
-        ;; \(([^)]+)\)   - capture text inside parentheses (the type)
-        pattern #"^\d+\.\s*(.+?)\s*\|\s*True\s*\|.*\(([^)]+)\).*$"]
+  (let [pattern #"^\d+\.\s*(.+?)\s*\|\s*True\s*\|.*\(([^)]+)\).*$"
+        
+        entities (->> response-text
+                      str/split-lines
+                      (map str/trim)
+                      (filter #(re-find #"^\d+\." %))
+                      (keep (fn [line]
+                              (when-let [matches (re-matches pattern line)]
+                                {:entity (nth matches 1)
+                                 :type   (-> matches (nth 2) keyword)}))))]
+
+    (tap> {'entities entities
+           'response response-text})
     
-    (->> response-text
-         str/split-lines
-         (map str/trim)
-         (filter #(re-find #"^\d+\." %)) ;; keep only lines with text
-         (keep (fn [line]
-                 (when-let [matches (re-matches pattern line)]
-                   (let [entity (nth matches 1)
-                         type   (nth matches 2)]
-                     [entity type]))))
-         vec)))
+    ;; Process entities sequentially, building the nested structure
+    (loop [remaining      entities
+           current-date   nil
+           current-object nil
+           result         []]
+      (if-let [item (first remaining)]
+        (cond
+          ;; New date
+          (= :dateperiod (:type item))
+          (recur (rest remaining)
+                 (:entity item)
+                 nil
+                 (conj result {:date         (:entity item)
+                               :observations []}))
+          
+          ;; New celestial body
+          (= :celestialbody (:type item))
+          (if current-date
+            (recur (rest remaining)
+                   current-date
+                   (:entity item)
+                   (update-in result
+                              [(dec (count result)) :observations]
+                              conj
+                              {:object  (:entity item)
+                               :details []}))
+            ;; No date context, skip
+            (recur (rest remaining) current-date current-object result))
+          
+          ;; Details for current object (obstime, skydirection, event, etc.)
+          :else
+          (if (and current-date current-object)
+            (let [date-idx (dec (count result))
+                  obs-idx  (dec (count (get-in result [date-idx :observations])))]
+              (recur (rest remaining)
+                     current-date
+                     current-object
+                     (update-in result
+                                [date-idx :observations obs-idx :details]
+                                conj
+                                item)))
+            (recur (rest remaining) current-date current-object result)))
+        
+        ;; Done
+        result))))
 
 (def prompt
   [[:user ["DEFINITION:"
@@ -173,27 +219,32 @@
            "TEXT:"
            "{{text}}"
            ""
+           "CONSTRAINTS:"
+           ""
            "When answering use precisly the same format of returning entities as given in the examples."
+           "Never add enitities of the types that were not given in the definition."
            ""
            "ANSWER:"]]
-   [:assistant (llm :gpt-5-nano wkk/output-format parse-ner-response wkk/var-name :ner)]])
+   [:assistant (llm :gpt-5-mini wkk/output-format parse-ner-response wkk/var-name :ner)]])
 
-;; Updated Definition map - removed mission, added observation time
+
 (def astronomy-definition
-  "An entity is a celestial body (celestialbody), constellation (constellation), astronomical event (event), date or time period (dateperiod),
-observation time (obstime), or sky direction (skydirection).
+  "An entity is a celestial body (celestialbody), constellation (constellation), astronomical event (event),
+date or time period (dateperiod), observation time (obstime), or sky direction (skydirection).
 
-Celestial bodies include planets, moons, stars, asteroids, comets with specific names. \"Moon\" when referring to Earth's moon is an entity.
-\"Full Moon\" is an astronomical event.
+Celestial bodies include planets, moons, stars, asteroids, comets with specific names. \"Moon\" when referring to Earth's moon
+is an entity. \"Full Moon\" is an astronomical event.
 
-Date/time periods include specific dates (Oct. 5, March 15), month references (All month, Later in the month), or specific times (9:45 PM).
+Date/time periods include specific dates (Oct. 5, March 15), month references (All month, Later in the month), or specific times
+(9:45 PM).
 
-Observation times are specific periods of the night/day for making observations (before dawn, predawn, early evening, middle of the night, after sunset).
+Observation times are specific periods of the night/day for making observations (before dawn, predawn, early evening, middle of
+the night, after sunset).
 
 Sky directions are cardinal directions where objects appear (east, west, overhead, southern sky).
 
-Abstract concepts, adjectives describing appearance (bright, yellowish, reddish, very low, high up), and action verbs (rises, getting lower, moving)
-are not entities.")
+Abstract concepts, adjectives describing appearance (bright, yellowish, reddish, very low, high up), and action verbs
+(rises, getting lower, moving) are not entities.")
 
 (defn ->entity-item
   [candidate is-entity? reasoning]
@@ -202,17 +253,16 @@ are not entities.")
    :reasoning reasoning})
 
 (def astronomy-examples
-  [{:text "All month: The bright star Sirius appears in the southern sky after sunset, rising higher before dawn."
+  [{:text "All month: The bright star Sirius appears in the southern sky after sunset, rising higher before dawn.
+On March 15-17: Mars and Venus will be visible in the west during early evening, near the constellation Orion. "
     :items [(->entity-item "All month" true "as it is a time period reference (dateperiod)")
             (->entity-item "Sirius" true "as it is a specific named star (celestialbody)")
             (->entity-item "bright" false "as it is an adjective describing appearance")
             (->entity-item "southern sky" true "as it is a sky direction (skydirection)")
             (->entity-item "after sunset" true "as it is an observation time period (obstime)")
             (->entity-item "rising higher" false "as it is a verb phrase describing motion")
-            (->entity-item "before dawn" true "as it is an observation time period (obstime)")]}
-   
-   {:text "On March 15, Mars and Venus will be visible in the west during early evening, near the constellation Orion."
-    :items [(->entity-item "March 15" true "as it is a specific date (dateperiod)")
+            (->entity-item "before dawn" true "as it is an observation time period (obstime)")
+            (->entity-item "March 15-17" true "as it is a specific date (dateperiod)")
             (->entity-item "Mars" true "as it is a specific planet (celestialbody)")
             (->entity-item "Venus" true "as it is a specific planet (celestialbody)")
             (->entity-item "visible" false "as it is an adjective describing state")
@@ -220,8 +270,8 @@ are not entities.")
             (->entity-item "early evening" true "as it is an observation time period (obstime)")
             (->entity-item "Orion" true "as it is a specific constellation (constellation)")]}
    
-   {:text "Later in the month, Jupiter's Great Red Spot will be prominently visible overhead at midnight."
-    :items [(->entity-item "Later in the month" true "as it is a time period reference (dateperiod)")
+   {:text "On March 29: Jupiter's Great Red Spot will be prominently visible overhead at midnight."
+    :items [(->entity-item "Match 29" true "as it is a time period reference (dateperiod)")
             (->entity-item "Jupiter" true "as it is a specific planet (celestialbody)")
             (->entity-item "Great Red Spot" true "as it is a specific named feature on Jupiter (celestialbody)")
             (->entity-item "prominently visible" false "as it is a descriptive phrase about visibility")
@@ -231,24 +281,97 @@ are not entities.")
 
 ;; The actual text to analyze
 (def astronomy-text
-  "All month: Super bright Venus is in the predawn east, getting lower as the weeks pass.
-All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
+  "All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
 All month: Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the rest of the night.
-All month: Reddish Mars is very low in the evening west, getting even lower as the weeks pass.
 Later in the month: Bright Mercury is low in the early evening west.
 Oct. 5: Yellowish Saturn is near a nearly Full Moon.
-Oct. 7: Full Moon.
-Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn.")
-
-;; Function call
-
-
+Oct. 10: A very thin crescent Moon is very near super-bright Venus in the predawn east.
+Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn. ")
 
 (comment
-  (def pner (prompt-ner))
   (def res (generate prompt
                      {:definition astronomy-definition
                       :examples   astronomy-examples
                       :text       astronomy-text}))
+  (tap> res) 
+
+
+  (def complex-resp "1. All month | True | as it is a time period reference (dateperiod)
+2. Venus | True | as it is a specific planet (celestialbody)
+3. predawn | True | as it is an observation time period (obstime)
+4. east | True | as it is a sky direction (skydirection)
+5. Jupiter | True | as it is a specific planet (celestialbody)
+6. middle of the night | True | as it is an observation time period (obstime)
+7. overhead | True | as it is a sky direction (skydirection)
+8. Oct. 5 | True | as it is a specific date (dateperiod)
+9. Saturn | True | as it is a specific planet (celestialbody)
+10. Full Moon | True | as it is an astronomical event (event)")
+  
+
+  (clojure.pprint/pprint (parse-ner-response resp))
   #__)
 
+
+;; # GPT-NER
+;; https://arxiv.org/pdf/2304.10428
+;; 
+(def gpt-ner-prompt
+  {:task-description 
+   ["I am an excellent linguist."
+    "The task is to label {{entity-type}} entities in the given sentence."
+    "Below are some examples."]
+   
+   :demonstrations
+   "{{#demonstrations}}Input: {{input}}\nOutput: {{output}}\n\n{{/demonstrations}}"
+   
+   :input-sentence
+   ["Input: {{sentence}}"
+    "Output:"]
+   
+   :extraction (llm :gpt-5-mini)})
+
+
+(def gpt-ner-prompt
+  {:task-description ["I am an excellent linguist."
+                      "The task is to label {{entity-type}} entities in the given sentence."
+                      "Below are some examples."]
+   :examples         ["{% for demo in demonstrations %}"
+                      "Input: {{demo.input}}"
+                      "Output: {{demo.output}}"
+                      ""
+                      "{% endfor %}"]
+   :input-sentence   ["Input: {{sentence}}"
+                      "Output:"]
+   :full-prompt      ["{{task-description}}"
+                      ""
+                      "{{examples}}"
+                      "{{input-sentence}}"
+                      "{{extraction}}"]
+   :extraction       (llm :gpt-5-mini)})
+
+(comment
+
+  (generate
+   gpt-ner-prompt
+   {:entity-type "location"
+    :demonstrations
+    [{:input  "Only France and Britain backed Fischler's proposal"
+      :output "Only @@France## and @@Britain## backed Fischler's proposal"}
+     {:input  "Germany imported 47,600 sheep from Britain last year"
+      :output "@@Germany## imported 47,600 sheep from @@Britain## last year"}
+     {:input  "It brought in 4,275 tonnes of British mutton"
+      :output "It brought in 4,275 tonnes of @@British## mutton"}]
+    :sentence    "China says Taiwan spoils atmosphere for talks sheduled to happen in Australia"})
+
+  (def sm-rememberer (simple-memory/->remember))
+  (def sm-recaller (simple-memory/->cue-memory))
+
+  (sm-rememberer {}
+                 [{:input  "Colombus is a city"
+                   :output "@@Colombus## is a city"}
+                  {:input  "2 + 3 = 5"
+                   :output "2 + 3 = 5"}])
+
+  (sm-recaller {r/memory-content :input}
+               "Mexico settelment")
+  #__)
