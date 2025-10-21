@@ -2,7 +2,7 @@
 (ns named-entity-processing
   {:nextjournal.clerk/toc true}
   (:require
-   [bosquet.llm.generator :refer [llm generate]]
+   [bosquet.llm.generator :refer [llm generate] :as g]
    [bosquet.llm.wkk :as wkk]
    [bosquet.template.selmer :as selmer]
    [clojure.string :as str]
@@ -319,9 +319,8 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 (defn parse-gpt-ner-response
   [response]
   (try
-    (str/join ","
-              (mapv second
-                    (re-seq #"@@(.*?)##" response)))
+    (mapv second
+          (re-seq #"@@(.*?)##" response))
     (catch Exception _
       (tap> {'error (str "Failed to parse: " response)})
       response)))
@@ -341,20 +340,23 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
                          ""
                          "{{examples}}"
                          "Input: {{sentence}}"
-                         "Output: {{extractor}}"]
-   ;; :verification-prompt ["Does the given word in the sentence belong to a {{entity-type}} entity?"
-   ;;                       "Answer with YES or NO only in exact same order as provided questions Never add any reasoning or explantions."
-   ;;                       "A comma separated YES/NO answers in the same order as provider words." 
-   ;;                       "Sentence: {{sentence}}"
-   ;;                       "Words: {{extractor}}"
-   ;;                       ;; "Words: {{extractor|join: \", \"}}"
-   ;;                       ;; "{% for word in {{extractor}} %}"
-   ;;                       ;; "{{word}}"
-   ;;                       ;; "{% endfor %}"
-   ;;                       "{{verifier}}"]
-   ;; :verifier            (llm :gpt-5-nano #_ #_wkk/output-format :bool)
-   })
+                         "Output: {{extractor}}"]})
 
+(def verification-prompt
+  {:verification-prompt ["Does the given word in the sentence belong to a {{entity-type}} entity?"
+                         "Answer with YES or NO only in exact same order as provided questions Never add any reasoning or explantions."
+                         "A comma separated YES/NO answers in the same order as provider words." 
+                         "Sentence: {{sentence}}"
+                         "Words: {{words|join: \", \"}}"
+                         "{{verifier}}"]
+   :verifier            (llm :gpt-5-nano wkk/output-format (fn [resp]
+                                                             (mapv (fn [w] (-> w str/trim (= "YES" w)))
+                                                                   (str/split resp #","))))})
+
+
+;; Something to think about how to know which path to traverse with two heads
+;; (merge gpt-ner-prompt verification-prompt) here we have two things full-prompt and verification-prompt
+;; verification refers extractor but it will be properly filled in if full-prompt executes first
 
 (comment
 
@@ -363,42 +365,46 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 
   (sm-rememberer
    {}
-   [{:input  "Jupiter rises in the middle of the night in the east"
+   [{:input "Jupiter rises in the middle of the night in the east"
      :output "@@Jupiter## rises in the middle of the night in the east"}
 
-    {:input  "Yellowish Saturn is up in the east in the early evening"
+    {:input "Yellowish Saturn is up in the east in the early evening"
      :output "Yellowish @@Saturn## is up in the east in the early evening"}
 
-    {:input  "Bright Mercury is low in the early evening west"
+    {:input "Bright Mercury is low in the early evening west"
      :output "Bright @@Mercury## is low in the early evening west"}
 
-    {:input  "Venus appears in the predawn sky"
+    {:input "Venus appears in the predawn sky"
      :output "@@Venus## appears in the predawn sky"}
 
-    {:input  "Mars will be visible near the Moon tonight"
+    {:input "Mars will be visible near the Moon tonight"
      :output "@@Mars## will be visible near the @@Moon## tonight"}
 
-    {:input  "The Orion constellation is prominent in winter"
+    {:input "The Orion constellation is prominent in winter"
      :output "The @@Orion## constellation is prominent in winter"}
 
-    {:input  "Neptune reaches opposition this month"
+    {:input "Neptune reaches opposition this month"
      :output "@@Neptune## reaches opposition this month"}
 
-    {:input  "Uranus is visible with binoculars in the eastern sky"
+    {:input "Uranus is visible with binoculars in the eastern sky"
      :output "@@Uranus## is visible with binoculars in the eastern sky"}
 
-    {:input  "The Pleiades star cluster rises after midnight"
-     :output "The @@Pleiades## star cluster rises after midnight"}
+    {:input "The Pleiades star cluster rises after midnight"
+     :output "The @@Pleiades## star cluster rises after midnight"}])
 
-    {:input  "Andromeda galaxy is visible in dark skies"
-     :output "@@Andromeda## galaxy is visible in dark skies"}])
+  (def txt "Jupiter and the Moon rise near each other in the middle of the night")
+  (def x
+    (generate
+     gpt-ner-prompt
+     {:entity-type    "celestial body"
+      :demonstrations (sm-recaller {r/memory-content :input} txt)
+      :sentence       txt}))
 
-  (generate
-   gpt-ner-prompt
-   {:entity-type    "celestial body"
-    :demonstrations (sm-recaller {r/memory-content :input}
-                                 "Jupiter and the Moon rise near each other")
-    :sentence       "Jupiter and the Moon rise near each other in the middle of the night"})
+  (def verif (generate
+              verification-prompt
+              {:entity-type "celestial body"
+               :words       (-> x g/completions :extractor)
+               :sentence    txt}))
 
   (generate
    gpt-ner-prompt
