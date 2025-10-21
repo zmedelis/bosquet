@@ -315,63 +315,103 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 ;; # GPT-NER
 ;; https://arxiv.org/pdf/2304.10428
 ;; 
-(def gpt-ner-prompt
-  {:task-description 
-   ["I am an excellent linguist."
-    "The task is to label {{entity-type}} entities in the given sentence."
-    "Below are some examples."]
-   
-   :demonstrations
-   "{{#demonstrations}}Input: {{input}}\nOutput: {{output}}\n\n{{/demonstrations}}"
-   
-   :input-sentence
-   ["Input: {{sentence}}"
-    "Output:"]
-   
-   :extraction (llm :gpt-5-mini)})
+
+(defn parse-gpt-ner-response
+  [response]
+  (try
+    (str/join ","
+              (mapv second
+                    (re-seq #"@@(.*?)##" response)))
+    (catch Exception _
+      (tap> {'error (str "Failed to parse: " response)})
+      response)))
 
 
 (def gpt-ner-prompt
-  {:task-description ["I am an excellent linguist."
-                      "The task is to label {{entity-type}} entities in the given sentence."
-                      "Below are some examples."]
-   :examples         ["{% for demo in demonstrations %}"
-                      "Input: {{demo.input}}"
-                      "Output: {{demo.output}}"
-                      ""
-                      "{% endfor %}"]
-   :input-sentence   ["Input: {{sentence}}"
-                      "Output:"]
-   :full-prompt      ["{{task-description}}"
-                      ""
-                      "{{examples}}"
-                      "{{input-sentence}}"
-                      "{{extraction}}"]
-   :extraction       (llm :gpt-5-mini)})
+  {:ner-task            ["I am an excellent linguist."
+                         "The task is to label {{entity-type}} entities in the given sentence."
+                         "Below are some examples."]
+   :examples            ["{% for demo in demonstrations %}"
+                         "Input: {{demo.input}}"
+                         "Output: {{demo.output}}"
+                         ""
+                         "{% endfor %}"]
+   :extractor           (llm :gpt-5-mini wkk/output-format parse-gpt-ner-response)
+   :full-prompt         ["{{ner-task}}"
+                         ""
+                         "{{examples}}"
+                         "Input: {{sentence}}"
+                         "Output: {{extractor}}"]
+   ;; :verification-prompt ["Does the given word in the sentence belong to a {{entity-type}} entity?"
+   ;;                       "Answer with YES or NO only in exact same order as provided questions Never add any reasoning or explantions."
+   ;;                       "A comma separated YES/NO answers in the same order as provider words." 
+   ;;                       "Sentence: {{sentence}}"
+   ;;                       "Words: {{extractor}}"
+   ;;                       ;; "Words: {{extractor|join: \", \"}}"
+   ;;                       ;; "{% for word in {{extractor}} %}"
+   ;;                       ;; "{{word}}"
+   ;;                       ;; "{% endfor %}"
+   ;;                       "{{verifier}}"]
+   ;; :verifier            (llm :gpt-5-nano #_ #_wkk/output-format :bool)
+   })
+
 
 (comment
-
-  (generate
-   gpt-ner-prompt
-   {:entity-type "location"
-    :demonstrations
-    [{:input  "Only France and Britain backed Fischler's proposal"
-      :output "Only @@France## and @@Britain## backed Fischler's proposal"}
-     {:input  "Germany imported 47,600 sheep from Britain last year"
-      :output "@@Germany## imported 47,600 sheep from @@Britain## last year"}
-     {:input  "It brought in 4,275 tonnes of British mutton"
-      :output "It brought in 4,275 tonnes of @@British## mutton"}]
-    :sentence    "China says Taiwan spoils atmosphere for talks sheduled to happen in Australia"})
 
   (def sm-rememberer (simple-memory/->remember))
   (def sm-recaller (simple-memory/->cue-memory))
 
-  (sm-rememberer {}
-                 [{:input  "Colombus is a city"
-                   :output "@@Colombus## is a city"}
-                  {:input  "2 + 3 = 5"
-                   :output "2 + 3 = 5"}])
+  (sm-rememberer
+   {}
+   [{:input  "Jupiter rises in the middle of the night in the east"
+     :output "@@Jupiter## rises in the middle of the night in the east"}
 
-  (sm-recaller {r/memory-content :input}
-               "Mexico settelment")
+    {:input  "Yellowish Saturn is up in the east in the early evening"
+     :output "Yellowish @@Saturn## is up in the east in the early evening"}
+
+    {:input  "Bright Mercury is low in the early evening west"
+     :output "Bright @@Mercury## is low in the early evening west"}
+
+    {:input  "Venus appears in the predawn sky"
+     :output "@@Venus## appears in the predawn sky"}
+
+    {:input  "Mars will be visible near the Moon tonight"
+     :output "@@Mars## will be visible near the @@Moon## tonight"}
+
+    {:input  "The Orion constellation is prominent in winter"
+     :output "The @@Orion## constellation is prominent in winter"}
+
+    {:input  "Neptune reaches opposition this month"
+     :output "@@Neptune## reaches opposition this month"}
+
+    {:input  "Uranus is visible with binoculars in the eastern sky"
+     :output "@@Uranus## is visible with binoculars in the eastern sky"}
+
+    {:input  "The Pleiades star cluster rises after midnight"
+     :output "The @@Pleiades## star cluster rises after midnight"}
+
+    {:input  "Andromeda galaxy is visible in dark skies"
+     :output "@@Andromeda## galaxy is visible in dark skies"}])
+
+  (generate
+   gpt-ner-prompt
+   {:entity-type    "celestial body"
+    :demonstrations (sm-recaller {r/memory-content :input}
+                                 "Jupiter and the Moon rise near each other")
+    :sentence       "Jupiter and the Moon rise near each other in the middle of the night"})
+
+  (generate
+   gpt-ner-prompt
+   {:entity-type    "celestial body"
+    :demonstrations (sm-recaller {r/memory-content :input}
+                                 "China says Taiwan spoils atmosphere for talks")
+    :sentence       "China says Taiwan spoils atmosphere for talks"})
+
+  (let [txt "The spacecraft will reach Mars orbit next week"]
+    (generate
+     gpt-ner-prompt
+     {:entity-type    "celestial body"
+      :demonstrations (sm-recaller {r/memory-content :input} txt)
+      :sentence       txt}))
+
   #__)
