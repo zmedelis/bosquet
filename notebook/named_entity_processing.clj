@@ -72,7 +72,7 @@
                               "{% for example in entity.examples %}"
                               "Example {{forloop.counter}}:"
                               "  Text: {{example.text}}"
-                              "  Entities: {{example.entities|join: \", \"}}"
+                              "  Entities: {{example.entities|join:, }}"
                               "{% endfor %}{% endfor %}"
                               ""
                               "TEXT:"
@@ -339,85 +339,147 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
    :full-prompt         ["{{ner-task}}"
                          ""
                          "{{examples}}"
-                         "Input: {{sentence}}"
+                         "Input: {{text}}"
                          "Output: {{extractor}}"]})
 
 (def verification-prompt
-  {:verification-prompt ["Does the given word in the sentence belong to a {{entity-type}} entity?"
+  {:verification-prompt ["Verify that the given entities extracted from the text are of the {{entity-type}} entity type."
                          "Answer with YES or NO only in exact same order as provided questions Never add any reasoning or explantions."
+                         "Answer NO only if you are absolutely positive that the mistake was made. Err on the side of YES."
                          "A comma separated YES/NO answers in the same order as provider words." 
-                         "Sentence: {{sentence}}"
-                         "Words: {{words|join: \", \"}}"
+                         "Text: {{text}}"
+                         "Entities: {{entities|join:, }}"
                          "{{verifier}}"]
    :verifier            (llm :gpt-5-nano wkk/output-format (fn [resp]
                                                              (mapv (fn [w] (-> w str/trim (= "YES" w)))
                                                                    (str/split resp #","))))})
 
+(defn only-confirmed-entities [entities validations]
+  (reduce (fn [m [e v]] (if v (conj m e) m))
+          []
+          (map vector entities validations)))
+
+
+(def entity-standartization-prompt
+  {:prompt "TASK: Normalize entity mentions to their canonical form for frequency counting and entity resolution.
+
+RULES FOR NORMALIZATION:
+1. **Proper Nouns** (names of specific things): Preserve original capitalization
+   - Example: 'Mars' stays 'Mars', 'Venus' stays 'Venus', 'Pleiades' stays 'Pleiades'
+   
+2. **Common Nouns** (generic categories): Convert to lowercase singular form UNLESS the entity is inherently plural
+   - Example: 'Comet' and 'comets' both become 'comet'
+   - Example: 'Meteor' and 'meteors' both become 'meteor'
+   - Exception: 'Pleiades' stays 'Pleiades' (inherently plural proper noun)
+
+3. **Mixed Cases** (proper noun + common descriptor): Keep only the proper noun part
+   - Example: 'Halley's Comet' → normalize as 'Halley's Comet' (proper noun kept)
+   - But if counting comets generically: 'comet'
+
+4. **Acronyms/Abbreviations**: Preserve capitalization
+   - Example: 'NASA' stays 'NASA', 'ESA' stays 'ESA'
+
+EXAMPLES:
+Input entities: ['Mars', 'mars', 'Venus', 'Comet', 'comets', 'Pleiades', 'meteor', 'Meteors', 'Andromeda Galaxy', 'galaxy', 'galaxies']
+Output:
+- Mars → Mars
+- mars → Mars (capitalize proper noun)
+- Venus → Venus
+- Comet → comet (common noun, singular)
+- comets → comet (common noun, singular)
+- Pleiades → Pleiades (inherently plural proper noun)
+- meteor → meteor (lowercase singular)
+- Meteors → meteor (lowercase singular)
+- Andromeda Galaxy → Andromeda Galaxy (proper noun preserved)
+- galaxy → galaxy (common noun singular)
+- galaxies → galaxy (common noun singular)
+
+NOW NORMALIZE THE FOLLOWING ENTITIES:
+Entity type: {{entity-type}}
+Text: {{text}}
+Entities found: {{entities}}
+
+Return a Clojure EDN formated array of entities in cannonical form in the same sequence as you received it.
+
+{{standartizer}}"
+   :standartizer (llm :gpt-5-mini wkk/output-format :edn)})
 
 ;; Something to think about how to know which path to traverse with two heads
 ;; (merge gpt-ner-prompt verification-prompt) here we have two things full-prompt and verification-prompt
 ;; verification refers extractor but it will be properly filled in if full-prompt executes first
 
+;; Memory to store examples for few-shot prompt
+
+(def sm-rememberer (simple-memory/->remember))
+(def sm-recaller (simple-memory/->cue-memory))
+
+(sm-rememberer
+ {}
+ [{:input "Jupiter rises in the middle of the night in the east"
+   :output "@@Jupiter## rises in the middle of the night in the east"}
+
+  {:input "Yellowish Saturn is up in the east in the early evening"
+   :output "Yellowish @@Saturn## is up in the east in the early evening"}
+
+  {:input "Bright Mercury is low in the early evening west"
+   :output "Bright @@Mercury## is low in the early evening west"}
+
+  {:input "Venus appears in the predawn sky"
+   :output "@@Venus## appears in the predawn sky"}
+
+  {:input "Mars will be visible near the Moon tonight"
+   :output "@@Mars## will be visible near the @@Moon## tonight"}
+
+  {:input "The Orion constellation is prominent in winter"
+   :output "The @@Orion## constellation is prominent in winter"}
+
+  {:input "Neptune reaches opposition this month"
+   :output "@@Neptune## reaches opposition this month"}
+
+  {:input "Uranus is visible with binoculars in the eastern sky"
+   :output "@@Uranus## is visible with binoculars in the eastern sky"}
+
+  {:input "The Pleiades star cluster rises after midnight"
+   :output "The @@Pleiades## star cluster rises after midnight"}])
+
 (comment
-
-  (def sm-rememberer (simple-memory/->remember))
-  (def sm-recaller (simple-memory/->cue-memory))
-
-  (sm-rememberer
-   {}
-   [{:input "Jupiter rises in the middle of the night in the east"
-     :output "@@Jupiter## rises in the middle of the night in the east"}
-
-    {:input "Yellowish Saturn is up in the east in the early evening"
-     :output "Yellowish @@Saturn## is up in the east in the early evening"}
-
-    {:input "Bright Mercury is low in the early evening west"
-     :output "Bright @@Mercury## is low in the early evening west"}
-
-    {:input "Venus appears in the predawn sky"
-     :output "@@Venus## appears in the predawn sky"}
-
-    {:input "Mars will be visible near the Moon tonight"
-     :output "@@Mars## will be visible near the @@Moon## tonight"}
-
-    {:input "The Orion constellation is prominent in winter"
-     :output "The @@Orion## constellation is prominent in winter"}
-
-    {:input "Neptune reaches opposition this month"
-     :output "@@Neptune## reaches opposition this month"}
-
-    {:input "Uranus is visible with binoculars in the eastern sky"
-     :output "@@Uranus## is visible with binoculars in the eastern sky"}
-
-    {:input "The Pleiades star cluster rises after midnight"
-     :output "The @@Pleiades## star cluster rises after midnight"}])
-
-  (def txt "Jupiter and the Moon rise near each other in the middle of the night")
+  (def txt "Jupiter and the Moon rise near each other in the middle of the night. Comets are visible this month. The comet appears in May.")
   (def x
     (generate
      gpt-ner-prompt
      {:entity-type    "celestial body"
       :demonstrations (sm-recaller {r/memory-content :input} txt)
-      :sentence       txt}))
+      :text           txt}))
 
   (def verif (generate
               verification-prompt
               {:entity-type "celestial body"
-               :words       (-> x g/completions :extractor)
-               :sentence    txt}))
+               :entities    (-> x g/completions :extractor)
+               :text        txt}))
+
+  (def entities (only-confirmed-entities (-> x g/completions :extractor)
+                                         (-> verif g/completions :verifier)))
+
+  (def normalized
+    (generate
+     entity-standartization-prompt
+     {:entity-type "celestial body"
+      :entities    entities
+      :text        txt}))
+
+  (def txt "Comets are visible this month. The comet appears in May.")
+  (def x
+    (generate
+     gpt-ner-prompt
+     {:entity-type    "celestial body"
+      :demonstrations (sm-recaller {r/memory-content :input} txt)
+      :text           txt}))
 
   (generate
    gpt-ner-prompt
    {:entity-type    "celestial body"
     :demonstrations (sm-recaller {r/memory-content :input}
                                  "China says Taiwan spoils atmosphere for talks")
-    :sentence       "China says Taiwan spoils atmosphere for talks"})
-
-  (let [txt "The spacecraft will reach Mars orbit next week"]
-    (generate
-     gpt-ner-prompt
-     {:entity-type    "celestial body"
-      :demonstrations (sm-recaller {r/memory-content :input} txt)
-      :sentence       txt}))
+    :text           "China says Taiwan spoils atmosphere for talks"})
 
   #__)
