@@ -11,17 +11,23 @@
 
 ;; # Named Entity Recognition
 ;;
+;; ![NER Interest 2024](notebook/assets/ner_example.png)
+;;
 ;; **Named Entity Recognition (NER)** is a Natural Language Processing technique that
 ;; extracts substrings from text representing real-world objects: people, organizations,
 ;; locations, dates, and other entity types of interest.
 ;;
-;; ## Why NER Matters
+;; ## Why NER Matters?
+
+;; * **Real-world Information Extraction** - Automatically extract key facts from huge text volumes. *Example: Scanning customer reviews to identify which specific products (Mustang, Explorer) are mentioned most frequently.*
+;; * **Foundation for Advanced NLP Tasks** - Essential building block for complex AI systems. *Example: A virtual assistant distinguishing between "I need to call Amazon" (company) vs "I'm traveling to the Amazon" (rainforest).*
+;; * **Business Intelligence and Decision Making** - Monitor markets and competitors in real-time. *Example: Alerting executives whenever "our CEO" and "resignation" appear together in news articles or social media.*
+;; * **Healthcare and Scientific Discovery** - Help with medical research or improve patient care. *Example: Mining clinical trials to identify which patients with "diabetes" (disease) also took "Aspirin" (drug) to detect unexpected treatment patterns.*
+;; * **Enhanced Search and Recommendation Systems** - Understand user intent beyond keywords. *Example: recommending jaguar wildlife documentaries vs Jaguar car reviews.*
 ;;
-;; Interest in NER has grown significantly in recent years. According to research trends
-;; ([arXiv:2401.10825v3](https://arxiv.org/html/2401.10825v3#S3)), NER applications span from
-;; traditional information extraction to modern knowledge graph construction and question answering systems.
-;;
-;; ![NER Interest 2024](https://arxiv.org/html/2401.10825v3/extracted/6075572/images/ner2024.png)
+;; According to research trends, interest in NER has grown significantly in recent years.
+;; ![NER Interest 2024](notebook/assets/ner2024.png)
+;; *(Taken from: [arXiv:2401.10825v3](https://arxiv.org/html/2401.10825v3#S3))*
 ;;
 ;; ### What is an Entity?
 ;;
@@ -125,7 +131,7 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 ;; PromptNER ([arXiv:2305.15444](https://arxiv.org/pdf/2305.15444)) uses few-shot learning
 ;; with carefully structured prompts to guide the LLM through entity identification.
 ;;
-;; ![PromptNER Architecture](assets/promtp_ner.png)
+;; ![PromptNER Architecture](notebook/assets/prompt_ner.png)
 
 (defn parse-ner-response
   "Parses NER response and groups by observation dates, then by celestial bodies.
@@ -319,7 +325,7 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (clerk/html
   [:div.font-mono
-   (for [observation (g/completions prompt-ner-result :ner)]
+   (for [observation (-> prompt-ner-result g/completions :ner)]
      [:div.block.p-4.mb-4.bg-white.border.border-gray-200.rounded-lg.shadow.dark:bg-gray-800.dark:border-gray-700
       [:div.font-bold.mb-2 (str "📅 " (:date observation))]
       (for [obs (:observations observation)]
@@ -341,7 +347,7 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 ;; GPT-NER ([arXiv:2304.10428](https://arxiv.org/pdf/2304.10428)) takes a different approach
 ;; using delimiter-based annotation and a two-stage verification process.
 ;;
-;; ![GPT-NER Extraction](assets/gpt_ner.png)
+;; ![GPT-NER Extraction](notebook/assets/gpt_ner.png)
 ;;
 ;; ## How GPT-NER Works
 ;;
@@ -349,7 +355,7 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 ;; 1. **Extraction**: Mark entities with delimiters `@@entity##`
 ;; 2. **Verification**: Use a second LLM call to validate extractions
 ;;
-;; ![GPT-NER Validation](assets/gpt_ner_validation.png)
+;; ![GPT-NER Validation](notebook/assets/gpt_ner_validation.png)
 ;;
 
 (defn parse-gpt-ner-response
