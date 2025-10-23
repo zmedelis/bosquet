@@ -1,12 +1,13 @@
 ^{:nextjournal.clerk/visibility {:code :fold}}
 (ns named-entity-processing
-  {:nextjournal.clerk/toc true}
+  {:nextjournal.clerk/toc                  true
+   :nextjournal.clerk/auto-expand-results? true}
   (:require
-   [bosquet.llm.generator :refer [llm generate] :as g]
+   [bosquet.llm.generator :refer [generate llm] :as g]
    [bosquet.llm.wkk :as wkk]
-   [clojure.string :as str]
-   [bosquet.memory.simple-memory :as simple-memory]
    [bosquet.memory.retrieval :as r]
+   [bosquet.memory.simple-memory :as simple-memory]
+   [clojure.string :as str]
    [nextjournal.clerk :as clerk]))
 
 ;; # Named Entity Recognition
@@ -114,11 +115,15 @@
 ;;
 ;; # Approach 1: PromptNER
 ;;
-;; PromptNER ([arXiv:2305.15444](https://arxiv.org/pdf/2305.15444)) uses few-shot learning
-;; with carefully structured prompts to guide the LLM through entity identification.
-;;
+;; PromptNER ([arXiv:2305.15444](https://arxiv.org/abs/2305.15444)) demonstrates that well-structured 
+;; prompts with few-shot examples can achieve competitive NER performance without fine-tuning.
+;; 
 ;; ![PromptNER Architecture](notebook/assets/prompt_ner.png)
+;;
+;; ### PromptNER Implementation with Bosquet
 
+;; #### Function to parse results
+{:nextjournal.clerk/visibility {:code :fold}}
 (defn parse-ner-response
   "Parses NER response and groups by observation dates, then by celestial bodies.
    Returns a vector of maps with nested observations per object.
@@ -142,10 +147,6 @@
                               (when-let [matches (re-matches pattern line)]
                                 {:entity (nth matches 1)
                                  :type   (-> matches (nth 2) keyword)}))))]
-
-    (tap> {'entities entities
-           'response response-text})
-    
     ;; Process entities sequentially, building the nested structure
     (loop [remaining      entities
            current-date   nil
@@ -192,17 +193,19 @@
         ;; Done
         result))))
 
+;; #### Prompt
+{:nextjournal.clerk/visibility {:code :show}}
 (def prompt-ner-prompt
-  [[:user ["DEFINITION:"
+  [[:user ["DEFINITION:" ;; 1. Entity type definition and criteria
            "{{definition}}"
            ""
-           "{% for example in examples %}"
+           "{% for example in examples %}" ;; 2. Few-shot examples (looping through provided examples)
            "EXAMPLE {{forloop.counter}}:"
            "TEXT:"
            "{{example.text}}"
            ""
            "ANSWER:"
-           "{% for item in example.items %}"
+           "{% for item in example.items %}" ;; 3. Example outputs showing expected format
            "{{forloop.counter}}. {{item.entity-candidate}} | {{item.is-entity}} | {{item.reasoning}}"
            "{% endfor %}"
            "{% endfor %}"
@@ -210,16 +213,33 @@
            "Q: Given the text below, identify a list of possible entities and for each entry explain why it either is or is not an entity:"
            ""
            "TEXT:"
-           "{{text}}"
+           "{{text}}" ;; 4. The actual text to process
            ""
-           "CONSTRAINTS:"
+           "CONSTRAINTS:" ;; 5. Explicit constraints to improve consistency
            ""
            "When answering use precisly the same format of returning entities as given in the examples."
            "Never add enitities of the types that were not given in the definition."
            ""
            "ANSWER:"]]
-   [:assistant (llm :gpt-5-mini wkk/output-format parse-ner-response wkk/var-name :ner)]])
+   [:assistant (llm :gpt-5-mini ;; 6. LLM call with output parsing
+                    wkk/output-format parse-ner-response wkk/var-name :ner)]])
 
+;; **Key Components:**
+;;
+;; 1. **Template variables** - `{{definition}}`, `{{text}}` are filled at runtime
+;; 2. **Selmer loops** - `{% for example in examples %}` iterates through few-shot examples
+;; 3. **Structured format** - Each example shows: candidate | is-entity (yes/no) | reasoning
+;; 4. **Explicit constraints** - Reduces hallucination and ensures format consistency
+;; 5. **Bosquet integration** - `:assistant` role with LLM call and custom parser (`parse-ner-response`)
+;;
+;; ## PromptNER Example: Astronomy Domain
+;;
+;; Let's apply PromptNER to extract entities from astronomical observation schedules—a 
+;; domain-specific use case where traditional NER tools would require extensive retraining.
+
+;; ### Entity Definition
+;;
+;; We define 6 entity types specific to astronomy observations:
 
 (def astronomy-definition
   "An entity is a celestial body (celestialbody), constellation (constellation), astronomical event (event),
@@ -239,12 +259,23 @@ Sky directions are cardinal directions where objects appear (east, west, overhea
 Abstract concepts, adjectives describing appearance (bright, yellowish, reddish, very low, high up), and action verbs
 (rises, getting lower, moving) are not entities.")
 
+;; **Key aspects:**
+;; - **Specific types** - `celestialbody`, `dateperiod`, `obstime`, `skydirection`
+;; - **Clear boundaries** - "Moon" vs "Full Moon" (body vs event)
+;; - **Explicit exclusions** - Adjectives ("bright", "yellowish") and verbs ("rises", "moving") are NOT entities
+;; 
+;; ### Few-Shot Examples
+;;
+;; PromptNER learns from examples showing both positive and negative cases:
+
+{:nextjournal.clerk/visibility {:code :fold}}
 (defn ->entity-item
   [candidate is-entity? reasoning]
   {:entity-candidate candidate
    :is-entity (if is-entity? "True" "False")
    :reasoning reasoning})
 
+{:nextjournal.clerk/visibility {:code :show}}
 (def astronomy-examples
   [{:text "All month: The bright star Sirius appears in the southern sky after sunset, rising higher before dawn.
 On March 15-17: Mars and Venus will be visible in the west during early evening, near the constellation Orion. "
@@ -271,8 +302,16 @@ On March 15-17: Mars and Venus will be visible in the west during early evening,
             (->entity-item "overhead" true "as it is a sky direction (skydirection)")
             (->entity-item "midnight" true "as it is an observation time period (obstime)")]}])
 
+;; Each example demonstrates:
+;; 1. **Entity candidates** - All possible entities in the text
+;; 2. **Binary classification** - True/False for each candidate
+;; 3. **Reasoning** - Why it is or isn't an entity of a specific type
+;;
+;; This format teaches the LLM to think step-by-step and provide justification.
 
+;; ### Input Text
 ;; The actual text to analyze
+;; 
 (def astronomy-text
   "All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
 All month: Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the rest of the night.
@@ -306,7 +345,7 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 ;; ### Extracted Entities
 ;;
 ;; The structured output groups entities by date and celestial body, creating a hierarchical
-;; representation of astronomical observations.
+;; representation of astronomical observations (this uses output from `parse-ner-response`).
 
 ^{:nextjournal.clerk/visibility {:code :hide}}
 (clerk/html
@@ -320,13 +359,6 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
          [:ul.ml-6.list-disc
           (for [detail (:details obs)]
             [:li (str (:entity detail) " (" (name (:type detail)) ")")])]])])])
-
-;; **PromptNER successfully:**
-;;
-;; - Extracted celestial bodies without modifiers ("Venus" not "Super bright Venus")
-;; - Distinguished between dates, observation times, and sky directions
-;; - Classified "Full Moon" correctly as an event
-;; - Handled temporal expressions ("All month", "Later in the month")
 
 ;; # Approach 2: GPT-NER
 ;;
