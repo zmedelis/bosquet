@@ -21,7 +21,7 @@
 
 ;; * **Real-world Information Extraction** - Automatically extract key facts from huge text volumes. *Example: Scanning customer reviews to identify which specific products (Mustang, Explorer) are mentioned most frequently.*
 ;; * **Foundation for Advanced NLP Tasks** - Essential building block for complex AI systems. *Example: A virtual assistant distinguishing between "I need to call Amazon" (company) vs "I'm traveling to the Amazon" (rainforest).*
-;; * **Business Intelligence and Decision Making** - Monitor markets and competitors in real-time. *Example: Alerting executives whenever "our CEO" and "resignation" appear together in news articles or social media.*
+;; * **Business Intelligence and Decision Making** - Monitor domains of interest in real-time. *Example: Alerting whenever "country leadership" and "resignation" appear together in news articles or social media.*
 ;; * **Healthcare and Scientific Discovery** - Help with medical research or improve patient care. *Example: Mining clinical trials to identify which patients with "diabetes" (disease) also took "Aspirin" (drug) to detect unexpected treatment patterns.*
 ;; * **Enhanced Search and Recommendation Systems** - Understand user intent beyond keywords. *Example: recommending jaguar wildlife documentaries vs Jaguar car reviews.*
 ;;
@@ -29,19 +29,6 @@
 ;; ![NER Interest 2024](notebook/assets/ner2024.png)
 ;; *(Taken from: [arXiv:2401.10825v3](https://arxiv.org/html/2401.10825v3#S3))*
 ;;
-;; ### What is an Entity?
-;;
-;; An entity is typically defined by three components:
-;;
-;; 1. **Type** - The category (e.g., PERSON, LOCATION, ORGANIZATION)
-;; 2. **Definition** - Clear criteria for what belongs in this category
-;; 3. **Examples** - Concrete instances demonstrating the category
-;;
-;; Since language is inherently ambiguous and context-dependent, examples are not just helpful
-;; but necessary for proper entity definition. Consider "Apple" - is it a fruit, a company, or
-;; perhaps a record label? Context determines the answer.
-;;
-
 ;; ## The NER Task
 ;;
 ;; Entity detection systems must accomplish two complementary goals:
@@ -49,82 +36,81 @@
 ;; 1. **Identify entities** - Locate spans of text that represent entities
 ;; 2. **Classify entities** - Assign appropriate types to the identified spans
 ;;
-;; Both tasks are challenging and interdependent. The boundaries of an entity are not always
-;; clear (is it "New York" or "New York City"?), and classification depends on both local
-;; context and domain knowledge.
-
-;; # Traditional Approaches
+;; Both tasks are challenging because language is inherently ambiguous and context-dependent. 
+;; Consider "Apple" - is it a fruit, a company, or a record label? Or "New York" vs "New York City" - 
+;; where should entity boundaries be drawn? Context and domain knowledge determine the answers.
+;; 
+;; # Non LLM Approaches
+;; 
+;; LLMs are not necessary for NER. There are proven, well-working tools and techniques:
 ;;
-;; Before diving into LLM-based methods, let's understand existing NER approaches:
+;; 1. **Transformer/CNN-based models** - [Spacy](https://demos.explosion.ai/displacy-ent) - uses CNNs with and Transformers
+;; 2. **Rule-based matching** - [Spacy EntityRuler](https://demos.explosion.ai/matcher) - pattern-based extraction
+;; 3. **Bidirectional encoder** - [GLiNER](https://huggingface.co/spaces/urchade/gliner_multiv2.1) - generalist lightweight model
 ;;
-;; 1. **[Spacy](https://demos.explosion.ai/displacy-ent)** - Combines rule-based patterns with machine learning models
-;; 2. **[GLiNER](https://huggingface.co/spaces/urchade/gliner_multiv2.1)** - Generalist and Lightweight model for Named Entity Recognition
+;; *Text for testing*
+;; ```text
+;; All month: Super bright Venus is in the predawn east, getting lower as the weeks pass.
+;; All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
+;; All month: Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the rest of the night.
+;; All month: Reddish Mars is very low in the evening west, getting even lower as the weeks pass.
+;; Later in the month: Bright Mercury is low in the early evening west.
+;; Oct. 5: Yellowish Saturn is near a nearly Full Moon.
+;; Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn.
+;; Oct. 15-20: Jupiter and the Moon rise near each other in the middle of the night. Comets are visible as well. The comet appears on 20th.
+;; ```
 ;;
 ;; ## Limitations of Traditional Methods
 ;;
-;; While these tools work well for general-purpose entity types (PERSON, LOCATION, ORGANIZATION),
-;; they struggle with:
+;; Traditional NER tools work well for trained entities (PERSON, LOCATION, ORGANIZATION)
+;; but struggle with:
 ;;
-;; - **Domain-specific entities** - Astronomy terms, medical concepts, legal terminology
-;; - **Nested entities** - "Super bright Venus" contains both a modifier and the entity "Venus"
-;; - **Ambiguous boundaries** - Should we extract "Venus" or "Super bright Venus"?
-;; - **Context-dependent classification** - "Full Moon" could be an astronomical event or just a celestial body
+;; - **Domain-specific low resource entities** - Require retraining for astronomy, medical, or legal terms
+;; - **Nested entities** - "Super bright Venus" contains modifier + entity
+;; - **Ambiguous boundaries** - Extract "Venus" or "Super bright Venus"?
+;; - **Context-dependent types** - "Apple" as fruit vs. company, "Full Moon" as event vs. celestial body
+;; - **Zero-shot capability** - Cannot recognize
 ;;
-;; ### Testing with Astronomy Text
-;;
-;; Consider this example from an astronomy observation guide. It contains dates, celestial bodies,
-;; observation times, and sky directions - a challenging mix for traditional NER systems.
-;; TODO this text is not used in code make it as simiple Markdown clerk quote
-(def astronomy-observation-text
-  "All month: Super bright Venus is in the predawn east, getting lower as the weeks pass.
-All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
-All month: Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the rest of the night.
-All month: Reddish Mars is very low in the evening west, getting even lower as the weeks pass.
-Later in the month: Bright Mercury is low in the early evening west.
-Oct. 5: Yellowish Saturn is near a nearly Full Moon.
-Oct. 7: Full Moon
-Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn.")
-
-;; **Challenges observed with traditional methods:**
-;;
-;; - **Nested entities**: "Super bright Venus" - we want just "Venus", but nested NER returns both
-;; - **Time ambiguity**: "All month" (when observable) vs "weeks" (duration) - hard to distinguish
-;; - **Incomplete extraction**: "The Orionids" detected but "The Orionid meteor shower" missed
-;; - **Modifier handling**: Adjectives like "Yellowish", "Reddish", "Super bright" confuse extractors
+;; Those issues apply to LLMs but their reasoning capabilities help to address those.
 ;;
 ;; # LLM-Based NER
 ;;
-;; Large Language Models present both opportunities and challenges for NER tasks.
+;; Large Language Models offer a fundamentally different approach to NER with both benefits but also their own shortcommings.
 ;;
-;; ## The Challenge
+;; ## The Fundamental Mismatch
 ;;
-;; LLMs are fundamentally designed for **text generation**, not **sequence labeling**. This creates
-;; a mismatch with the traditional NER formulation as a token classification problem.
+;; LLMs are designed for **text generation**, not **sequence labeling**. Traditional NER treats 
+;; entity recognition as token classification, but LLMs work by predicting the next token in a sequence.
 ;;
-;; ## Why Use LLMs Despite the Challenges?
+;; ## Why Use LLMs Anyway?
 ;;
-;; Consider this question: Should "Theory of General Relativity" be extracted as an entity?
+;; Consider: Should "Theory of General Relativity" be extracted as an entity?
 ;;
-;; - A **media company** analyzing political articles might say **no**
-;; - A **scientific journal** would say **yes**
+;; - **Media company** analyzing political news → **No**
+;; - **Scientific journal** indexing research → **Yes**
 ;;
-;; This illustrates the core strength of LLMs: **flexible adaptation to domain-specific needs**
-;; with minimal labeled data and human effort.
+;; The answer depends entirely on your domain and use case. This is where LLMs excel: **flexible, 
+;; zero or few shot adaptation to domain-specific requirements** without retraining or labeled data.
 ;;
-;; ### LLM Advantages for NER
+;; ### Key Advantages
 ;;
-;; 1. **Rich Context** - Can provide detailed definitions and examples dynamically
-;; 2. **Canonical Forms** - Not just extraction, but normalization too ("Mr. Medelis" → "Zygimantas Medelis")
-;; 3. **Entity Resolution** - Can identify that "Zygimantas Medelis" and "Mr. Medelis" refer to the same entity
-;; 4. **Domain Adaptation** - Easy to specify new entity types without retraining
+;; 1. **Zero/Few-shot capability** - Define new entity types through natural language instructions
+;; 2. **Rich contextual understanding** - Handles ambiguity better ("Apple" in tech vs. food context)
+;; 3. **Beyond extraction** - Normalization ("Mr. Medelis" → "Zygimantas Medelis"), entity resolution, 
+;;    and relationship extraction in one step
+;; 4. **Few-shot learning** - Provide examples directly in the prompt without retraining
 ;;
-;; ### LLM Challenges
+;; ### Key Challenges
 ;;
-;; 1. **Resource intensive** - Slower and more expensive than traditional methods
-;; 2. **Prompt sensitivity** - Results depend heavily on prompt engineering
+;; 1. **Computational cost** - 10-100x slower and more expensive than traditional methods
+;; 2. **Prompt engineering** - Performance highly sensitive to instruction phrasing
+;; 3. **Consistency** - May produce different outputs for identical inputs
+;; 4. **Output formatting** - Requires careful prompt design to get structured results
 ;;
-;; Despite these challenges, LLMs offer unique capabilities that make them invaluable for
-;; domain-specific NER tasks. Let's explore two approaches.
+;; ## The Bottom Line
+;;
+;; LLMs excel when you need flexibility, domain adaptation, or semantic understanding. Traditional 
+;; methods win on speed, cost, and consistency. Let's explore two practical LLM approaches.
 ;;
 ;; # Approach 1: PromptNER
 ;;
