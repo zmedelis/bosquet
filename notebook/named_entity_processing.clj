@@ -4,12 +4,10 @@
   (:require
    [bosquet.llm.generator :refer [llm generate] :as g]
    [bosquet.llm.wkk :as wkk]
-   [bosquet.template.selmer :as selmer]
    [clojure.string :as str]
    [helpers :as h]
    [bosquet.memory.simple-memory :as simple-memory]
-   [bosquet.memory.retrieval :as r]
-   [clojure.pprint :as p]))
+   [bosquet.memory.retrieval :as r]))
 
 ;; # Named Entity Recognition
 ;; 
@@ -27,23 +25,38 @@
 ;; necessary part of the definition.
 ;;
 
-(def EntityDefinition
-  [:map
-   [:entity-type [:enum "Person" "Location" "Organization" "Date"]]
-   [:definition [:string {:min 5}]]
-   [:examples [:set
-               {:gen/min 1 :gen/max 3}
-               [:map
-                [:text [:string {:min 5}]]
-                [:entities [:vector {:gen/min 1 :gen/max 3} [:string {:min 5}]]]]]]])
-
 ;; The task for entity detection system is two fold:
 ;; 1. Identity entity
 ;; 2. Classify entity
 
 ;; # Traditional approaches
-;; 1. Spacy rule and ML
-;; 2. GLiNER
+;; 1. Spacy rule and ML https://demos.explosion.ai/displacy-ent
+;; 2. GLiNER https://huggingface.co/spaces/urchade/gliner_multiv2.1
+;;
+;; ## Examples to test Spacy and GLiNER
+;; 
+;; Example text
+;;
+;; All month: Super bright Venus is in the predawn east, getting lower as the weeks pass. 
+;; All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
+;; All month:  Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the
+;; rest of the night. 
+;; All month: Reddish Mars is very low in the evening west, getting even lower as the weeks pass.
+;; Later in the month: Bright Mercury is low in the early evening west.
+;; Oct. 5: Yellowish Saturn is near a nearly Full Moon.
+;; Oct. 7: Full Moon
+;; Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn. 
+;; For gliner use labels: time, space object, position | kai pakeit i 'time, celestial object, position' tada
+;; kiek mažiau problemų su 'Super bright Venus' gauni 'Venus' tačiau 'Reddish Mars' išlieka
+;;
+;; problemos
+;; * Super bright Venus - noriu tik Venus, tiesa kai nuime 'nested ner' gauni ir SB Venus ir Venus
+;; bet tada kuris teisingas. Galima būtų įvedinėti 'condition' or something kad atskirti 'super bright'
+;; bet tada jau prarandam sprendimo paprastumą
+;; * time problematiškas nes jį markina ir eilutės pradžioje t.y. kada galima matyti, ir eilutės gale 'weeks'
+;; atskirti irgi problematiška nes padarius 'date, time' vėl problemos
+;; * naudojant 'celestial object' pagauna 'Orionids' tačiau tik 'The Orionids' 'The Orionid meteor shower' nepagauta
+;; * naudojant 'astronomical body' panašiai
 ;;
 ;; # LLM
 ;; Problem with LLM is that it they are for text generation not sequence labeling
@@ -61,70 +74,20 @@
 ;; Two problems remain
 ;; 1. LLMs are resource intensive
 ;; 2. Prompt sensitivity, no matter what this involves complex prompting and it is always problemantic
+;;
+;; Still LLMs are the solution becuase:
+;; 1. ability to give more context when dynamicly specifying which entity types to extradct (somehting gliner lacks)
+;; 2. just identifying stirng in the text is not enough, we need to figure out cannonical form
+;; 3. although entity resolution is different and separate activity in NLP at the end for full
+;; NER we need to do that because we will get two annotations in 'Zygimantas Medelis' and later 'Mr. Medelis'
+;; 4. TODO more arguments for LLMs with NER
+;;
+;; There are many techniques to detect NERs with LLM, lets use a couple to illustrate
+;; how it works
 ;; 
-
-(defn llm-named-entity-extraction
-  [text enity-definitions]
-  (let [prompt {:goal (h/join "Detect the following entities:"
-                              "{% for entity in entities %}"
-                              "## {{entity.entity-type}} ##"
-                              "{{entity.definition}}"
-                              "{% for example in entity.examples %}"
-                              "Example {{forloop.counter}}:"
-                              "  Text: {{example.text}}"
-                              "  Entities: {{example.entities|join:, }}"
-                              "{% endfor %}{% endfor %}"
-                              ""
-                              "TEXT:"
-                              "{{text}}")}]
-    (selmer/render (:goal prompt)
-                   {:text     text
-                    :entities enity-definitions})))
-
-;; https://huggingface.co/spaces/urchade/gliner_multiv2.1
-;; 
-;; When the James Webb Space Telescope instrument ( JWST instrument ) looked back
-;; in time to observe the Universe’s earliest moments, it presented astronomers
-;; profession with something most peculiar: hundreds of ‘little red dots space
-;; object ’ that inexplicably freckled the ancient cosmos.
-
-;; The specks space object , named for their compact size in JWST instrument images
-;; and their emission of long, ‘red’ wavelengths of light, initially baffled
-;; astronomers profession . They seemed too condensed to be galaxies, yet didn’t
-;; emit the right kind of light to be black holes space object . Researchers
-;; profession quickly dubbed the dots, which JWST instrument first detected in
-;; 2022, Universe breakers, because they contradicted standard thinking about the
-;; features of the early Universe.
-;;
-;; instrument, profession, space object
-;;
-;; * 2ia prblema su JWST abr ir visu vardu, reikia sujunginėti
-
-
-;; time, space object, position | kai pakeit i 'time, celestial object, position' tada
-;; kiek mažiau problemų su 'Super bright Venus' gauni 'Venus' tačiau 'Reddish Mars' išlieka
-;;
-;; problemos
-;; * Super bright Venus - noriu tik Venus, tiesa kai nuime 'nested ner' gauni ir SB Venus ir Venus
-;; bet tada kuris teisingas. Galima būtų įvedinėti 'condition' or something kad atskirti 'super bright'
-;; bet tada jau prarandam sprendimo paprastumą
-;; * time problematiškas nes jį markina ir eilutės pradžioje t.y. kada galima matyti, ir eilutės gale 'weeks'
-;; atskirti irgi problematiška nes padarius 'date, time' vėl problemos
-;; * naudojant 'celestial object' pagauna 'Orionids' tačiau tik 'The Orionids' 'The Orionid meteor shower' nepagauta
-;; * naudojant 'astronomical body' panašiai
-;;
-;;
-;; All month: Super bright Venus is in the predawn east, getting lower as the weeks pass. 
-;; All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
-;; All month:  Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the
-;; rest of the night. 
-;; All month: Reddish Mars is very low in the evening west, getting even lower as the weeks pass.
-;; Later in the month: Bright Mercury is low in the early evening west.
-;; Oct. 5: Yellowish Saturn is near a nearly Full Moon.
-;; Oct. 7: Full Moon
-;; Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn. 
-
 ;; # PromptNER
+;; https://arxiv.org/pdf/2305.15444
+;; [assets/promtp_ner.png] image
 
 (defn parse-ner-response
   "Parses NER response and groups by observation dates, then by celestial bodies.
@@ -199,7 +162,7 @@
         ;; Done
         result))))
 
-(def prompt
+(def prompt-ner-prompt
   [[:user ["DEFINITION:"
            "{{definition}}"
            ""
@@ -288,32 +251,21 @@ Oct. 5: Yellowish Saturn is near a nearly Full Moon.
 Oct. 10: A very thin crescent Moon is very near super-bright Venus in the predawn east.
 Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn. ")
 
-(comment
-  (def res (generate prompt
-                     {:definition astronomy-definition
-                      :examples   astronomy-examples
-                      :text       astronomy-text}))
-  (tap> res) 
 
+(def res (generate prompt-ner-prompt
+                   {:definition astronomy-definition
+                    :examples   astronomy-examples
+                    :text       astronomy-text}))
 
-  (def complex-resp "1. All month | True | as it is a time period reference (dateperiod)
-2. Venus | True | as it is a specific planet (celestialbody)
-3. predawn | True | as it is an observation time period (obstime)
-4. east | True | as it is a sky direction (skydirection)
-5. Jupiter | True | as it is a specific planet (celestialbody)
-6. middle of the night | True | as it is an observation time period (obstime)
-7. overhead | True | as it is a sky direction (skydirection)
-8. Oct. 5 | True | as it is a specific date (dateperiod)
-9. Saturn | True | as it is a specific planet (celestialbody)
-10. Full Moon | True | as it is an astronomical event (event)")
-  
-
-  (clojure.pprint/pprint (parse-ner-response resp))
-  #__)
+;; Print out the results using Clerk rendering
 
 
 ;; # GPT-NER
 ;; https://arxiv.org/pdf/2304.10428
+;; NER extraction
+;; [assets/gpt_ner.png] render image
+;; Validation set
+;; [assets/gpt_ner_validation.png image
 ;; 
 
 (defn parse-gpt-ner-response
@@ -323,7 +275,7 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
           (re-seq #"@@(.*?)##" response))
     (catch Exception _
       (tap> {'error (str "Failed to parse: " response)})
-      response)))
+      response))) 
 
 
 (def gpt-ner-prompt
@@ -354,11 +306,85 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
                                                              (mapv (fn [w] (-> w str/trim (= "YES" w)))
                                                                    (str/split resp #","))))})
 
-(defn only-confirmed-entities [entities validations]
-  (reduce (fn [m [e v]] (if v (conj m e) m))
-          []
-          (map vector entities validations)))
 
+
+;; Something to think about how to know which path to traverse with two heads
+;; (merge gpt-ner-prompt verification-prompt) here we have two things full-prompt and verification-prompt
+;; verification refers extractor but it will be properly filled in if full-prompt executes first
+
+;; Memory to store examples for few-shot prompt
+
+(def sm-rememberer (simple-memory/->remember))
+(def sm-recaller (simple-memory/->cue-memory))
+
+(sm-rememberer
+ {}
+ [{:input "Jupiter rises in the middle of the night in the east"
+   :output "@@Jupiter## rises in the middle of the night in the east"}
+
+  {:input "Yellowish Saturn is up in the east in the early evening"
+   :output "Yellowish @@Saturn## is up in the east in the early evening"}
+
+  {:input "Bright Mercury is low in the early evening west"
+   :output "Bright @@Mercury## is low in the early evening west"}
+
+  {:input "Venus appears in the predawn sky"
+   :output "@@Venus## appears in the predawn sky"}
+
+  {:input "Mars will be visible near the Moon tonight"
+   :output "@@Mars## will be visible near the @@Moon## tonight"}
+
+  {:input "The Orion constellation is prominent in winter"
+   :output "The @@Orion## constellation is prominent in winter"}
+
+  {:input "Neptune reaches opposition this month"
+   :output "@@Neptune## reaches opposition this month"}
+
+  {:input "Uranus is visible with binoculars in the eastern sky"
+   :output "@@Uranus## is visible with binoculars in the eastern sky"}
+
+  {:input "The Pleiades star cluster rises after midnight"
+   :output "The @@Pleiades## star cluster rises after midnight"}])
+
+
+
+;; first check that it does not mark wrong stuff
+(def txt "China says Taiwan spoils atmosphere for talks")
+(generate
+ gpt-ner-prompt
+ {:entity-type    "celestial body"
+  :demonstrations (sm-recaller {r/memory-content :input} txt)
+  :text           txt})
+
+  ;; now full check
+(def txt "Jupiter and the Moon rise near each other in the middle of the night. Comets are visible this month. The comet appears in May.")
+(def x
+  (generate
+   gpt-ner-prompt
+   {:entity-type    "celestial body"
+    :demonstrations (sm-recaller {r/memory-content :input} txt)
+    :text           txt}))
+
+  ;; and verification
+
+(def verif (generate
+            verification-prompt
+            {:entity-type "celestial body"
+             :entities    (-> x g/completions :extractor)
+             :text        txt}))
+
+
+;; Entity standartization
+;;
+;; No mater the method used to extract entities they need to be transformed into cannonical form
+;; There are vaious problems:
+;; 1. for different langauges different transliterations
+;; 2. grammatical forms
+;; 3. abbreviations
+;; 4. More?
+;;
+;; The prompt quickly gets complex and you probably want to do separate prompts for separate entities
+;; Here everything is done in one prompt to show that even in cases with narrow domain definition complexity grows
 
 (def entity-standartization-prompt
   {:prompt "TASK: Normalize entity mentions to their canonical form for frequency counting and entity resolution.
@@ -404,82 +430,18 @@ Return a Clojure EDN formated array of entities in cannonical form in the same s
 {{standartizer}}"
    :standartizer (llm :gpt-5-mini wkk/output-format :edn)})
 
-;; Something to think about how to know which path to traverse with two heads
-;; (merge gpt-ner-prompt verification-prompt) here we have two things full-prompt and verification-prompt
-;; verification refers extractor but it will be properly filled in if full-prompt executes first
 
-;; Memory to store examples for few-shot prompt
+(defn only-confirmed-entities [entities validations]
+  (reduce (fn [m [e v]] (if v (conj m e) m))
+          []
+          (map vector entities validations)))
 
-(def sm-rememberer (simple-memory/->remember))
-(def sm-recaller (simple-memory/->cue-memory))
+(def entities (only-confirmed-entities (-> x g/completions :extractor)
+                                       (-> verif g/completions :verifier)))
 
-(sm-rememberer
- {}
- [{:input "Jupiter rises in the middle of the night in the east"
-   :output "@@Jupiter## rises in the middle of the night in the east"}
-
-  {:input "Yellowish Saturn is up in the east in the early evening"
-   :output "Yellowish @@Saturn## is up in the east in the early evening"}
-
-  {:input "Bright Mercury is low in the early evening west"
-   :output "Bright @@Mercury## is low in the early evening west"}
-
-  {:input "Venus appears in the predawn sky"
-   :output "@@Venus## appears in the predawn sky"}
-
-  {:input "Mars will be visible near the Moon tonight"
-   :output "@@Mars## will be visible near the @@Moon## tonight"}
-
-  {:input "The Orion constellation is prominent in winter"
-   :output "The @@Orion## constellation is prominent in winter"}
-
-  {:input "Neptune reaches opposition this month"
-   :output "@@Neptune## reaches opposition this month"}
-
-  {:input "Uranus is visible with binoculars in the eastern sky"
-   :output "@@Uranus## is visible with binoculars in the eastern sky"}
-
-  {:input "The Pleiades star cluster rises after midnight"
-   :output "The @@Pleiades## star cluster rises after midnight"}])
-
-(comment
-  (def txt "Jupiter and the Moon rise near each other in the middle of the night. Comets are visible this month. The comet appears in May.")
-  (def x
-    (generate
-     gpt-ner-prompt
-     {:entity-type    "celestial body"
-      :demonstrations (sm-recaller {r/memory-content :input} txt)
-      :text           txt}))
-
-  (def verif (generate
-              verification-prompt
-              {:entity-type "celestial body"
-               :entities    (-> x g/completions :extractor)
-               :text        txt}))
-
-  (def entities (only-confirmed-entities (-> x g/completions :extractor)
-                                         (-> verif g/completions :verifier)))
-
-  (def normalized
-    (generate
-     entity-standartization-prompt
-     {:entity-type "celestial body"
-      :entities    entities
-      :text        txt}))
-
-  (def txt "Comets are visible this month. The comet appears in May.")
-  (def x
-    (generate
-     gpt-ner-prompt
-     {:entity-type    "celestial body"
-      :demonstrations (sm-recaller {r/memory-content :input} txt)
-      :text           txt}))
-
+(def normalized
   (generate
-   gpt-ner-prompt
-   {:entity-type    "celestial body"
-    :demonstrations (sm-recaller {r/memory-content :input}
-                                 "China says Taiwan spoils atmosphere for talks")
-    :text           "China says Taiwan spoils atmosphere for talks"})
-
-  #__)
+   entity-standartization-prompt
+   {:entity-type "celestial body"
+    :entities    entities
+    :text        txt}))
