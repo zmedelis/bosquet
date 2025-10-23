@@ -309,9 +309,14 @@ On March 15-17: Mars and Venus will be visible in the west during early evening,
 ;;
 ;; This format teaches the LLM to think step-by-step and provide justification.
 
-;; ### Input Text
-;; The actual text to analyze
-;; 
+;; ## Running PromptNER
+;;
+;; Let's apply the PromptNER approach to our astronomy text. The prompt includes:
+;; - Clear entity type definitions
+;; - Few-shot examples showing reasoning
+;; - Explicit instructions on what to extract
+
+{:nextjournal.clerk/visibility {:code :hide :result :hide}}
 (def astronomy-text
   "All month: Very bright Jupiter rises in the middle of the night in the east, and is high overhead before dawn.
 All month: Yellowish Saturn is up in the east in the early evening, and high up and moving west through most of the rest of the night.
@@ -321,14 +326,7 @@ Oct. 10: A very thin crescent Moon is very near super-bright Venus in the predaw
 Oct. 14: Jupiter and the Moon rise near each other in the middle of the night and are high overhead before dawn. ")
 
 
-;; ## Running PromptNER
-;;
-;; Let's apply the PromptNER approach to our astronomy text. The prompt includes:
-;; - Clear entity type definitions
-;; - Few-shot examples showing reasoning
-;; - Explicit instructions on what to extract
-
-^{:nextjournal.clerk/visibility {:result :hide}}
+^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def prompt-ner-result
   (generate prompt-ner-prompt
             {:definition astronomy-definition
@@ -337,7 +335,7 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 
 ;; ### Input Text
 
-^{:nextjournal.clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide :result :show}}
 (clerk/html
   [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.dark:bg-gray-800.dark:border-gray-700
    [:div.font-mono.text-sm.whitespace-pre-wrap astronomy-text]])
@@ -347,7 +345,7 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 ;; The structured output groups entities by date and celestial body, creating a hierarchical
 ;; representation of astronomical observations (this uses output from `parse-ner-response`).
 
-^{:nextjournal.clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide :result :show}}
 (clerk/html
   [:div.font-mono
    (for [observation (-> prompt-ner-result g/completions :ner)]
@@ -362,8 +360,9 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 
 ;; # Approach 2: GPT-NER
 ;;
-;; GPT-NER ([arXiv:2304.10428](https://arxiv.org/pdf/2304.10428)) takes a different approach
-;; using delimiter-based annotation and a two-stage verification process.
+;; GPT-NER ([arXiv:2304.10428](https://arxiv.org/pdf/2304.10428)) simplifies entity extraction 
+;; by treating it as inline text annotation. Instead of reasoning about each candidate, the LLM 
+;; directly marks entities using delimiters.
 ;;
 ;; ![GPT-NER Extraction](notebook/assets/gpt_ner.png)
 ;;
@@ -374,8 +373,13 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 ;; 2. **Verification**: Use a second LLM call to validate extractions
 ;;
 ;; ![GPT-NER Validation](notebook/assets/gpt_ner_validation.png)
-;;
+;; 
+;; ## Implementation with Bosquet
 
+;; ### Parsing Annotated Text
+;;
+;; Extract entities from the `@@entity##` format using regex:
+^{:nextjournal.clerk/visibility {:code :show}}
 (defn parse-gpt-ner-response
   [response]
   (try
@@ -385,7 +389,14 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
       (tap> {'error (str "Failed to parse: " response)})
       response))) 
 
+;; ### Extraction Prompt
+;;
+;; The extraction prompt includes:
+;; - Task description ("label celestial body entities")
+;; - Few-shot examples showing the `@@entity##` pattern
+;; - The text to annotate
 
+^{:nextjournal.clerk/visibility {:code :show}}
 (def gpt-ner-prompt
   {:ner-task            ["I am an excellent linguist."
                          "The task is to label {{entity-type}} entities in the given sentence."
@@ -401,7 +412,11 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
                          "{{examples}}"
                          "Input: {{text}}"
                          "Output: {{extractor}}"]})
+;; ### Verification Prompt
+;;
+;; The second stage validates each extracted entity with binary YES/NO answers:
 
+^{:nextjournal.clerk/visibility {:code :show}}
 (def verification-prompt
   {:verification-prompt ["Verify that the given entities extracted from the text are of the {{entity-type}} entity type."
                          "Answer with YES or NO only in exact same order as provided questions Never add any reasoning or explantions."
@@ -420,15 +435,20 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 ;; (merge gpt-ner-prompt verification-prompt) here we have two things full-prompt and verification-prompt
 ;; verification refers extractor but it will be properly filled in if full-prompt executes first
 
-;; ## Setting Up GPT-NER Memory
+;; ## Dynamic Few-Shot Learning with Memory
 ;;
-;; GPT-NER uses few-shot examples to guide the extraction. We'll store examples in memory
-;; and retrieve the most relevant ones for each query.
+;; Instead of static examples, GPT-NER retrieves the most relevant examples for each query
+;; using a simple memory system. This improves performance by showing the model similar cases.
 
+{:nextjournal.clerk/visibility {:code :show}}
 (def sm-rememberer (simple-memory/->remember))
 (def sm-recaller (simple-memory/->cue-memory))
 
-^{:nextjournal.clerk/visibility {:result :hide}}
+;; ### Storing Few-Shot Examples
+;;
+;; We populate memory with annotation examples showing the `@@entity##` pattern:
+
+^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (sm-rememberer
  {}
  [{:input "Jupiter rises in the middle of the night in the east"
@@ -458,15 +478,20 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
   {:input "The Pleiades star cluster rises after midnight"
    :output "The @@Pleiades## star cluster rises after midnight"}])
 
-;; These examples demonstrate the `@@entity##` annotation pattern that the model should follow.
+;; **Memory retrieval**: When processing new text, `sm-recaller` finds the most similar 
+;; examples from memory based on semantic similarity. This dynamic selection adapts to 
+;; each input rather than using fixed examples.
 
-;; ## GPT-NER in Action
+;; ## Testing GPT-NER
+
+;; ### Negative Test: No False Positives
 ;;
-;; First, let's verify the model doesn't hallucinate entities in unrelated text.
+;; First, verify the model doesn't hallucinate entities in unrelated text:
 
+{:nextjournal.clerk/visibility {:code :show}}
 (def non-astronomy-text "China says Taiwan spoils atmosphere for talks")
 
-^{:nextjournal.clerk/visibility {:result :hide}}
+^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def negative-test
   (generate
    gpt-ner-prompt
@@ -474,19 +499,21 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
     :demonstrations (sm-recaller {r/memory-content :input} non-astronomy-text)
     :text           non-astronomy-text}))
 
-^{:nextjournal.clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide :result :show}}
 (clerk/html
   [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.dark:bg-gray-800.dark:border-gray-700
    [:div.mb-2 [:strong "Input: "] [:span.font-mono non-astronomy-text]]
    [:div [:strong "Extracted: "]
-    [:span.font-mono (str (g/completions negative-test :extractor))]]])
+    [:span.font-mono (str (-> negative-test g/completions :extractor))]]])
 
-;; Good! No false positives. Now let's test on actual astronomy text.
+;; ✅ **Result**: No false positives detected. The model correctly identifies no celestial bodies.
 
+
+{:nextjournal.clerk/visibility {:code :show}}
 (def gpt-ner-test-text
   "Jupiter and the Moon rise near each other in the middle of the night. Comets are visible this month. The comet appears in May.")
 
-^{:nextjournal.clerk/visibility {:result :hide}}
+^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def gpt-ner-extraction
   (generate
    gpt-ner-prompt
@@ -494,9 +521,11 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
     :demonstrations (sm-recaller {r/memory-content :input} gpt-ner-test-text)
     :text           gpt-ner-test-text}))
 
-;; ### Extraction Results
+;; ### Positive Test: Entity Extraction
+;;
+;; Now let's test on astronomy text with multiple entities:
 
-^{:nextjournal.clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide :result :show}}
 (clerk/html
   [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.dark:bg-gray-800.dark:border-gray-700
    [:div.mb-4 [:strong "Input Text:"]]
@@ -506,11 +535,13 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
     (for [entity (-> gpt-ner-extraction g/completions :extractor)]
       [:li.font-mono entity])]])
 
-;; ### Two-Stage Verification
-;;
-;; GPT-NER's second stage validates the extractions, reducing false positives.
+;; **Note**: The model extracted entities, but some might be incorrect. This is where verification helps.
 
-^{:nextjournal.clerk/visibility {:result :hide}}
+;; ### Stage 2: Verification
+;;
+;; The second stage validates each extraction, filtering out false positives:
+
+^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def gpt-ner-verification
   (generate
    verification-prompt
@@ -518,7 +549,7 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
     :entities    (-> gpt-ner-extraction g/completions :extractor)
     :text        gpt-ner-test-text}))
 
-^{:nextjournal.clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide :result :show}}
 (clerk/html
   [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.dark:bg-gray-800.dark:border-gray-700
    [:div.mb-2 [:strong "Verification Results:"]]
@@ -537,24 +568,32 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 
 ;; # Entity Normalization
 ;;
-;; Once entities are extracted, they must be transformed into **canonical forms** for
-;; consistent analysis and aggregation.
+;; This step is independent of approach can be applied to *GPT-NER* or *PromptNER* or to *Spacy* results.
 ;;
-;; ## Why Normalization Matters
+;; Extraction is only the first step. Real applications need entities in **canonical form** 
+;; for accurate counting, aggregation, and entity resolution.
 ;;
-;; Entity extraction is just the first step. Real-world text contains variations:
+;;## The Normalization Problem
 ;;
-;; 1. **Transliterations** - Different languages have different spellings (e.g., "Beijing" vs "Peking")
-;; 2. **Grammatical forms** - Plurals, possessives, case variations ("comet" vs "comets" vs "Comet's")
-;; 3. **Abbreviations** - "NASA" vs "National Aeronautics and Space Administration"
-;; 4. **Referential variations** - "Zygimantas Medelis" vs "Mr. Medelis" vs "Medelis"
+;; Entity extraction produces variations that refer to the same concept:
 ;;
-;; ## The Complexity Challenge
+;; | Variation Type | Examples |
+;; |----------------|----------|
+;; | **Case variations** | "Mars" vs "mars", "JUPITER" vs "Jupiter" |
+;; | **Plurals** | "comet" vs "comets", "galaxy" vs "galaxies" |
+;; | **Possessives** | "Mars" vs "Mars's atmosphere" |
+;; | **Abbreviations** | "NASA" vs "National Aeronautics and Space Administration" |
+;; | **Referential** | "Zygimantas Medelis" vs "Mr. Medelis" vs "Medelis" |
 ;;
-;; Even in a narrow domain like astronomy, normalization rules become complex quickly.
-;; The prompt below handles multiple cases, but in production you might need separate
-;; prompts for different entity types.
+;; Without normalization, frequency counts and entity resolution fail: Is "comet" appearing 
+;; 5 times, or are "comet", "Comet", and "comets" three different entities?
 
+;; ## LLM-Based Normalization
+;;
+;; Traditional rule-based normalization requires extensive domain knowledge and maintenance.
+;; LLMs can handle complex normalization rules through natural language instructions:
+
+{:nextjournal.clerk/visibility {:code :show}}
 (def entity-standartization-prompt
   {:prompt "TASK: Normalize entity mentions to their canonical form for frequency counting and entity resolution.
 
@@ -599,23 +638,26 @@ Return a Clojure EDN formated array of entities in cannonical form in the same s
 {{standartizer}}"
    :standartizer (llm :gpt-5-mini wkk/output-format :edn)})
 
+;; ## Complete Pipeline: Extract → Verify → Normalize
 
+
+{:nextjournal.clerk/visibility {:code :show}}
 (defn only-confirmed-entities [entities validations]
   (reduce (fn [m [e v]] (if v (conj m e) m))
           []
           (map vector entities validations)))
 
-;; ## Normalization in Action
-;;
-;; Let's normalize the entities we extracted and verified from the GPT-NER pipeline.
+;; ### Step 1: Get Verified Entities from GPT-NER
 
-^{:nextjournal.clerk/visibility {:result :hide}}
+^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def confirmed-entities
   (only-confirmed-entities
    (-> gpt-ner-extraction g/completions :extractor)
    (-> gpt-ner-verification g/completions :verifier)))
 
-^{:nextjournal.clerk/visibility {:result :hide}}
+;; ### Step 2: Normalize to Canonical Forms
+
+^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def normalized-entities
   (generate
    entity-standartization-prompt
@@ -623,9 +665,9 @@ Return a Clojure EDN formated array of entities in cannonical form in the same s
     :entities    confirmed-entities
     :text        gpt-ner-test-text}))
 
-;; ### Before and After Normalization
+;; ### Normalization Results
 
-^{:nextjournal.clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide :result :show}}
 (clerk/html
   [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.dark:bg-gray-800.dark:border-gray-700
    [:div.mb-4
@@ -633,40 +675,42 @@ Return a Clojure EDN formated array of entities in cannonical form in the same s
     [:div.font-mono.ml-4 (str confirmed-entities)]]
    [:div
     [:strong "Normalized Entities:"]
-    [:div.font-mono.ml-4 (str (g/completions normalized-entities :standartizer))]]])
+    [:div.font-mono.ml-4 (str (-> normalized-entities g/completions :standartizer))]]])
 
-;; **The normalization process:**
-;;
-;; - Converts proper nouns to standard capitalization
-;; - Reduces common nouns to singular form
-;; - Preserves inherently plural entities
-;; - Enables accurate frequency counting and entity resolution
+;; **What normalization achieved:**
+;; - Standardized capitalization (proper vs common nouns)
+;; - Reduced plurals to singular forms
+;; - Created consistent canonical forms for counting and aggregation
 
-;; # Bringing It All Together with Bosquet
+;; ## What We Built
 ;;
-;; This notebook demonstrates how **Bosquet** simplifies complex NER pipelines:
+;; | Stage | Approach | Key Feature |
+;; |-------|----------|-------------|
+;; | **Extraction (PromptNER)** | Structured reasoning | Explicit yes/no decisions with justification |
+;; | **Extraction (GPT-NER)** | Delimiter annotation | Inline `@@entity##` marking |
+;; | **Verification** | Two-stage validation | Separate LLM call reduces false positives |
+;; | **Normalization** | Rule-based prompting | Canonical forms for aggregation |
 ;;
-;; 1. **Flexible Prompting** - Mix template strings, Selmer syntax, and Clojure code seamlessly
-;; 2. **Memory Integration** - Use simple-memory for development, scale to vector databases for production
-;; 3. **Pipeline Composition** - Chain extraction, verification, and normalization steps naturally
-;; 4. **Output Parsing** - Custom parsers transform LLM output into structured data
+;; ## Why Bosquet?
 ;;
-;; ## Key Takeaways
+;; Bosquet simplified the implementation through:
+;; 1. **Template composition** - Mix Selmer syntax with Clojure naturally
+;; 2. **Memory integration** - Dynamic few-shot example retrieval
+;; 3. **Pipeline chaining** - Compose multi-stage workflows declaratively
+;; 4. **Custom parsing** - Transform LLM output into structured data (EDN, regex, etc.)
+
+;; ## When to Use Each Approach
 ;;
-;; - **Traditional NER** works well for general domains but struggles with specialized vocabulary
-;; - **LLM-based NER** offers flexibility and domain adaptation at the cost of compute
-;; - **PromptNER** uses detailed reasoning and few-shot examples
-;; - **GPT-NER** employs delimiter-based extraction with verification
-;; - **Entity normalization** is essential for practical applications
+;; **Traditional NER (spaCy, GLiNER)**
+;; - ✅ High throughput required (1000s of documents/second)
+;; - ✅ Standard entity types (PERSON, ORG, LOC)
+;; - ✅ Budget-constrained applications
+;; - ❌ Domain-specific entities without training data
 ;;
-;; ## Next Steps
-;;
-;; For production NER systems, consider:
-;;
-;; - Caching normalized entities to reduce redundant processing
-;; - Combining multiple extraction methods and voting on results
-;; - Fine-tuning smaller models on domain-specific data
-;; - Using entity linking to connect entities to knowledge bases
-;;
-;; Try adapting these techniques to your own domain - legal documents, medical records,
-;; financial reports, or any specialized text corpus!
+;; **LLM-Based NER (PromptNER, GPT-NER)**
+;; - ✅ Domain-specific entities (astronomy, legal, medical)
+;; - ✅ Zero-shot or few-shot requirements
+;; - ✅ Need for normalization and entity resolution
+;; - ✅ Flexible entity type definitions
+;; - ❌ Real-time, high-volume processing
+;; - ❌ Strict budget constraints
