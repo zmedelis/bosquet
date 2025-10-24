@@ -501,8 +501,22 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 (def non-astronomy-text "China says Taiwan spoils atmosphere for talks")
 
 ;; Memory used:
-{:nextjournal.clerk/visibility {:code :show :result :show}}
+{:nextjournal.clerk/visibility {:code :show :result :hide}}
 (def memory-1 (sm-recaller {r/memory-content :input} non-astronomy-text))
+
+^{:nextjournal.clerk/visibility {:code :hide :result :show}}
+(clerk/html
+  [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.dark:bg-gray-800.dark:border-gray-700
+   [:div.mb-4 [:strong "Retrieved Examples from Memory:"]]
+   [:div.space-y-3
+    (for [example memory-1]
+      [:div.border.border-gray-300.rounded.p-3.bg-gray-50
+       [:div.mb-2
+        [:span.font-semibold.text-gray-700 "Input: "]
+        [:span.font-mono.text-sm (:input example)]]
+       [:div
+        [:span.font-semibold.text-gray-700 "Output: "]
+        [:span.font-mono.text-sm (:output example)]]])]])
 
 ^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def negative-test
@@ -528,8 +542,26 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
   "Jupiter and the Moon rise near each other in the middle of the night. Comets are visible this month. The comet appears in May.")
 
 ;; Memory used:
-{:nextjournal.clerk/visibility {:code :show :result :show}}
+{:nextjournal.clerk/visibility {:code :show :result :hide}}
 (def memory-2 (sm-recaller {r/memory-content :input} gpt-ner-test-text))
+
+^{:nextjournal.clerk/visibility {:code :hide :result :show}}
+(clerk/html
+  [:div.block.p-6.bg-white.border.border-gray-200.rounded-lg.shadow.dark:bg-gray-800.dark:border-gray-700
+   [:div.mb-4 [:strong "Retrieved Examples from Memory:"]]
+   [:div.space-y-3
+    (concat
+     (for [example (take 5 memory-2)]
+       [:div.border.border-gray-300.rounded.p-3.bg-gray-50
+        [:div.mb-2
+         [:span.font-semibold.text-gray-700 "Input: "]
+         [:span.font-mono.text-sm (:input example)]]
+        [:div
+         [:span.font-semibold.text-gray-700 "Output: "]
+         [:span.font-mono.text-sm (:output example)]]])
+     (when (> (count memory-2) 5)
+       [[:div.text-center.text-gray-500.italic.py-2
+         (str "... and " (- (count memory-2) 5) " more examples")]]))]])
 
 ^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def gpt-ner-extraction
