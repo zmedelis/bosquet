@@ -500,16 +500,18 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 {:nextjournal.clerk/visibility {:code :show}}
 (def non-astronomy-text "China says Taiwan spoils atmosphere for talks")
 
+;; Memory used:
+{:nextjournal.clerk/visibility {:code :show :result :show}}
+(def memory-1 (sm-recaller {r/memory-content :input} non-astronomy-text))
+
 ^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def negative-test
   (generate
    gpt-ner-prompt
    {:entity-type    "celestial body"
-    :demonstrations (sm-recaller {r/memory-content :input} non-astronomy-text)
+    :demonstrations memory-1
     :text           non-astronomy-text}))
 
-;; Memory used:
-(sm-recaller {r/memory-content :input} non-astronomy-text)
 
 ^{:nextjournal.clerk/visibility {:code :hide :result :show}}
 (clerk/html
@@ -525,16 +527,18 @@ Oct. 14: Jupiter and the Moon rise near each other in the middle of the night an
 (def gpt-ner-test-text
   "Jupiter and the Moon rise near each other in the middle of the night. Comets are visible this month. The comet appears in May.")
 
+;; Memory used:
+{:nextjournal.clerk/visibility {:code :show :result :show}}
+(def memory-2 (sm-recaller {r/memory-content :input} gpt-ner-test-text))
+
 ^{:nextjournal.clerk/visibility {:result :hide :code :show}}
 (def gpt-ner-extraction
   (generate
    gpt-ner-prompt
    {:entity-type    "celestial body"
-    :demonstrations (sm-recaller {r/memory-content :input} gpt-ner-test-text)
+    :demonstrations memory-2
     :text           gpt-ner-test-text}))
 
-;; Memory used:
-(sm-recaller {r/memory-content :input} gpt-ner-test-text)
 
 ;; #### Positive Test: Entity Extraction
 ;;
