@@ -4,6 +4,7 @@
    [bosquet.db.cache :as cache]
    [bosquet.env :as env]
    [bosquet.llm.gen-data :as gd]
+   [bosquet.llm.resilience :as resilience]
    [bosquet.llm.wkk :as wkk]
    [bosquet.template.selmer :as selmer]
    [bosquet.utils :as u]
@@ -80,19 +81,14 @@
                  content)})
    messages))
 
-(defn call-llm
-  "Make a call to the LLM service.
-  - `llm-config` provides a map containing LLM service configurations, the
-     LLM to call is specified in
-  - `properties` providing model parameters and other details of LLM invocation
-  - `messages` contains the context/prompt to be supplied to LLM."
+(defn- do-llm-call
   [llm-config
    {llm-impl     wkk/service
     model-params wkk/model-params
     use-cache    wkk/cache
     :as          properties}
    messages]
-  (if-let [chat-impl (get-in llm-config [llm-impl wkk/chat-fn])]
+  (when-let [chat-impl (get-in llm-config [llm-impl wkk/chat-fn])]
     (let [format-fn      (partial converter/coerce (wkk/output-format properties))
           service-config (dissoc (llm-impl llm-config)
                                  wkk/complete-fn wkk/chat-fn wkk/embed-fn)
@@ -105,12 +101,24 @@
           params         (merge
                           (get-in llm-config [llm-impl :model-params])
                           (assoc model-params :messages (->chatml messages)))
-
           result         (if use-cache
                            (cache/lookup-or-call chat-fn params)
                            (chat-fn params))]
-      (update-in result [wkk/content :content] format-fn))
-    (timbre/warnf "Generation instruction does not contain AI gen function spec")))
+      (update-in result [wkk/content :content] format-fn))))
+
+(defn call-llm
+  "Make a call to the LLM service.
+  - `llm-config` provides a map containing LLM service configurations, the
+     LLM to call is specified in
+  - `properties` providing model parameters and other details of LLM invocation
+  - `messages` contains the context/prompt to be supplied to LLM."
+  [llm-config
+   {resilience-config wkk/resilience :as properties}
+   messages]
+  (if resilience-config
+    (resilience/with-fallback do-llm-call resilience-config llm-config messages)
+    (or (do-llm-call llm-config properties messages)
+        (timbre/warnf "Generation instruction does not contain AI gen function spec"))))
 
 (def conversation
   "Result map key holding full chat conversation including generated parts"
