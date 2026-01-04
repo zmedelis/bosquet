@@ -106,6 +106,29 @@
                            (chat-fn params))]
       (update-in result [wkk/content :content] format-fn))))
 
+(defn- do-complete-call
+  [llm-config
+   {llm-impl     wkk/service
+    model-params wkk/model-params
+    use-cache    wkk/cache
+    :as          properties}
+   prompt]
+  (when-let [complete-impl (get-in llm-config [llm-impl wkk/complete-fn])]
+    (let [format-fn      (partial converter/coerce (wkk/output-format properties))
+          service-config (dissoc (llm-impl llm-config)
+                                 wkk/complete-fn wkk/chat-fn wkk/embed-fn)
+          complete-fn    (partial (if (symbol? complete-impl)
+                                    (requiring-resolve complete-impl)
+                                    complete-impl)
+                                  service-config)
+          params         (merge
+                          (get-in llm-config [llm-impl :model-params])
+                          (assoc model-params :prompt prompt))
+          result         (if use-cache
+                           (cache/lookup-or-call complete-fn params)
+                           (complete-fn params))]
+      (update-in result [wkk/content :completion] format-fn))))
+
 (defn call-llm
   "Make a call to the LLM service.
   - `llm-config` provides a map containing LLM service configurations, the
@@ -119,6 +142,19 @@
     (resilience/with-fallback do-llm-call resilience-config llm-config messages)
     (or (do-llm-call llm-config properties messages)
         (timbre/warnf "Generation instruction does not contain AI gen function spec"))))
+
+(defn call-complete
+  "Make a completion call to the LLM service.
+  - `llm-config` provides a map containing LLM service configurations
+  - `properties` providing model parameters and other details
+  - `prompt` contains the text prompt to be supplied to LLM."
+  [llm-config
+   {resilience-config wkk/resilience :as properties}
+   prompt]
+  (if resilience-config
+    (resilience/with-fallback do-complete-call resilience-config llm-config prompt)
+    (or (do-complete-call llm-config properties prompt)
+        (timbre/warnf "Generation instruction does not contain completion function spec"))))
 
 (def conversation
   "Result map key holding full chat conversation including generated parts"

@@ -1,8 +1,10 @@
 (ns bosquet.llm.resilience-test
   (:require
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest is testing use-fixtures]]
    [bosquet.llm.resilience :as resilience]
    [bosquet.llm.wkk :as wkk]))
+
+(use-fixtures :each (fn [f] (resilience/reset-circuit-breakers!) (f)))
 
 (deftest retry-test
   (testing "retries on retryable error"
@@ -100,3 +102,36 @@
                               {}
                               [])))
       (is (= [:openai :claude :mistral] @calls)))))
+
+(deftest complete-fallback-test
+  (testing "completion falls back to secondary provider"
+    (let [calls (atom [])]
+      (is (= {:result "completion from mistral"}
+             (resilience/with-fallback
+               (fn [_ provider prompt]
+                 (swap! calls conj (wkk/service provider))
+                 (if (= :openai (wkk/service provider))
+                   (throw (ex-info "Service down" {:recoverable? true}))
+                   {:result "completion from mistral"}))
+               {:primary {wkk/service :openai}
+                :fallbacks [{wkk/service :mistral}]
+                :retry {:max-attempts 1}
+                :circuit-breaker {}}
+               {}
+               "Complete this: Hello")))
+      (is (= [:openai :mistral] @calls))))
+
+  (testing "completion succeeds with primary provider"
+    (let [calls (atom [])]
+      (is (= {:result "completion from openai"}
+             (resilience/with-fallback
+               (fn [_ provider prompt]
+                 (swap! calls conj (wkk/service provider))
+                 {:result "completion from openai"})
+               {:primary {wkk/service :openai}
+                :fallbacks [{wkk/service :mistral}]
+                :retry {:max-attempts 1}
+                :circuit-breaker {}}
+               {}
+               "Complete this: Hello")))
+      (is (= [:openai] @calls)))))

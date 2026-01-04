@@ -6,6 +6,11 @@
 
 (defonce ^:private circuit-breakers (atom {}))
 
+(defn reset-circuit-breakers!
+  "Reset all circuit breakers. Useful for testing."
+  []
+  (reset! circuit-breakers {}))
+
 (defn- get-or-create-cb 
   [provider-key 
    config]
