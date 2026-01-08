@@ -46,3 +46,5 @@
 
 (def tools
   :llm/tools)
+
+(def resilience :llm/resilience)
