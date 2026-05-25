@@ -7,10 +7,17 @@
 (defn- read-json [json]
   (j/read-value json (j/object-mapper {:decode-key-fn true})))
 
+;; Wikimedia's API policy requires a descriptive User-Agent; requests using a
+;; generic/default client UA are rejected with HTTP 403.
+;; https://meta.wikimedia.org/wiki/User-Agent_policy
+(def ^:private user-agent
+  "Bosquet/1.0 (https://github.com/zmedelis/bosquet; LLM agent toolkit) clj-http")
+
 (defn call-wiki [params]
   (->> (http/request
         {:method       :get
          :url          "https://en.wikipedia.org/w/api.php"
+         :headers      {"User-Agent" user-agent}
          :query-params params})
        :body read-json))
 

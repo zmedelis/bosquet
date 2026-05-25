@@ -1,7 +1,10 @@
 (ns bosquet.mcp.core
   (:require [clojure.string :as str]
             [taoensso.timbre :as timbre]
-            [bosquet.mcp.client :as client]))
+            [bosquet.mcp.client :as client]
+            ;; side-effecting load: this is the namespace tool fns are interned
+            ;; into (see intern/ns-publics on 'bosquet.mcp.tools below)
+            [bosquet.mcp.tools]))
 
 (def ^:dynamic *transports* (atom {}))
 (def ^:dynamic *tool-vars* (atom []))
