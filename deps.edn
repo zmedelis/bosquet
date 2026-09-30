@@ -1,7 +1,7 @@
 {:paths   ["src" "resources"]
  :deps    {org.clojure/clojure                           {:mvn/version "1.12.3"}
            io.github.zmedelis/hfds-clj                   {:mvn/version "2023.12.11"}
-           metosin/malli                                 {:mvn/version "0.20.0-alpha2"}
+           metosin/malli                                 {:mvn/version "0.20.2"}
            com.wsscode/pathom3                           {:mvn/version "2025.01.16-alpha"}
            net.clojars.wkok/openai-clojure               {:mvn/version "0.23.0"}
            com.taoensso/timbre                           {:mvn/version "6.8.0"}
@@ -10,19 +10,19 @@
            metosin/jsonista                              {:mvn/version "0.3.13"}
            org.clojars.danielsz/cohere                   {:mvn/version "1.0.0"}
            aero/aero                                     {:mvn/version "1.1.6"}
-           org.clojure/core.cache                        {:mvn/version "1.1.234"}
-           org.apache.commons/commons-text               {:mvn/version "1.14.0"}
+           org.clojure/core.cache                        {:mvn/version "1.2.999"}
+           org.apache.commons/commons-text               {:mvn/version "1.15.0"}
            me.flowthing/pp                               {:mvn/version "2024-11-13.77"}
            org.apache.tika/tika-core                     {:mvn/version "3.2.3"}
            org.apache.tika/tika-parser-html-commons      {:mvn/version "2.9.4"}
            org.apache.tika/tika-parsers-standard-package {:mvn/version "3.2.3"}
            org.apache.opennlp/opennlp-tools              {:mvn/version "2.5.6.1"}
-           org.clojure/tools.cli                         {:mvn/version "1.2.245"}
+           org.clojure/tools.cli                         {:mvn/version "1.4.256"}
            com.fzakaria/slf4j-timbre                     {:mvn/version "0.4.1"}
-           org.clojure/core.async                        {:mvn/version "1.8.741"}
-           selmer/selmer                                 {:mvn/version "1.12.65"}
-           net.modulolotus/truegrit                      {:mvn/version "2.3.35"}
-           aysylu/loom                                   {:mvn/version "1.0.2"}}
+           org.clojure/core.async                        {:mvn/version "1.9.865"}
+           selmer/selmer                                 {:mvn/version "1.13.5"}
+           net.modulolotus/truegrit                      {:mvn/version "2.4.36"}
+           aysylu/loom                                   {:mvn/version "1.2.2"}}
  :aliases {:dev        {:extra-paths ["dev" "notebook"]
                         :extra-deps  {io.github.nextjournal/clerk          {:mvn/version "0.18.1150"}
                                       djblue/portal                        {:mvn/version "0.61.0"}
@@ -33,7 +33,7 @@
                         :main-opts  ["-m" "rebel-readline.main"]}
            :outdated   {:deps      {com.github.liquidz/antq {:mvn/version "RELEASE"}}
                         :main-opts ["-m" "antq.core" "--upgrade"]}
-           :test       {:extra-deps {nubank/matcher-combinators {:mvn/version "3.9.2"}}}
+           :test       {:extra-deps {nubank/matcher-combinators {:mvn/version "3.11.0"}}}
            :kaocha     {:main-opts   ["-m" "kaocha.runner"]
                         :extra-paths ["test"]
                         :extra-deps  {lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
